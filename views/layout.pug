@@ -1,0 +1,23 @@
+doctype html
+meta(name="google-signin-client_id", content="875872766577-t50bt5dsv9f6ua10a79r536m1b50b4h1.apps.googleusercontent.com")
+meta(name='viewport', content='width=device-width, initial-scale=1')
+
+html
+	head
+		title= title
+		script(src='https://apis.google.com/js/platform.js', async, defer)
+
+		// jquery
+		script(src="js/jquery.min.js")
+
+		// bootstrap 3
+
+		// Latest compiled and minified CSS
+		link(rel="stylesheet", href="css/bootstrap.min.css")
+		// Optional theme
+		link(rel="stylesheet", href="css/bootstrap-theme.min.css")
+		// Latest compiled and minified JavaScript
+		script(src="js/bootstrap.min.js")
+	body
+		.container
+			block content

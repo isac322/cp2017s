@@ -1,0 +1,13 @@
+extends layout
+
+block content
+	.page-header.col-md-12
+		h1.text-center.text-info.col-lg-12 #{title} #[small 2017 Spring]
+
+	blockquote.col-md-12
+		p Welcome to #{title} Homework System
+
+	.col-md-12
+		.alert.alert-info.col-md-6(role='alert') You have to sign in to Google to verify your identity.
+
+	.g-signin2.center-block(data-onsuccess="onSignIn")
