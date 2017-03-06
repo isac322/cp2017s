@@ -71,6 +71,7 @@ var Server = (function () {
         this.app.use(cookieParser());
         this.app.use(require('less-middleware')(path.join(__dirname, 'public')));
         this.app.use(express.static(path.join(__dirname, 'public')));
+        this.app.use('/js', express.static(path.join(__dirname, '/node_modules/bootstrap-validator/dist')));
         this.app.use('/js', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/js')));
         this.app.use('/js', express.static(path.join(__dirname, '/node_modules/jquery/dist/')));
         this.app.use('/js', express.static(path.join(__dirname, '/res/js/')));
