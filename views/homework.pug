@@ -1,0 +1,58 @@
+extends layout
+
+block content
+	if admin
+		.col-md-12
+			.col-md-2
+				a(role='button', href='/homework/add')
+					| #[span.glyphicon.glyphicon-plus]
+					| Add
+
+	.col-md-6
+		.panel.panel-info
+			// Default panel contents
+			.panel-heading
+				h3.panel-title Panel title
+
+			.panel-body
+				p ...
+				a.appender(role='button', data-toggle='collapse', href='#collapseExample', aria-expanded='false', aria-controls='collapseExample')
+					| #[span.glyphicon.glyphicon-menu-down]
+			// List group
+			ul.list-group.collapse#collapseExample
+				li.list-group-item Cras justo odio
+				li.list-group-item Dapibus ac facilisis in
+				li.list-group-item Morbi leo risus
+				li.list-group-item Porta ac consectetur ac
+				li.list-group-item Vestibulum at eros
+	.col-md-6
+		.panel.panel-info
+			// Default panel contents
+			.panel-heading
+				h3.panel-title Panel title
+
+			.panel-body
+				p ...
+				a.appender(role='button', data-toggle='collapse', href='#collapseExample2', aria-expanded='false', aria-controls='collapseExample2')
+					| #[span.glyphicon.glyphicon-menu-down]
+			// List group
+			ul.list-group.collapse#collapseExample2
+				li.list-group-item Cras justo odio
+				li.list-group-item Dapibus ac facilisis in
+				li.list-group-item Morbi leo risus
+				li.list-group-item Porta ac consectetur ac
+				li.list-group-item Vestibulum at eros
+
+	script(type='text/javascript').
+		$('.appender').click(function () {
+			const icon = $(this).find('span');
+
+			if (icon.hasClass('glyphicon-menu-down')) {
+				icon.removeClass('glyphicon-menu-down')
+					.addClass('glyphicon-menu-up');
+			}
+			else {
+				icon.removeClass('glyphicon-menu-up')
+					.addClass('glyphicon-menu-down');
+			}
+		});

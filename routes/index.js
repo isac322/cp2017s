@@ -14,7 +14,7 @@ var route_1 = require("./route");
 /**
  * / route
  *
- * @class User
+ * @class IndexRoute
  */
 var IndexRoute = (function (_super) {
     __extends(IndexRoute, _super);
@@ -25,7 +25,9 @@ var IndexRoute = (function (_super) {
      * @constructor
      */
     function IndexRoute() {
-        return _super.call(this) || this;
+        var _this = _super.call(this) || this;
+        _this.navPos = 1;
+        return _this;
     }
     /**
      * Create the routes.
@@ -49,12 +51,13 @@ var IndexRoute = (function (_super) {
      * @method index
      * @param req {Request} The express Request object.
      * @param res {Response} The express Response object.
-     * @next {NextFunction} Execute the next method.
+     * @param next {NextFunction} Execute the next method.
      */
     IndexRoute.prototype.index = function (req, res, next) {
         this.title = 'SNU Computer Programming';
         //render template
         this.render(req, res, "index");
+        next();
     };
     return IndexRoute;
 }(route_1.BaseRoute));

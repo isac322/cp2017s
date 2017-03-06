@@ -5,19 +5,76 @@ meta(name='viewport', content='width=device-width, initial-scale=1')
 html
 	head
 		title= title
-		script(src='https://apis.google.com/js/platform.js', async, defer)
+
+		link(rel="stylesheet", href="/css/sticky-footer-navbar.css")
 
 		// jquery
-		script(src="js/jquery.min.js")
+		script(src="/js/jquery.min.js")
 
 		// bootstrap 3
 
 		// Latest compiled and minified CSS
-		link(rel="stylesheet", href="css/bootstrap.min.css")
+		link(rel="stylesheet", href="/css/bootstrap.min.css")
 		// Optional theme
-		link(rel="stylesheet", href="css/bootstrap-theme.min.css")
+		link(rel="stylesheet", href="/css/bootstrap-theme.min.css")
 		// Latest compiled and minified JavaScript
-		script(src="js/bootstrap.min.js")
+		script(src="/js/bootstrap.min.js")
+
+		script(src='https://apis.google.com/js/platform.js')
+		link(rel='stylesheet', href='/css/bootstrap-social.css')
+		link(rel='stylesheet', href='/css/font-awesome.min.css')
 	body
+		nav.navbar.navbar-default.navbar-fixed-top
+			.container
+				.navbar-header
+					button.navbar-toggle.collapsed(type='button', data-toggle='collapse', data-target='#navbar', aria-expanded='false', aria-controls='navbar')
+						span.sr-only Toggle navigation
+						span.icon-bar
+						span.icon-bar
+						span.icon-bar
+					a.navbar-brand(href='/')
+						b CP2017s
+				#navbar.collapse.navbar-collapse
+					ul.nav.navbar-nav
+						li(class=navPos == 1 ? 'active' : undefined)
+							a(href='/') Main
+						li(class=navPos == 2 ? 'active' : undefined)
+							a(href='/homework') Homework
+
+					ul.nav.navbar-nav.navbar-right
+						li
+							a(href='http://dcslab.snu.ac.kr/courses/cp2017s/') Class Page #[span.glyphicon.glyphicon-link(aria-hidden="true")]
+						if signIn
+							li.dropdown
+								a.dropdown-toggle(href='#', data-toggle='dropdown', role='button', aria-haspopup='true', aria-expanded='false') #{name}
+									span.caret
+								ul.dropdown-menu
+									li
+										a(href='#') Action
+									li
+										a(href='#') Another action
+									li
+										a(href='#') Something else here
+									li.divider(role='separator')
+									li.dropdown-header Nav header
+									li
+										a(href='#') Separated link
+									li
+										a(href='#', onclick='signOut();') Sign out
+
 		.container
 			block content
+		script(src='/js/identificator.js')
+
+		footer.footer
+			.container
+				address.text-muted.col-xs-12.col-sm-3.col-md-3.col-lg-2
+					strong Assistant
+					br
+					a(href='mailto:bhyoo@dcslab.snu.ac.kr') bhyoo@dcslab.snu.ac.kr
+					br
+					a(href='mailto:jwbang@dcslab.snu.ac.kr') jwbang@dcslab.snu.ac.kr
+				address.text-muted.col-xs-12.col-sm-3.col-md-3.col-lg-2
+					strong DSCLAB
+					br
+					a(href='http://dcslab.snu.ac.kr/') http://dcslab.snu.ac.kr/

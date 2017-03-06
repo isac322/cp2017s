@@ -3,9 +3,10 @@ import * as cookieParser from "cookie-parser";
 import * as express from "express";
 import * as logger from "morgan";
 import * as path from "path";
-import * as errorHandler from "errorhandler";
+import * as expressSession from "express-session";
 import {IndexRoute} from "./routes/index";
-import {LoginRoute} from "./routes/login";
+import {HWRoute} from "./routes/homework";
+import {signIn, register, signOut} from "./routes/rest_api";
 
 /**
  * The server.
@@ -55,7 +56,9 @@ export class Server {
 	 * @method api
 	 */
 	public api() {
-		//empty for now
+		this.app.post('/signin', signIn);
+		this.app.post('/register', register);
+		this.app.post('/signout', signOut);
 	}
 
 	/**
@@ -78,10 +81,21 @@ export class Server {
 		this.app.use(require('less-middleware')(path.join(__dirname, 'public')));
 		this.app.use(express.static(path.join(__dirname, 'public')));
 
+
 		this.app.use('/js', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/js')));
 		this.app.use('/js', express.static(path.join(__dirname, '/node_modules/jquery/dist/')));
+		this.app.use('/js', express.static(path.join(__dirname, '/res/js/')));
 		this.app.use('/css', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/css')));
+		this.app.use('/css', express.static(path.join(__dirname, '/node_modules/font-awesome/css')));
+		this.app.use('/css', express.static(path.join(__dirname, '/res/css')));
 		this.app.use('/fonts', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/fonts')));
+		this.app.use('/fonts', express.static(path.join(__dirname, '/node_modules/font-awesome/fonts')));
+
+		this.app.use(expressSession({
+			secret: 'dcs%%*#',
+			resave: false,
+			saveUninitialized: true
+		}));
 
 		// error handler
 		this.app.use(function (err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -105,7 +119,7 @@ export class Server {
 		let router: express.Router = express.Router();
 
 		IndexRoute.create(router);
-		LoginRoute.create(router);
+		HWRoute.create(router);
 
 		this.app.use(router);
 	}

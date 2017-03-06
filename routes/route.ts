@@ -6,10 +6,8 @@ import { NextFunction, Request, Response } from "express";
  * @class BaseRoute
  */
 export class BaseRoute {
-
 	protected title: string;
-
-	private scripts: string[];
+	protected navPos: number;
 
 	/**
 	 * Constructor
@@ -20,20 +18,6 @@ export class BaseRoute {
 	constructor() {
 		//initialize variables
 		this.title = "SNU Computer Programming";
-		this.scripts = [];
-	}
-
-	/**
-	 * Add a JS external file to the request.
-	 *
-	 * @class BaseRoute
-	 * @method addScript
-	 * @param src {string} The src to the external JS file.
-	 * @return {BaseRoute} Self for chaining
-	 */
-	public addScript(src: string): BaseRoute {
-		this.scripts.push(src);
-		return this;
 	}
 
 	/**
@@ -51,11 +35,12 @@ export class BaseRoute {
 		//add constants
 		res.locals.BASE_URL = "/";
 
-		//add scripts
-		res.locals.scripts = this.scripts;
-
-		//add title
+		// add variables
 		res.locals.title = this.title;
+		res.locals.navPos = this.navPos;
+		res.locals.signIn = req.session.signIn;
+		res.locals.admin = req.session.admin;
+		res.locals.name = req.session.name;
 
 		//render view
 		res.render(view, options);

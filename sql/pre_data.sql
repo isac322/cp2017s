@@ -1,0 +1,1 @@
+INSERT INTO user values('2017-28933', '유병훈', 1, NOW());

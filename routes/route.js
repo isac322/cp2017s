@@ -15,20 +15,7 @@ var BaseRoute = (function () {
     function BaseRoute() {
         //initialize variables
         this.title = "SNU Computer Programming";
-        this.scripts = [];
     }
-    /**
-     * Add a JS external file to the request.
-     *
-     * @class BaseRoute
-     * @method addScript
-     * @param src {string} The src to the external JS file.
-     * @return {BaseRoute} Self for chaining
-     */
-    BaseRoute.prototype.addScript = function (src) {
-        this.scripts.push(src);
-        return this;
-    };
     /**
      * Render a page.
      *
@@ -43,10 +30,12 @@ var BaseRoute = (function () {
     BaseRoute.prototype.render = function (req, res, view, options) {
         //add constants
         res.locals.BASE_URL = "/";
-        //add scripts
-        res.locals.scripts = this.scripts;
-        //add title
+        // add variables
         res.locals.title = this.title;
+        res.locals.navPos = this.navPos;
+        res.locals.signIn = req.session.signIn;
+        res.locals.admin = req.session.admin;
+        res.locals.name = req.session.name;
         //render view
         res.render(view, options);
     };
