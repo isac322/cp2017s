@@ -75,7 +75,7 @@ export class HWRoute extends BaseRoute {
 	 * @param next {NextFunction} Execute the next method.
 	 */
 	public add(req: Request, res: Response, next: NextFunction) {
-		this.title = 'issue homework';
+		this.title = 'making homework';
 
 		if (!req.session.admin) {
 			res.redirect('/homework');

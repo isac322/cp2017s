@@ -42,6 +42,7 @@ function signIn(req, res) {
                     req.session.admin = row[0].is_admin == '1';
                     req.session.signIn = true;
                     req.session.name = decodeURIComponent(row[0].name);
+                    req.session.student_id = row[0].student_id;
                     res.status(202).send();
                     break;
                 default:
