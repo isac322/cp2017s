@@ -11,7 +11,7 @@ function onSignIn(googleUser: any) {
 	const xhr = new XMLHttpRequest();
 	const btn = $('#login-btn').button('loading');
 
-	xhr.open('POST', 'http://localhost:3000/signin');
+	xhr.open('POST', 'http://localhost/signin');
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	xhr.onload = () => {
 		switch (xhr.status) {
@@ -38,7 +38,7 @@ function signOut() {
 	auth2.signOut().then(function () {
 		console.log('User signed out.');
 		const xhr = new XMLHttpRequest();
-		xhr.open('POST', 'http://localhost:3000/signout');
+		xhr.open('POST', 'http://localhost/signout');
 		xhr.onload = function () {
 			document.location.href = '/';
 		};
