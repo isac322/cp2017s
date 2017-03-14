@@ -49,8 +49,7 @@ block content
 							.col-md-12
 								.form-group.has-feedback
 									label(for='name-input') Name
-									input.inputs.form-control#name-input(type='text', placeholder='Name', name='name', required)
-									span.glyphicon.form-control-feedback(aria-hidden='true')
+									input.inputs.form-control#name-input(type='text', placeholder='Name', name='name', required, disabled)
 
 						script(type="text/javascript").
 							$(".inputs").keyup(function () {
@@ -61,6 +60,6 @@ block content
 
 
 					.modal-footer
-						input#id_token-input(type='text', hidden='true', name='id_token')
+						input#id_token-input(type='text', hidden='true', name='id_token', required)
 						button.btn.btn-default(type='button', data-dismiss='modal') Close
 						button.btn.btn-success(type='submit') Register

@@ -1,7 +1,8 @@
 $('#date_picker').datepicker({
 	todayBtn: true,
 	orientation: "bottom auto",
-	todayHighlight: true
+	todayHighlight: true,
+	format: "yyyy-mm-dd"
 });
 
 Date.dateDiff = function (fromDate, toDate) {

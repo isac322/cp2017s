@@ -1,4 +1,6 @@
 import {Request, Response} from "express";
+import * as mysql from "mysql"
+import {IConnection} from "mysql";
 
 
 const CLIENT_ID = "875872766577-t50bt5dsv9f6ua10a79r536m1b50b4h1.apps.googleusercontent.com";
@@ -6,16 +8,23 @@ const CLIENT_ID = "875872766577-t50bt5dsv9f6ua10a79r536m1b50b4h1.apps.googleuser
 const GoogleAuth = require('google-auth-library');
 const auth = new GoogleAuth;
 const OAuth2Client = new auth.OAuth2(CLIENT_ID, '', '');
+/*
+ const Client = require('mariasql');
 
-const Client = require('mariasql');
+ const dbClient = new Client({
+ host: 'localhost',
+ user: 'cp2017s',
+ password: 'dcs%%*#',
+ db: 'cp2017s'
+ });*/
 
-const dbClient = new Client({
+
+const dbClient: IConnection = mysql.createConnection({
 	host: 'localhost',
 	user: 'cp2017s',
 	password: 'dcs%%*#',
-	db: 'cp2017s'
+	database: 'cp2017s'
 });
-
 
 /**
  * The sign in request api.
@@ -38,36 +47,36 @@ export function signIn(req: Request, res: Response) {
 
 			const payload = login.getPayload();
 			const email = payload['email'];
-			const name = payload['name'];
 
 			dbClient.query(
 				'SELECT * from email, user where email = "' + email + '" and user.student_id = email.student_id;',
-				(err, row) => {
+				(err, result) => {
 					if (err) {
 						// FIXME: error handling
 						throw err;
 					}
 
 					console.log('[signIn]');
-					console.log(row.info);
+					console.log(result);
+					console.log();
 
-					switch (row.info.numRows) {
-						case '0':
-							res.status(404).send({'name': name, 'idToken': token});
+					switch (result.length) {
+						case 0:
+							res.sendStatus(404);
 							break;
 
-						case '1':
-							req.session.admin = row[0].is_admin == '1';
+						case 1:
+							req.session.admin = result[0].is_admin == '1';
 							req.session.signIn = true;
-							req.session.name = decodeURIComponent(row[0].name);
-							req.session.student_id = row[0].student_id;
+							req.session.name = decodeURIComponent(result[0].name);
+							req.session.student_id = result[0].student_id;
 							req.session.email = email;
 
-							res.status(202).send();
+							res.sendStatus(202);
 							break;
 
 						default:
-							res.status(500).send();
+							res.sendStatus(500);
 							break;
 					}
 				});
@@ -78,7 +87,7 @@ export function signOut(req: Request, res: Response) {
 	req.session.signIn = false;
 	req.session.admin = false;
 
-	res.status(202).send();
+	res.sendStatus(202);
 }
 
 
@@ -107,34 +116,38 @@ export function register(req: Request, res: Response) {
 
 			const payload = login.getPayload();
 			const email = payload['email'];
+			const nameInGoogle = encodeURIComponent(payload['name']);
 
 			dbClient.query(
 				'SELECT * FROM user WHERE student_id=\'' + studentId + '\';',
-				(err, row) => {
-					if (err || row.info.numRows != 1) {
+				(err, selectResult) => {
+					if (err || selectResult.length != 1) {
 						// FIXME: error handling
 						throw err;
 					}
 
 					console.log('[register:outer]');
-					console.log(row);
+					console.log(selectResult);
+					console.log();
 
 					dbClient.query(
-						'INSERT INTO email VALUES ( \'' + studentId + '\', \'' + email + '\', \'' + name + '\');',
-						(err, row2) => {
+						'INSERT INTO email VALUES (?,?,?);',
+						[studentId, email, nameInGoogle],
+						(err, insertResult) => {
 							if (err) {
 								// FIXME: error handling
 								throw err;
 							}
 
 							console.log('[register:inner]');
-							console.log(row2);
+							console.log(insertResult);
+							console.log();
 
 							req.session.signIn = true;
-							req.session.name = decodeURIComponent(row[0].name);
-							req.session.student_id = row[0].student_id;
+							req.session.name = decodeURIComponent(selectResult[0].name);
+							req.session.student_id = selectResult[0].student_id;
 							req.session.email = email;
-							req.session.admin = row[0].is_admin == '1';
+							req.session.admin = selectResult[0].is_admin == '1';
 
 							res.redirect('/');
 						}
@@ -157,9 +170,51 @@ export function createHW(req: Request, res: Response) {
 		res.redirect('/homework');
 	}
 	else {
-		console.log(req.body);
-		console.log(req.body.attachment);
-		console.log(req.body.attachment.name);
+		const name = encodeURIComponent(req.body.name);
+		const start_date = req.body.start;
+		const end_date = req.body.due;
+		const description = req.body.description;
+
+		dbClient.query(
+			'INSERT INTO homework(name, start_date, end_date, author_id, description) VALUES(?,?,?,?,?);',
+			[name, start_date, end_date, req.session.student_id, description],
+			(err, insertResult) => {
+				if (err) {
+					// FIXME: error handling
+					throw err;
+				}
+
+				console.log('[createHW:insert into homework]');
+				console.log(insertResult);
+				console.log();
+
+				const id = insertResult.insertId;
+
+				const values = [];
+
+				for (let attachment of req.body.attachment) {
+					const hwName = encodeURIComponent(attachment.name);
+					const extension = attachment.extension;
+
+					values.push([id, hwName, extension]);
+				}
+
+				console.log(values);
+
+				dbClient.query(
+					'INSERT INTO hw_config(homework_id, name, extension) VALUES ' + mysql.escape(values) + ';',
+					(err, result) => {
+						if (err) {
+							// FIXME: error handling
+							throw err;
+						}
+
+						console.log('[createHW:insert into hw_config]');
+						console.log(result);
+					}
+				)
+			}
+		);
 		res.redirect('/homework');
 	}
 }

@@ -5,6 +5,7 @@ gapi.load('auth2', function () {
         next();
 });
 function onSignIn(googleUser) {
+    var name = googleUser.getBasicProfile().getName();
     var id_token = googleUser.getAuthResponse().id_token;
     var xhr = new XMLHttpRequest();
     var btn = $('#login-btn').button('loading');
@@ -13,10 +14,9 @@ function onSignIn(googleUser) {
     xhr.onload = function () {
         switch (xhr.status) {
             case 404:
-                var res = JSON.parse(xhr.responseText);
                 $('#register-modal').modal();
-                $('#name-input').val(res.name);
-                $('#id_token-input').val(res.idToken);
+                $('#name-input').val(name);
+                $('#id_token-input').val(id_token);
                 break;
             case 202:
                 document.location.href = '/homework';

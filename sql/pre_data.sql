@@ -1,1 +1,1 @@
-INSERT INTO user values('2017-28933', '유병훈', 1, NOW());
+INSERT INTO user(student_id, name, is_admin) values('2017-28933', '%EC%9C%A0%EB%B3%91%ED%9B%88', 1);
