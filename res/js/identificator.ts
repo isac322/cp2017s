@@ -12,7 +12,7 @@ function onSignIn(googleUser: any) {
 	const xhr = new XMLHttpRequest();
 	const btn = $('#login-btn').button('loading');
 
-	xhr.open('POST', 'http://localhost/signin');
+	xhr.open('POST', 'https://cp2017s.snu.ac.kr/signin');
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	xhr.onload = () => {
 		switch (xhr.status) {
@@ -39,7 +39,7 @@ function signOut() {
 	auth2.signOut().then(function () {
 		console.log('User signed out.');
 		const xhr = new XMLHttpRequest();
-		xhr.open('POST', 'http://localhost/signout');
+		xhr.open('POST', 'https://cp2017s.snu.ac.kr/signout');
 		xhr.onload = function () {
 			document.location.href = '/';
 		};

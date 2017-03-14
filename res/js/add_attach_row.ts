@@ -8,8 +8,8 @@ $('#btn-append-item').click((event: JQueryEventObject) => {
 	event.preventDefault();
 
 	// create new row and add to list-group
-	const attachRow: JQuery = attachTemplate.clone().show();
-	attachRow.appendTo(attachList);
+	const attachRow: JQuery = attachTemplate.clone();
+	attachRow.appendTo(attachList).fadeIn(400);
 
 	// change
 	const nameColumn = attachRow.find('.file-name:first');
@@ -29,5 +29,9 @@ $('#btn-append-item').trigger('click');
 
 
 $('body').on('click', '.btn-remove-item', (event: JQueryEventObject) => {
-	$(event.target).closest('li').remove();
+	const clicked = $(event.target).closest('li');
+	clicked.fadeOut(300, () => {
+		clicked.remove();
+		currentForm.validator('update');
+	});
 });

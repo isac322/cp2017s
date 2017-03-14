@@ -5,15 +5,6 @@ var CLIENT_ID = "875872766577-t50bt5dsv9f6ua10a79r536m1b50b4h1.apps.googleuserco
 var GoogleAuth = require('google-auth-library');
 var auth = new GoogleAuth;
 var OAuth2Client = new auth.OAuth2(CLIENT_ID, '', '');
-/*
- const Client = require('mariasql');
-
- const dbClient = new Client({
- host: 'localhost',
- user: 'cp2017s',
- password: 'dcs%%*#',
- db: 'cp2017s'
- });*/
 var dbClient = mysql.createConnection({
     host: 'localhost',
     user: 'cp2017s',
@@ -41,7 +32,7 @@ function signIn(req, res) {
                 // FIXME: error handling
                 throw err;
             }
-            console.log('[signIn]');
+            console.log('\n[signIn]');
             console.log(result);
             console.log();
             switch (result.length) {
@@ -95,7 +86,7 @@ function register(req, res) {
                 // FIXME: error handling
                 throw err;
             }
-            console.log('[register:outer]');
+            console.log('\n[register:outer]');
             console.log(selectResult);
             console.log();
             dbClient.query('INSERT INTO email VALUES (?,?,?);', [studentId, email, nameInGoogle], function (err, insertResult) {
@@ -103,7 +94,7 @@ function register(req, res) {
                     // FIXME: error handling
                     throw err;
                 }
-                console.log('[register:inner]');
+                console.log('\n[register:inner]');
                 console.log(insertResult);
                 console.log();
                 req.session.signIn = true;
@@ -138,7 +129,7 @@ function createHW(req, res) {
                 // FIXME: error handling
                 throw err;
             }
-            console.log('[createHW:insert into homework]');
+            console.log('\n[createHW:insert into homework]');
             console.log(insertResult);
             console.log();
             var id = insertResult.insertId;
@@ -149,14 +140,14 @@ function createHW(req, res) {
                 var extension = attachment.extension;
                 values.push([id, hwName, extension]);
             }
-            console.log(values);
             dbClient.query('INSERT INTO hw_config(homework_id, name, extension) VALUES ' + mysql.escape(values) + ';', function (err, result) {
                 if (err) {
                     // FIXME: error handling
                     throw err;
                 }
-                console.log('[createHW:insert into hw_config]');
+                console.log('\n[createHW:insert into hw_config]');
                 console.log(result);
+                console.log();
             });
         });
         res.redirect('/homework');

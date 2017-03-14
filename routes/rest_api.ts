@@ -8,16 +8,6 @@ const CLIENT_ID = "875872766577-t50bt5dsv9f6ua10a79r536m1b50b4h1.apps.googleuser
 const GoogleAuth = require('google-auth-library');
 const auth = new GoogleAuth;
 const OAuth2Client = new auth.OAuth2(CLIENT_ID, '', '');
-/*
- const Client = require('mariasql');
-
- const dbClient = new Client({
- host: 'localhost',
- user: 'cp2017s',
- password: 'dcs%%*#',
- db: 'cp2017s'
- });*/
-
 
 const dbClient: IConnection = mysql.createConnection({
 	host: 'localhost',
@@ -56,7 +46,7 @@ export function signIn(req: Request, res: Response) {
 						throw err;
 					}
 
-					console.log('[signIn]');
+					console.log('\n[signIn]');
 					console.log(result);
 					console.log();
 
@@ -126,7 +116,7 @@ export function register(req: Request, res: Response) {
 						throw err;
 					}
 
-					console.log('[register:outer]');
+					console.log('\n[register:outer]');
 					console.log(selectResult);
 					console.log();
 
@@ -139,7 +129,7 @@ export function register(req: Request, res: Response) {
 								throw err;
 							}
 
-							console.log('[register:inner]');
+							console.log('\n[register:inner]');
 							console.log(insertResult);
 							console.log();
 
@@ -184,7 +174,7 @@ export function createHW(req: Request, res: Response) {
 					throw err;
 				}
 
-				console.log('[createHW:insert into homework]');
+				console.log('\n[createHW:insert into homework]');
 				console.log(insertResult);
 				console.log();
 
@@ -199,8 +189,6 @@ export function createHW(req: Request, res: Response) {
 					values.push([id, hwName, extension]);
 				}
 
-				console.log(values);
-
 				dbClient.query(
 					'INSERT INTO hw_config(homework_id, name, extension) VALUES ' + mysql.escape(values) + ';',
 					(err, result) => {
@@ -209,8 +197,9 @@ export function createHW(req: Request, res: Response) {
 							throw err;
 						}
 
-						console.log('[createHW:insert into hw_config]');
+						console.log('\n[createHW:insert into hw_config]');
 						console.log(result);
+						console.log();
 					}
 				)
 			}

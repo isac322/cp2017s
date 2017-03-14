@@ -9,7 +9,7 @@ function onSignIn(googleUser) {
     var id_token = googleUser.getAuthResponse().id_token;
     var xhr = new XMLHttpRequest();
     var btn = $('#login-btn').button('loading');
-    xhr.open('POST', 'http://localhost/signin');
+    xhr.open('POST', 'https://cp2017s.snu.ac.kr/signin');
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.onload = function () {
         switch (xhr.status) {
@@ -32,7 +32,7 @@ function signOut() {
     auth2.signOut().then(function () {
         console.log('User signed out.');
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://localhost/signout');
+        xhr.open('POST', 'https://cp2017s.snu.ac.kr/signout');
         xhr.onload = function () {
             document.location.href = '/';
         };
