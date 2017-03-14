@@ -33,6 +33,7 @@ function signIn(req, res) {
                 // FIXME: error handling
                 throw err;
             }
+            console.log('[signIn]');
             console.log(row.info);
             switch (row.info.numRows) {
                 case '0':
@@ -43,6 +44,7 @@ function signIn(req, res) {
                     req.session.signIn = true;
                     req.session.name = decodeURIComponent(row[0].name);
                     req.session.student_id = row[0].student_id;
+                    req.session.email = email;
                     res.status(202).send();
                     break;
                 default:
@@ -78,20 +80,47 @@ function register(req, res) {
         }
         var payload = login.getPayload();
         var email = payload['email'];
-        dbClient.query('INSERT INTO user VALUES (\'' + studentId + '\', \'' + name + '\', 0, NOW()) ON DUPLICATE KEY UPDATE name=\'' + name + '\';', function (err, row) {
-            if (err) {
+        dbClient.query('SELECT * FROM user WHERE student_id=\'' + studentId + '\';', function (err, row) {
+            if (err || row.info.numRows != 1) {
                 // FIXME: error handling
                 throw err;
             }
-            dbClient.query('INSERT INTO email VALUES ( \'' + studentId + '\', \'' + email + '\');', function (err, row) {
+            console.log('[register:outer]');
+            console.log(row);
+            dbClient.query('INSERT INTO email VALUES ( \'' + studentId + '\', \'' + email + '\', \'' + name + '\');', function (err, row2) {
                 if (err) {
                     // FIXME: error handling
                     throw err;
                 }
-                console.log(row);
+                console.log('[register:inner]');
+                console.log(row2);
+                req.session.signIn = true;
+                req.session.name = decodeURIComponent(row[0].name);
+                req.session.student_id = row[0].student_id;
+                req.session.email = email;
+                req.session.admin = row[0].is_admin == '1';
                 res.redirect('/');
             });
         });
     });
 }
 exports.register = register;
+/**
+ * creating a new homework request api.
+ *
+ * @method createHW
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+function createHW(req, res) {
+    if (!req.session.admin) {
+        res.redirect('/homework');
+    }
+    else {
+        console.log(req.body);
+        console.log(req.body.attachment);
+        console.log(req.body.attachment.name);
+        res.redirect('/homework');
+    }
+}
+exports.createHW = createHW;

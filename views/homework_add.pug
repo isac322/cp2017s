@@ -11,10 +11,22 @@ block content
 			margin-bottom: 40px;
 		}
 
-		.row .form-group {
-			margin-bottom: 0;
+		@media (min-device-width: 768px) {
+			.row .form-group {
+				margin-bottom: 0;
+			}
 		}
-	form(action='/homework/add', method='post', data-toggle="validator", role='form')
+
+		@media (max-device-width: 768px) {
+			.file-name {
+				margin-bottom: 15px !important;
+			}
+
+			.row .form-group {
+				margin-bottom: 0;
+			}
+		}
+	form#create-hw(action='/homework', method='post', data-toggle="validator", role='form')
 		// homework name
 		.col-xs-12.col-md-6
 			.form-group.has-feedback
@@ -33,62 +45,50 @@ block content
 		.col-xs-12.col-md-6
 			.form-group.has-feedback
 				label.control-label(for='date_picker') Start and Due dates
-				#date_picker.input-daterange.input-group
+				.input-daterange.input-group#date_picker
 					input.date-input.form-control#start-date(type='text', placeholder='Start date', name='start', required)
 					span.input-group-addon to
 					input.date-input.form-control#due-date(type='text', placeholder='Due date', name='due', required)
 				span.glyphicon.form-control-feedback(aria-hidden='true')
 				.help-block#diff-date
 
-				script(type='text/javascript').
-					$('#date_picker').datepicker({
-						todayBtn: true,
-						orientation: "bottom auto",
-						todayHighlight: true
-					});
+				script(src='/js/date_picker_init.js')
 
-					Date.dateDiff = function (fromDate, toDate) {
-						const diff = toDate - fromDate;
-						const divideBy = 86400000;
-
-						return Math.floor(diff / divideBy) + 1;
-					};
-
-					$('.date-input').change(function () {
-						const fromArr = $('#start-date').val().split('/');
-						const toArr = $('#due-date').val().split('/');
-
-						const fromDate = new Date(fromArr[2], fromArr[0] - 1, fromArr[1]);
-						const toDate = new Date(toArr[2], toArr[0] - 1, toArr[1]);
-
-						$('#diff-date').text(Date.dateDiff(fromDate, toDate) + ' Days');
-					});
+		.col-xs-12
+			label.control-label(for='attachments') Attachment Setting
+			.panel.panel-success#attachments
+				// Default panel contents
+				.panel-heading
+					h4.text-info Attachments
+				ul.list-group#attach-list
+				.panel-footer.text-center
+					button.btn.btn-link#btn-append-item
+						span.glyphicon.glyphicon-plus(aria-hidden="true")
 
 		.col-xs-12
 			.form-group
-				label.control-label(for='attachments') Attachment Setting
-				.panel.panel-success#attachments
-					// Default panel contents
-					.panel-heading
-						h4.text-info Attachments
-					ul.list-group
-						li.list-group-item
-							.row
-								.col-xs-4.form-group.has-feedback
-									input.form-control(type='text', placeholder='File Name', required)
-								.col-xs-7.form-group.has-feedback
-									select.form-control(required)
-										option(value='cpp') C++
-										option(value='java') Java
-										option(value='makefile') Makefile
-										option(value='md') Markdown
-										option(value='report') Report
+				button.btn.pull-right.btn-success(type='submit') Create
 
-						li.list-group-item Dapibus ac facilisis in
-						li.list-group-item Morbi leo risus
-						li.list-group-item Porta ac consectetur ac
-						li.list-group-item Vestibulum at eros
-					.panel-footer Panel footer
+	li.list-group-item#list-item_template
+		.row
+			.col-xs-10.col-sm-6
+				.form-group.has-feedback.file-name
+					label.control-label.sr-only File Name
+					input.form-control(type='text', placeholder='File Name', name='attachment[][name]', required)
+					span.glyphicon.form-control-feedback(aria-hidden='true')
+			.col-xs-10.col-sm-5
+				.form-group.has-feedback.extension
+					label.control-label.sr-only File Type
+					select.form-control(name='attachment[][extension]', required)
+						option(value='cpp') C++
+						option(value='java') Java
+						option(value='makefile') Makefile
+						option(value='report') Report
+						option(value='zip') Zip
+					span.glyphicon.form-control-feedback(aria-hidden='true')
+			.pull-right.text-center
+				a.btn.btn-link
+					span.glyphicon.glyphicon-remove(aria-hidden="true")
 
-		.col-xs-12.form-group
-			button.btn.pull-right.btn-success(type='submit') Create
+
+	script(src='/js/add_attach_row.js')

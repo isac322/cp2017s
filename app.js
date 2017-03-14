@@ -52,6 +52,7 @@ var Server = (function () {
         this.app.post('/signin', rest_api_1.signIn);
         this.app.post('/register', rest_api_1.register);
         this.app.post('/signout', rest_api_1.signOut);
+        this.app.post('/homework', rest_api_1.createHW);
     };
     /**
      * Configure application

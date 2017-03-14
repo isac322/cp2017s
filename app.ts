@@ -6,7 +6,7 @@ import * as path from "path";
 import * as expressSession from "express-session";
 import {IndexRoute} from "./routes/index";
 import {HWRoute} from "./routes/homework";
-import {signIn, register, signOut} from "./routes/rest_api";
+import {signIn, register, signOut, createHW} from "./routes/rest_api";
 
 /**
  * The server.
@@ -59,6 +59,7 @@ export class Server {
 		this.app.post('/signin', signIn);
 		this.app.post('/register', register);
 		this.app.post('/signout', signOut);
+		this.app.post('/homework', createHW);
 	}
 
 	/**

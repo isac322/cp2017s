@@ -48,6 +48,7 @@ export function signIn(req: Request, res: Response) {
 						throw err;
 					}
 
+					console.log('[signIn]');
 					console.log(row.info);
 
 					switch (row.info.numRows) {
@@ -60,6 +61,7 @@ export function signIn(req: Request, res: Response) {
 							req.session.signIn = true;
 							req.session.name = decodeURIComponent(row[0].name);
 							req.session.student_id = row[0].student_id;
+							req.session.email = email;
 
 							res.status(202).send();
 							break;
@@ -107,22 +109,32 @@ export function register(req: Request, res: Response) {
 			const email = payload['email'];
 
 			dbClient.query(
-				'INSERT INTO user VALUES (\'' + studentId + '\', \'' + name + '\', 0, NOW()) ON DUPLICATE KEY UPDATE name=\'' + name + '\';',
+				'SELECT * FROM user WHERE student_id=\'' + studentId + '\';',
 				(err, row) => {
-					if (err) {
+					if (err || row.info.numRows != 1) {
 						// FIXME: error handling
 						throw err;
 					}
 
+					console.log('[register:outer]');
+					console.log(row);
+
 					dbClient.query(
-						'INSERT INTO email VALUES ( \'' + studentId + '\', \'' + email + '\');',
-						(err, row) => {
+						'INSERT INTO email VALUES ( \'' + studentId + '\', \'' + email + '\', \'' + name + '\');',
+						(err, row2) => {
 							if (err) {
 								// FIXME: error handling
 								throw err;
 							}
 
-							console.log(row);
+							console.log('[register:inner]');
+							console.log(row2);
+
+							req.session.signIn = true;
+							req.session.name = decodeURIComponent(row[0].name);
+							req.session.student_id = row[0].student_id;
+							req.session.email = email;
+							req.session.admin = row[0].is_admin == '1';
 
 							res.redirect('/');
 						}
@@ -130,4 +142,24 @@ export function register(req: Request, res: Response) {
 				}
 			)
 		});
+}
+
+
+/**
+ * creating a new homework request api.
+ *
+ * @method createHW
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+export function createHW(req: Request, res: Response) {
+	if (!req.session.admin) {
+		res.redirect('/homework');
+	}
+	else {
+		console.log(req.body);
+		console.log(req.body.attachment);
+		console.log(req.body.attachment.name);
+		res.redirect('/homework');
+	}
 }

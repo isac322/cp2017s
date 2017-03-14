@@ -65,7 +65,6 @@ var HWRoute = (function (_super) {
         else {
             //render template
             this.render(req, res, 'homework');
-            next();
         }
     };
     /**
@@ -85,7 +84,6 @@ var HWRoute = (function (_super) {
         else {
             //render template
             this.render(req, res, 'homework_add');
-            next();
         }
     };
     return HWRoute;

@@ -61,7 +61,6 @@ export class HWRoute extends BaseRoute {
 		else {
 			//render template
 			this.render(req, res, 'homework');
-			next();
 		}
 	}
 
@@ -83,7 +82,6 @@ export class HWRoute extends BaseRoute {
 		else {
 			//render template
 			this.render(req, res, 'homework_add');
-			next();
 		}
 	}
 }
