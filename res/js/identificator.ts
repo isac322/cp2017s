@@ -2,9 +2,11 @@ let auth2;
 
 gapi.load('auth2', () => {
 	auth2 = gapi.auth2.init();
-	if (next !== undefined)
+	if ('next' in window)
 		next();
 });
+
+const origin = location.protocol + '//' + location.host;
 
 function onSignIn(googleUser: any) {
 	const name = googleUser.getBasicProfile().getName();
@@ -12,11 +14,11 @@ function onSignIn(googleUser: any) {
 	const xhr = new XMLHttpRequest();
 	const btn = $('#login-btn').button('loading');
 
-	xhr.open('POST', 'https://cp2017s.snu.ac.kr/signin');
+	xhr.open('POST', origin + '/signin');
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	xhr.onload = () => {
 		switch (xhr.status) {
-			case 404:
+			case 204:
 				$('#register-modal').modal();
 				$('#name-input').val(name);
 				$('#id_token-input').val(id_token);
@@ -36,10 +38,10 @@ function onSignIn(googleUser: any) {
 }
 
 function signOut() {
-	auth2.signOut().then(function () {
+	auth2.signOut().then(() => {
 		console.log('User signed out.');
 		const xhr = new XMLHttpRequest();
-		xhr.open('POST', 'https://cp2017s.snu.ac.kr/signout');
+		xhr.open('POST', origin + '/signout');
 		xhr.onload = function () {
 			document.location.href = '/';
 		};

@@ -1,5 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var fs = require("fs");
+var webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
+var renderOption = {
+    clientId: webConfig.google.clientId,
+    assistants: webConfig.assistants,
+    webManager: webConfig.web_manager,
+    classPage: webConfig.class_page,
+    shortName: webConfig.short_name,
+    yearNSeason: webConfig.year_and_season
+};
 /**
  * Constructor
  *
@@ -24,10 +34,9 @@ var BaseRoute = (function () {
      * @param req {Request} The request object.
      * @param res {Response} The response object.
      * @param view {String} The view to render.
-     * @param options {Object} Additional options to append to the view's local scope.
      * @return void
      */
-    BaseRoute.prototype.render = function (req, res, view, options) {
+    BaseRoute.prototype.render = function (req, res, view) {
         //add constants
         res.locals.BASE_URL = "/";
         // add variables
@@ -37,7 +46,7 @@ var BaseRoute = (function () {
         res.locals.admin = req.session.admin;
         res.locals.name = req.session.name;
         //render view
-        res.render(view, options);
+        return res.render(view, renderOption);
     };
     return BaseRoute;
 }());

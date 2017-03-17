@@ -11,6 +11,13 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var route_1 = require("./route");
+var rest_api_1 = require("./rest_api");
+var monthNames = [
+    "January", "February", "March",
+    "April", "May", "June", "July",
+    "August", "September", "October",
+    "November", "December"
+];
 /**
  * /homework route
  *
@@ -58,14 +65,43 @@ var HWRoute = (function (_super) {
      * @param next {NextFunction} Execute the next method.
      */
     HWRoute.prototype.homework = function (req, res, next) {
-        this.title = 'homework list';
-        if (!req.session.signIn) {
-            res.redirect('/');
-        }
-        else {
+        var _this = this;
+        this.title = 'Homework List';
+        rest_api_1.dbClient.query(req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery, function (err, searchResult) {
+            console.log('\n[homework]');
+            console.log(searchResult);
+            console.log();
+            var currentId = -1;
+            var currentObject;
+            var homework = [];
+            for (var _i = 0, searchResult_1 = searchResult; _i < searchResult_1.length; _i++) {
+                var record = searchResult_1[_i];
+                if (record.homework_id != currentId) {
+                    currentObject = {
+                        id: record.homework_id,
+                        name: decodeURIComponent(record.name),
+                        startDate: monthNames[record.start_date.getMonth()] + ' ' + record.start_date.getDate(),
+                        deadline: monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
+                        description: record.description,
+                        leftMillis: record.end_date - Date.now() + 24 * 60 * 59 * 1000,
+                        attachments: []
+                    };
+                    homework.push(currentObject);
+                    currentId = record.homework_id;
+                }
+                currentObject.attachments.push({
+                    id: record.file_id,
+                    name: record.file_name,
+                    extension: record.file_extension,
+                    latestFile: record.submitted_name,
+                    latestTime: record.submitted_time
+                });
+            }
+            console.log(homework);
+            res.locals.homeworkList = homework;
             //render template
-            this.render(req, res, 'homework');
-        }
+            _this.render(req, res, 'homework');
+        });
     };
     /**
      * The homework issuing page route.
@@ -77,15 +113,36 @@ var HWRoute = (function (_super) {
      * @param next {NextFunction} Execute the next method.
      */
     HWRoute.prototype.add = function (req, res, next) {
-        this.title = 'making homework';
+        this.title = 'Create Homework';
         if (!req.session.admin) {
-            res.redirect('/homework');
+            return res.redirect('/homework');
         }
         else {
             //render template
-            this.render(req, res, 'homework_add');
+            return this.render(req, res, 'homework_add');
         }
     };
     return HWRoute;
 }(route_1.BaseRoute));
+HWRoute.hwQuery = function (student_id) {
+    var ret = 'SELECT homework.homework_id, homework.name, homework.start_date, homework.end_date, homework.description,' +
+        '       hw_config.id AS `file_id`, hw_config.name AS `file_name`, hw_config.extension AS `file_extension`,' +
+        '       reduced_submit.submitted_name, reduced_submit.submitted_time ' +
+        'FROM homework ' +
+        '     LEFT JOIN hw_config ' +
+        '         ON homework.homework_id = hw_config.homework_id ' +
+        '     LEFT JOIN ( ' +
+        '         SELECT attachment_id, file_name AS `submitted_name`, MAX(submitted) AS `submitted_time` ' +
+        '         FROM submit_log ' +
+        '         WHERE student_id = \'' + student_id + '\' ' +
+        '         GROUP BY attachment_id ' +
+        '     ) AS reduced_submit ' +
+        '         ON hw_config.id = reduced_submit.attachment_id;';
+    return ret;
+};
+HWRoute.guestHwQuery = 'SELECT homework.homework_id, homework.name, homework.start_date, homework.end_date, homework.description,' +
+    '       hw_config.name AS `file_name`, hw_config.extension AS `file_extension` ' +
+    'FROM homework ' +
+    '        LEFT JOIN hw_config ' +
+    '            ON homework.homework_id = hw_config.homework_id;';
 exports.HWRoute = HWRoute;

@@ -38,11 +38,11 @@ body > .container {
 
 @media (max-device-width: 768px) {
 	.footer {
-		height: 181px;
+		height: 282px;
 	}
 
 	body {
 		/* Margin bottom by footer height */
-		margin-bottom: 181px !important;
+		margin-bottom: 282px !important;
 	}
 }

@@ -1,51 +1,160 @@
 extends layout
 
+block header
+	script(src='/js/validator.min.js')
+	script(src='/js/jquery.form.min.js')
+
+	style.
+		.card-header {
+			margin-bottom: 40px;
+		}
+
+		#btn-add {
+			margin-top: 0;
+		}
+
+		.homework-card {
+			margin-bottom: 40px;
+		}
+
+		.wrapped-text {
+			overflow-wrap: break-word;
+		}
+
+		.nopadding {
+			padding: 0 !important;
+			margin: 0 !important;
+		}
+
+		.btn-file {
+			position: relative;
+			overflow: hidden;
+		}
+
+		.btn-file input[type=file] {
+			position: absolute;
+			top: 0;
+			right: 0;
+			min-width: 100%;
+			min-height: 100%;
+			font-size: 100px;
+			text-align: right;
+			filter: alpha(opacity=0);
+			opacity: 0;
+			outline: none;
+			background: white;
+			cursor: inherit;
+			display: block;
+		}
+
+		@media (max-device-width: 768px) {
+			.appender {
+				margin-top: 20px;
+			}
+		}
+
+
 block content
+	.col-md-12.page-header
+		h1.text-info Homework List
+
 	if admin
-		.col-md-12
-			.col-md-2
-				a(role='button', href='/homework/add')
+		.col-xs-12
+			a.pull-right(role='button', href='/homework/add')
+				h3#btn-add
 					| #[span.glyphicon.glyphicon-plus]
 					| Add
 
-	.col-md-6
-		.panel.panel-info
-			// Default panel contents
-			.panel-heading
-				h3.panel-title Panel title
+	each homework in homeworkList
+		.col-xs-12.col-md-6.homework-card
+			.panel.panel-default
+				.panel-body
+					.col-xs-12
+						h1.wrapped-text.card-header
+							b=homework.name
 
-			.panel-body
-				p ...
-				a.appender(role='button', data-toggle='collapse', href='#collapseExample', aria-expanded='false', aria-controls='collapseExample')
-					| #[span.glyphicon.glyphicon-menu-down]
-			// List group
-			ul.list-group.collapse#collapseExample
-				li.list-group-item Cras justo odio
-				li.list-group-item Dapibus ac facilisis in
-				li.list-group-item Morbi leo risus
-				li.list-group-item Porta ac consectetur ac
-				li.list-group-item Vestibulum at eros
-	.col-md-6
-		.panel.panel-info
-			// Default panel contents
-			.panel-heading
-				h3.panel-title Panel title
+						.row
+							.col-xs-12.col-sm-4.col-md-12
+								h4
+									b Description
+								p
+									a.wrapped-text(href=homework.description)=homework.description
 
-			.panel-body
-				p ...
-				a.appender(role='button', data-toggle='collapse', href='#collapseExample2', aria-expanded='false', aria-controls='collapseExample2')
-					| #[span.glyphicon.glyphicon-menu-down]
-			// List group
-			ul.list-group.collapse#collapseExample2
-				li.list-group-item Cras justo odio
-				li.list-group-item Dapibus ac facilisis in
-				li.list-group-item Morbi leo risus
-				li.list-group-item Porta ac consectetur ac
-				li.list-group-item Vestibulum at eros
+							.col-xs-6.col-sm-4
+								h4
+									b Start Date
+								p=homework.startDate
+
+							.col-xs-6.col-sm-4
+								h4
+									b Deadline
+								p=homework.deadline
+
+					.col-xs-12
+						a.pull-right.appender(role='button', data-toggle='collapse', href='#collapseExample' + homework.id, aria-expanded='false', aria-controls='collapseExample' + homework.id)
+							| #[i.fa.fa-upload(aria-hidden="true")]
+							| Submit
+							| #[span.glyphicon.glyphicon-menu-down]
+
+				ul.list-group.collapse(id='collapseExample' + homework.id)
+					each attachment in homework.attachments
+						li.list-group-item
+							form.upload-form(action='/homework/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
+								.row
+									.col-xs-12.col-sm-5.vcenter(class=attachment.latestFile == null ? '' : 'text-success')
+										h4.wrapped-text
+											| #[span.glyphicon.glyphicon-file]
+											| &nbsp;
+											| #{attachment.name}
+
+									if signIn
+										.col-xs-12.col-sm-7.vcenter
+											.form-group
+												.pull-right.input-group
+													input.form-control(type='text', data-validate='false', readonly)
+													.input-group-btn
+														span.btn.btn-default.btn-file
+															| Select
+															input(type='file' name='attachment', hidden, required)
+														button.btn.btn-primary(type='submit', role='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Sending...') Submit
+
+
+				.panel-footer.text-center
+					- var millis = 24 * 60 * 60 * 1000
+					if homework.leftMillis < 0
+						| Overpast
+					else if homework.leftMillis < millis
+						| Less than 24 hours
+					else if homework.leftMillis < 2 * millis
+						| 1 day left
+					else
+						| #{Math.floor(homework.leftMillis / millis)} days left
+
 
 	script(type='text/javascript').
+		// wrap cards with row
+		const cards = $('.homework-card');
+		for (let i = 0; i < cards.length; i += 2) {
+			cards.slice(i, i + 2).wrapAll('<div class="row"></div>');
+		}
+
+		// input:file handling
+		const files = $(':file');
+		files.on('change', function () {
+			const input = $(this);
+			const label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+
+			input.trigger('fileselect', label);
+		});
+
+		files.on('fileselect', function (event, label) {
+			$(this).parents('.input-group').find(':text').val(label);
+		});
+
+
+		// card appender
 		$('.appender').click(function () {
-			const icon = $(this).find('span');
+			const icon = $(this).find('span:last');
 
 			if (icon.hasClass('glyphicon-menu-down')) {
 				icon.removeClass('glyphicon-menu-down')
@@ -56,3 +165,5 @@ block content
 					.addClass('glyphicon-menu-down');
 			}
 		});
+
+	script(src='/js/attachment_uploader.js')

@@ -12,52 +12,57 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var route_1 = require("./route");
 /**
- * / route
+ * /attendance route
  *
- * @class IndexRoute
+ * @class AttendanceRoute
  */
-var IndexRoute = (function (_super) {
-    __extends(IndexRoute, _super);
+var AttendanceRoute = (function (_super) {
+    __extends(AttendanceRoute, _super);
     /**
      * Constructor
      *
-     * @class IndexRoute
+     * @class AttendanceRoute
      * @constructor
      */
-    function IndexRoute() {
+    function AttendanceRoute() {
         var _this = _super.call(this) || this;
-        _this.navPos = 1;
+        _this.navPos = 3;
         return _this;
     }
     /**
      * Create the routes.
      *
-     * @class IndexRoute
+     * @class AttendanceRoute
      * @method create
      * @static
      */
-    IndexRoute.create = function (router) {
+    AttendanceRoute.create = function (router) {
         //log
-        console.log("[IndexRoute::create] Creating index route.");
-        //add home page route
-        router.get("/", function (req, res, next) {
-            new IndexRoute().index(req, res, next);
+        console.log("[AttendanceRoute::create] Creating attendance route.");
+        //add attendance page route
+        router.get("/attendance", function (req, res, next) {
+            new AttendanceRoute().attendance(req, res, next);
         });
     };
     /**
-     * The home page route.
+     * The attendance page route.
      *
-     * @class IndexRoute
-     * @method index
+     * @class AttendanceRoute
+     * @method attendance
      * @param req {Request} The express Request object.
      * @param res {Response} The express Response object.
      * @param next {NextFunction} Execute the next method.
      */
-    IndexRoute.prototype.index = function (req, res, next) {
-        this.title = 'SNU Computer Programming';
-        //render template
-        this.render(req, res, "index");
+    AttendanceRoute.prototype.attendance = function (req, res, next) {
+        this.title = 'Attendance';
+        if (!req.session.signIn) {
+            res.redirect('/');
+        }
+        else {
+            //render template
+            this.render(req, res, "attendance");
+        }
     };
-    return IndexRoute;
+    return AttendanceRoute;
 }(route_1.BaseRoute));
-exports.IndexRoute = IndexRoute;
+exports.AttendanceRoute = AttendanceRoute;

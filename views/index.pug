@@ -2,9 +2,9 @@ extends layout
 
 block content
 	.col-md-12.jumbotron
-		h1.text-center.col-lg-12 #{title}#[br]#[small 2017 Spring]
+		h1.text-center.col-lg-12 #{title}#[br]#[small #{yearNSeason}]
 
-		p Welcome to #{title} Homework System
+		p Welcome to Online Submission System for #{title}
 
 	unless signIn
 		.row.col-md-12
@@ -22,44 +22,45 @@ block content
 				blockquote
 					p You have to sign in to Google to verify your identity.
 
+		block header
+			script(src='/js/validator.min.js')
 
-	script(src='/js/validator.min.js')
-	.modal.fade#register-modal(tabindex='-1', role='dialog', aria-labelledby="register-modal-title")
-		.modal-dialog(role='document')
-			form(action='/register', method='post', data-toggle="validator", role='form')
-				.modal-content
-					.modal-header
-						button.close(type='button', data-dismiss='modal', aria-label='Close')
-							span(aria-hidden='true') ×
-						h3.modal-title#register-modal-title Register required
-					.modal-body
-						.row
-							.col-md-12
-								h4 Signing in Google was successful, but you have to register your student identification to use this system.
-						.row
-							.col-md-12
-								.form-group.has-feedback
-									label(for='student-id') Student ID
-									.input-group#student-id
-										input.inputs.form-control(type='text', placeholder='20XX', pattern="^[0-9]{4}$", aria-describedby='student_id-splitter', maxlength='4', name='student_id1', required)
-										span#student_id-splitter.input-group-addon -
-										input.inputs.form-control(type='text', placeholder='XXXXXX', pattern="^[0-9]{5}$", aria-describedby='student_id-splitter', maxlength='5', name='student_id2', required)
-									span.glyphicon.form-control-feedback(aria-hidden='true')
-						.row
-							.col-md-12
-								.form-group.has-feedback
-									label(for='name-input') Name
-									input.inputs.form-control#name-input(type='text', placeholder='Name', name='name', required, disabled)
+		.modal.fade#register-modal(tabindex='-1', role='dialog', aria-labelledby="register-modal-title")
+			.modal-dialog(role='document')
+				form(action='/register', method='POST', data-toggle="validator", role='form')
+					.modal-content
+						.modal-header
+							button.close(type='button', data-dismiss='modal', aria-label='Close')
+								span(aria-hidden='true') ×
+							h3.modal-title#register-modal-title Register required
+						.modal-body
+							.row
+								.col-md-12
+									h4 Signing in Google was successful, but you have to register your student identification to use this system.
+							.row
+								.col-md-12
+									.form-group.has-feedback
+										label(for='student-id') Student ID
+										.input-group#student-id
+											input.inputs.form-control(type='text', placeholder='20XX', pattern="^[0-9]{4}$", aria-describedby='student_id-splitter', maxlength='4', name='student_id1', required)
+											span#student_id-splitter.input-group-addon -
+											input.inputs.form-control(type='text', placeholder='XXXXXX', pattern="^[0-9]{5}$", aria-describedby='student_id-splitter', maxlength='5', name='student_id2', required)
+										span.glyphicon.form-control-feedback(aria-hidden='true')
+							.row
+								.col-md-12
+									.form-group.has-feedback
+										label(for='name-input') Name
+										input.inputs.form-control#name-input(type='text', placeholder='Name', name='name', required, disabled)
 
-						script(type="text/javascript").
-							$(".inputs").keyup(function () {
-								if (this.value.length == this.maxLength) {
-									$(this).nextAll('.inputs').eq(0).focus();
-								}
-							});
+							script(type="text/javascript").
+								$(".inputs").keyup(function () {
+									if (this.value.length == this.maxLength) {
+										$(this).nextAll('.inputs').eq(0).focus();
+									}
+								});
 
 
-					.modal-footer
-						input#id_token-input(type='text', hidden='true', name='id_token', required)
-						button.btn.btn-default(type='button', data-dismiss='modal') Close
-						button.btn.btn-success(type='submit') Register
+						.modal-footer
+							input#id_token-input(type='text', hidden='true', name='id_token', required)
+							button.btn.btn-default(type='button', data-dismiss='modal') Close
+							button.btn.btn-success(type='submit') Register

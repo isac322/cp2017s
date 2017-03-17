@@ -4,9 +4,12 @@ import * as express from "express";
 import * as logger from "morgan";
 import * as path from "path";
 import * as expressSession from "express-session";
+import * as Docker from "dockerode"
 import {IndexRoute} from "./routes/index";
 import {HWRoute} from "./routes/homework";
-import {signIn, register, signOut, createHW} from "./routes/rest_api";
+import {AttendanceRoute} from "./routes/attendance"
+import {signIn, register, signOut, createHW, uploadAttach} from "./routes/rest_api";
+import fileUpload = require('express-fileupload');
 
 /**
  * The server.
@@ -60,6 +63,7 @@ export class Server {
 		this.app.post('/register', register);
 		this.app.post('/signout', signOut);
 		this.app.post('/homework', createHW);
+		this.app.post('/homework/:attachId', uploadAttach);
 	}
 
 	/**
@@ -76,6 +80,7 @@ export class Server {
 		// uncomment after placing your favicon in /public
 		//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 		this.app.use(logger('dev'));
+		this.app.use(fileUpload());
 		this.app.use(bodyParser.json());
 		this.app.use(bodyParser.urlencoded({extended: true}));
 		this.app.use(cookieParser());
@@ -86,6 +91,7 @@ export class Server {
 		this.app.use('/js', express.static(path.join(__dirname, '/node_modules/bootstrap-validator/dist')));
 		this.app.use('/js', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/js')));
 		this.app.use('/js', express.static(path.join(__dirname, '/node_modules/jquery/dist/')));
+		this.app.use('/js', express.static(path.join(__dirname, '/node_modules/jquery-form/dist/')));
 		this.app.use('/js', express.static(path.join(__dirname, '/res/js/')));
 		this.app.use('/css', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/css')));
 		this.app.use('/css', express.static(path.join(__dirname, '/node_modules/font-awesome/css')));
@@ -99,15 +105,13 @@ export class Server {
 			saveUninitialized: true
 		}));
 
-		// error handler
-		this.app.use(function (err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
-			// set locals, only providing error in development
-			res.locals.message = err.message;
-			res.locals.error = req.app.get('env') === 'development' ? err : {};
+		const docker = new Docker({host: 'http://localhost', port: 2375});
 
-			// render the error page
-			res.status(err.status || 500);
-			res.render('error');
+		docker.buildImage({
+			context: path.join(__dirname, '/judge_server'),
+			src: ['Dockerfile']
+		}, {t: 'judge_server'}, (err, response) => {
+			console.log(err);
 		});
 	}
 
@@ -122,6 +126,7 @@ export class Server {
 
 		IndexRoute.create(router);
 		HWRoute.create(router);
+		AttendanceRoute.create(router);
 
 		this.app.use(router);
 	}

@@ -51,6 +51,5 @@ export class IndexRoute extends BaseRoute {
 
 		//render template
 		this.render(req, res, "index");
-		next();
 	}
 }

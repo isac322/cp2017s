@@ -1,9 +1,18 @@
 doctype html
-meta(name="google-signin-client_id", content="875872766577-t50bt5dsv9f6ua10a79r536m1b50b4h1.apps.googleusercontent.com")
-meta(name='viewport', content='width=device-width, initial-scale=1')
 
 html
 	head
+		meta(name="google-signin-client_id", content=clientId)
+		meta(name='viewport', content='width=device-width, initial-scale=1')
+
+		// for Android
+		meta(name='theme-color' content='#FDFAFB')
+		// Windows Phone
+		meta(name='msapplication-navbutton-color', content='#FDFAFB')
+		// iOS Safari
+		meta(name='apple-mobile-web-app-capable', content='yes')
+		meta(name='apple-mobile-web-app-status-bar-style', content='black-translucent')
+
 		title= title
 
 		link(rel="stylesheet", href="/css/sticky-footer-navbar.css")
@@ -13,10 +22,9 @@ html
 
 		// bootstrap 3
 
+
 		// Latest compiled and minified CSS
 		link(rel="stylesheet", href="/css/bootstrap.min.css")
-		// Optional theme
-		link(rel="stylesheet", href="/css/bootstrap-theme.min.css")
 		// Latest compiled and minified JavaScript
 		script(src="/js/bootstrap.min.js")
 
@@ -29,6 +37,18 @@ html
 				-moz-appearance: none;
 			}
 
+			.page-header {
+				margin-top: 20px;
+			}
+
+			.vcenter {
+				display: inline-block;
+				vertical-align: middle;
+				float: none;
+			}
+
+		block header
+
 	body
 		nav.navbar.navbar-default.navbar-fixed-top
 			.container
@@ -39,17 +59,20 @@ html
 						span.icon-bar
 						span.icon-bar
 					a.navbar-brand(href='/')
-						b CP2017s
+						b=shortName
 				#navbar.collapse.navbar-collapse
 					ul.nav.navbar-nav
 						li(class=navPos == 1 ? 'active' : undefined)
 							a(href='/') Main
 						li(class=navPos == 2 ? 'active' : undefined)
 							a(href='/homework') Homework
+						if signIn
+							li(class=navPos == 3 ? 'active' : undefined)
+								a(href='/attendance') Attendance
 
 					ul.nav.navbar-nav.navbar-right
 						li
-							a(href='http://dcslab.snu.ac.kr/courses/cp2017s/') Class Page #[span.glyphicon.glyphicon-link(aria-hidden="true")]
+							a(href=classPage) #[span.glyphicon.glyphicon-link(aria-hidden="true")] Class Page
 						if signIn
 							li.dropdown
 								a.dropdown-toggle(href='#', data-toggle='dropdown', role='button', aria-haspopup='true', aria-expanded='false') #{name}
@@ -57,14 +80,7 @@ html
 								ul.dropdown-menu
 									li
 										a(href='#') Action
-									li
-										a(href='#') Another action
-									li
-										a(href='#') Something else here
 									li.divider(role='separator')
-									li.dropdown-header Nav header
-									li
-										a(href='#') Separated link
 									li
 										a(href='#', onclick='signOut();') Sign out
 
@@ -75,12 +91,15 @@ html
 		footer.footer
 			.container
 				address.text-muted.col-xs-12.col-sm-3.col-md-3.col-lg-2
-					strong Assistant
-					br
-					a(href='mailto:bhyoo@dcslab.snu.ac.kr') bhyoo@dcslab.snu.ac.kr
-					br
-					a(href='mailto:jwbang@dcslab.snu.ac.kr') jwbang@dcslab.snu.ac.kr
+					strong Assistants
+					each assistant in assistants
+						br
+						a(href='mailto:' + assistant)=assistant
 				address.text-muted.col-xs-12.col-sm-3.col-md-3.col-lg-2
 					strong DSCLAB
 					br
 					a(href='http://dcslab.snu.ac.kr/') http://dcslab.snu.ac.kr/
+				address.text-muted.col-xs-12.col-sm-3.col-md-3.col-lg-2
+					strong Web Manager
+					br
+					a(href='mailto:' + webManager)=webManager

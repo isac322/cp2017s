@@ -1,8 +1,6 @@
 extends layout
 
-block content
-	.col-md-12.page-header
-		h1.text-info Create Homework
+block header
 	script(src='/js/validator.min.js')
 	script(src='/js/bootstrap-datepicker.min.js')
 	link(rel='stylesheet', href='/css/bootstrap-datepicker3.min.css')
@@ -27,7 +25,16 @@ block content
 			}
 		}
 
-	form#create-hw(action='/homework', method='post', data-toggle="validator", role='form')
+		#btn-append-item {
+			padding-top: 3px;
+			padding-bottom: 3px;
+		}
+
+block content
+	.col-md-12.page-header
+		h1.text-info Create Homework
+
+	form#create-hw(action='/homework', method='POST', data-toggle="validator", role='form')
 		// homework name
 		.col-xs-12.col-md-6
 			.form-group.has-feedback
@@ -55,21 +62,26 @@ block content
 
 				script(src='/js/date_picker_init.js')
 
+		// attachment setting
 		.col-xs-12
 			label.control-label(for='attachments') Attachment Setting
-			.panel.panel-success#attachments
-				// Default panel contents
-				.panel-heading
-					h4.text-info Attachments
+			.panel.panel-default#attachments
+				.panel-body
+					h3.text-info
+						b Attachments
+
 				ul.list-group#attach-list
+
 				.panel-footer.text-center
-					a.btn.btn-link#btn-append-item
+					a.btn.btn-link#btn-append-item(role='button')
 						span.glyphicon.glyphicon-plus(aria-hidden="true")
 
+		// submit button
 		.col-xs-12
 			.form-group
-				button.btn.pull-right.btn-success(type='submit') Create
+				button.btn.pull-right.btn-primary(type='submit') Create
 
+	// list item template for attachments
 	li.list-group-item#list-item_template
 		.row
 			.col-xs-10.col-sm-6
@@ -84,10 +96,9 @@ block content
 						option(value='makefile') Makefile
 						option(value='report') Report
 						option(value='zip') Zip
-					span.glyphicon.form-control-feedback(aria-hidden='true')
-			.pull-right.text-center
-				a.btn.btn-link.btn-remove-item
-					span.glyphicon.glyphicon-remove(aria-hidden="true")
+			.pull-right.text-center.wrapper-btn-remove
+				a.btn.btn-link.btn-remove-item(role='button')
+					span.glyphicon.glyphicon-trash(aria-hidden="true")
 
 
 	script(src='/js/add_attach_row.js')
