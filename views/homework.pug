@@ -3,10 +3,11 @@ extends layout
 block header
 	script(src='/js/validator.min.js')
 	script(src='/js/jquery.form.min.js')
+	script(src='/js/bootbox.min.js')
 
 	style.
 		.card-header {
-			margin-bottom: 40px;
+			margin-bottom: 30px;
 		}
 
 		#btn-add {
@@ -47,21 +48,16 @@ block header
 			display: block;
 		}
 
-		@media (max-device-width: 768px) {
-			.appender {
-				margin-top: 20px;
-			}
-		}
-
 
 block content
 	.col-md-12.page-header
-		h1.text-info Homework List
+		h2.text-info
+			b Homework List
 
 	if admin
 		.col-xs-12
 			a.pull-right(role='button', href='/homework/add')
-				h3#btn-add
+				h4#btn-add
 					| #[span.glyphicon.glyphicon-plus]
 					| Add
 
@@ -70,7 +66,7 @@ block content
 			.panel.panel-default
 				.panel-body
 					.col-xs-12
-						h1.wrapped-text.card-header
+						h2.wrapped-text.card-header
 							b=homework.name
 
 						.row
@@ -91,18 +87,19 @@ block content
 								p=homework.deadline
 
 					.col-xs-12
-						a.pull-right.appender(role='button', data-toggle='collapse', href='#collapseExample' + homework.id, aria-expanded='false', aria-controls='collapseExample' + homework.id)
-							| #[i.fa.fa-upload(aria-hidden="true")]
-							| Submit
-							| #[span.glyphicon.glyphicon-menu-down]
+						h4
+							a.pull-right.appender(role='button', data-toggle='collapse', href='#collapseExample' + homework.id, aria-expanded='false', aria-controls='collapseExample' + homework.id)
+								| #[i.fa.fa-upload(aria-hidden="true")]
+								| Submit
+								| #[span.glyphicon.glyphicon-menu-down]
 
 				ul.list-group.collapse(id='collapseExample' + homework.id)
 					each attachment in homework.attachments
 						li.list-group-item
 							form.upload-form(action='/homework/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
 								.row
-									.col-xs-12.col-sm-5.vcenter(class=attachment.latestFile == null ? '' : 'text-success')
-										h4.wrapped-text
+									.col-xs-12.col-sm-5.vcenter
+										h4.wrapped-text(class=attachment.latestFile == null ? '' : 'text-success')
 											| #[span.glyphicon.glyphicon-file]
 											| &nbsp;
 											| #{attachment.name}
@@ -148,7 +145,9 @@ block content
 		});
 
 		files.on('fileselect', function (event, label) {
-			$(this).parents('.input-group').find(':text').val(label);
+			const parent = $(this).parents('.input-group');
+			parent.find(':text').val(label);
+			parent.find('button:last').focus();
 		});
 
 

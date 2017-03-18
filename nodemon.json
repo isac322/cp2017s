@@ -4,6 +4,7 @@
 		"res/*",
 		"*.ts",
 		"sql/*",
-		"views/*"
+		"views/*",
+		"media/*"
 	]
 }

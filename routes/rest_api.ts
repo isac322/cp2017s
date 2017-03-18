@@ -229,7 +229,7 @@ export function createHW(req: Request, res: Response) {
  */
 export function uploadAttach(req: Request, res: Response) {
 	if (!req.session.signIn) {
-		return res.redirect('/');
+		return res.sendStatus(401);
 	}
 	const hash = crypto.createHash('sha512');
 	const file = req.files.attachment;

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="DBNavigator.Project.DataEditorManager">
     <record-view-column-sorting-type value="BY_INDEX" />
-    <value-preview-text-wrapping value="false" />
+    <value-preview-text-wrapping value="true" />
     <value-preview-pinned value="false" />
   </component>
   <component name="DBNavigator.Project.DataExportManager">
@@ -26,22 +26,12 @@
     <loaded-nodes />
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
-    <connection id="eb85a76d-4e5f-44c3-8753-2b5acf05eae0">
-      <console name="Connection" type="STANDARD" />
+    <connection id="43f63392-bef1-419f-b822-f5cbaa6c30ef">
+      <console name="cp2017s" type="STANDARD" />
     </connection>
   </component>
   <component name="DBNavigator.Project.EditorStateManager">
     <last-used-providers />
-  </component>
-  <component name="DBNavigator.Project.FileConnectionMappingManager">
-    <mapping file-url="file://$PROJECT_DIR$/sql/homework.sql" connection-id="eb85a76d-4e5f-44c3-8753-2b5acf05eae0" current-schema="cp2017s" />
-    <mapping file-url="file://$PROJECT_DIR$/sql/submit_attach.sql" connection-id="eb85a76d-4e5f-44c3-8753-2b5acf05eae0" current-schema="CP2017S" />
-    <mapping file-url="file://$PROJECT_DIR$/sql/email.sql" connection-id="eb85a76d-4e5f-44c3-8753-2b5acf05eae0" current-schema="CP2017S" />
-    <mapping file-url="file://$PROJECT_DIR$/sql/user.sql" connection-id="eb85a76d-4e5f-44c3-8753-2b5acf05eae0" current-schema="cp2017s" />
-    <mapping file-url="file://$PROJECT_DIR$/sql/students.sql" connection-id="eb85a76d-4e5f-44c3-8753-2b5acf05eae0" current-schema="CP2017S" />
-    <mapping file-url="file://$PROJECT_DIR$/sql/submit_log.sql" connection-id="eb85a76d-4e5f-44c3-8753-2b5acf05eae0" current-schema="CP2017S" />
-    <mapping file-url="file://$PROJECT_DIR$/sql/pre_data.sql" connection-id="eb85a76d-4e5f-44c3-8753-2b5acf05eae0" current-schema="CP2017S" />
-    <mapping file-url="file://$PROJECT_DIR$/sql/hw_config.sql" connection-id="eb85a76d-4e5f-44c3-8753-2b5acf05eae0" current-schema="cp2017s" />
   </component>
   <component name="DBNavigator.Project.MethodExecutionManager">
     <method-browser />
@@ -59,15 +49,13 @@
     <filters />
   </component>
   <component name="DBNavigator.Project.ScriptExecutionManager" clear-outputs="true">
-    <recently-used-interfaces>
-      <mapping database-type="MYSQL" interface-id="DEFAULT" />
-    </recently-used-interfaces>
+    <recently-used-interfaces />
   </component>
   <component name="DBNavigator.Project.Settings">
     <connections>
-      <connection id="eb85a76d-4e5f-44c3-8753-2b5acf05eae0" active="true">
+      <connection id="43f63392-bef1-419f-b822-f5cbaa6c30ef" active="true">
         <database>
-          <name value="mariadb-cp2017s" />
+          <name value="cp2017s" />
           <description value="" />
           <database-type value="MYSQL" />
           <config-type value="BASIC" />

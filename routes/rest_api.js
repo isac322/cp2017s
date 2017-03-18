@@ -171,7 +171,7 @@ exports.createHW = createHW;
  */
 function uploadAttach(req, res) {
     if (!req.session.signIn) {
-        return res.redirect('/');
+        return res.sendStatus(401);
     }
     var hash = crypto.createHash('sha512');
     var file = req.files.attachment;
