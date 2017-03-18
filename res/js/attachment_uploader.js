@@ -6,7 +6,7 @@ $('.upload-form').validator().on('submit', function (e) {
 		const form = this;
 		const $sendBtn = $form.find('button:last');
 		const $selectBtn = $form.find('.btn-file');
-		const fileName = $form.find('input:file').val();
+		const fileName = $form.find('input:file').get(0).files[0].name;
 		const $rowLabel = $form.find('h4:first');
 
 		e.preventDefault();
