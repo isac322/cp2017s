@@ -70,11 +70,11 @@ html
 							a(href='/homework') Homework
 						if signIn
 							li(class=navPos == 3 ? 'active' : undefined)
-								a(href='/attendance') Attendance
+								a(href='/exercise') Exercise
 
 					ul.nav.navbar-nav.navbar-right
 						li
-							a(href=classPage) #[span.glyphicon.glyphicon-link(aria-hidden="true")] Class Page
+							a(target='_blank', href=classPage) #[span.glyphicon.glyphicon-link(aria-hidden="true")] Class Page
 						if signIn
 							li.dropdown
 								a.dropdown-toggle(href='#', data-toggle='dropdown', role='button', aria-haspopup='true', aria-expanded='false') #{name}
@@ -92,15 +92,15 @@ html
 
 		footer.footer
 			.container
-				address.text-muted.col-xs-12.col-sm-3.col-md-3.col-lg-2
+				address.text-muted.col-xs-12.col-sm-3.col-lg-2
 					strong Assistants
 					each assistant in assistants
 						br
 						a(href='mailto:' + assistant)=assistant
-				address.text-muted.col-xs-12.col-sm-3.col-md-3.col-lg-2
+				address.text-muted.col-xs-12.col-sm-3.col-lg-2
 					strong DSCLAB
 					br
-					a(href='http://dcslab.snu.ac.kr/') http://dcslab.snu.ac.kr/
+					a(target='_blank', href='http://dcslab.snu.ac.kr/') http://dcslab.snu.ac.kr/
 				address.text-muted.col-xs-12.col-sm-3.col-md-3.col-lg-2
 					strong Web Manager
 					br

@@ -1,0 +1,117 @@
+extends layout
+
+block header
+	script(src='/js/validator.min.js')
+	script(src='/js/jquery.form.min.js')
+	script(src='/js/bootbox.min.js')
+
+	link(rel='stylesheet', href='/css/card-style.css')
+
+block content
+	.col-md-12.page-header
+		h2.text-info
+			b Exercise List
+
+	if admin
+		.col-xs-12
+			a.pull-right(role='button', href='/exercise/add')
+				h4#btn-add
+					| #[span.glyphicon.glyphicon-plus]
+					| Add
+
+	each exercise in exerciseList
+		.col-xs-12.col-md-6.homework-card
+			.panel.panel-default
+				.panel-body
+					.col-xs-12
+						h2.wrapped-text.card-header
+							b=exercise.name
+
+						.row
+							.col-xs-12.col-sm-4.col-md-12
+								h4
+									b Description
+								p
+									a.wrapped-text(target='_blank', href=exercise.description)=exercise.description
+
+							.col-xs-6.col-sm-4
+								h4
+									b Start Date
+								p=exercise.startDate
+
+							.col-xs-6.col-sm-4
+								h4
+									b Deadline
+								p=exercise.dueDate
+
+					.col-xs-12
+						h4
+							a.pull-right.appender(role='button', data-toggle='collapse', href='#collapseExample' + exercise.id, aria-expanded='false', aria-controls='collapseExample' + exercise.id)
+								| #[i.fa.fa-upload(aria-hidden="true")]
+								| Submit
+								| #[span.glyphicon.glyphicon-menu-down]
+
+				- const present = Date.now();
+
+				ul.list-group.collapse(id='collapseExample' + exercise.id)
+					each attachment in exercise.attachments
+						form.upload-form(action='/exercise/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
+							li.list-group-item(class=attachment.result == null ? '' : 'list-group-item-success')
+								.row
+									.col-xs-12.col-sm-5.vcenter
+										h4.wrapped-text
+											| #[span.glyphicon.glyphicon-file]
+											| &nbsp;
+											| #{attachment.name}
+
+									if signIn && exercise.deadline > present
+										.col-xs-12.col-sm-7.vcenter
+											.form-group
+												.pull-right.input-group
+													input.form-control(type='text', data-validate='false', readonly)
+													.input-group-btn
+														span.btn.btn-default.btn-file
+															| Select
+															input(type='file' name='attachment', hidden, required)
+														button.btn.btn-primary(type='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Judging...') Submit
+
+
+				.panel-footer.text-center
+					- var millis = 24 * 60 * 60 * 1000
+					if exercise.leftMillis < 0
+						| Overpast
+					else if exercise.leftMillis < millis
+						| Less than 24 hours
+					else if exercise.leftMillis < 2 * millis
+						| 1 day left
+					else
+						| #{Math.floor(exercise.leftMillis / millis)} days left
+
+	// Result Modal
+	#resultModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='resultModalLabel', data-backdrop='false')
+		.modal-dialog.modal-lg(role='document')
+			.modal-content
+				.modal-header
+					button.close(type='button', data-dismiss='modal', aria-label='Close')
+						span(aria-hidden='true') ×
+					h2#resultModalLabel.modal-title Modal title
+				.modal-body
+					#correctBody Correct!
+					#incorrectBody
+						label(for='inputBox') Input
+						pre#inputBox.col-xs-12
+						.row
+							.col-xs-12.col-md-6
+								label(for='outputBox') Your output
+								pre#outputBox
+							.col-xs-12.col-md-6
+								label(for='answerBox') Answer output
+								pre#answerBox
+					#errorBody
+						pre#errorBox
+				.modal-footer
+					button.btn.btn-default(type='button', data-dismiss='modal') Close
+
+
+	script(src='/js/card-run.js')
+	script(src='/js/submit_exercise.js')

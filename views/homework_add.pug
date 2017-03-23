@@ -40,7 +40,7 @@ block content
 		.col-xs-12.col-md-6
 			.form-group.has-feedback
 				label.control-label(for='hw_name') Homework Name
-				input.form-control.input-lg#hw_name(type='text', placeholder='Name', name='name', required)
+				input.form-control.input-lg#hw_name(type='text', placeholder='Name', name='name', data-remote='name', required)
 				span.glyphicon.form-control-feedback(aria-hidden='true')
 
 		// description pdf URL
@@ -102,4 +102,4 @@ block content
 					span.glyphicon.glyphicon-trash(aria-hidden="true")
 
 
-	script(src='/js/add_attach_row.js')
+	script(src='/js/homework_add.js')

@@ -1,6 +1,6 @@
-CREATE TABLE homework (
-    homework_id  MEDIUMINT UNSIGNED      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name         VARCHAR(100)
+CREATE TABLE exercise (
+    id           MEDIUMINT UNSIGNED      NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name         VARCHAR(255)
                  CHARACTER SET utf8
                  COLLATE utf8_unicode_ci NOT NULL UNIQUE,
     start_date   DATE                    NOT NULL,

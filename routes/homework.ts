@@ -1,8 +1,8 @@
 import {NextFunction, Request, Response, Router} from "express";
+import {dbClient} from "./rest_api";
 import {BaseRoute} from "./route";
-import {dbClient} from "./rest_api"
 
-const monthNames = [
+export const monthNames = [
 	"January", "February", "March",
 	"April", "May", "June", "July",
 	"August", "September", "October",
@@ -17,19 +17,19 @@ const monthNames = [
 export class HWRoute extends BaseRoute {
 	private static hwQuery = (student_id) => {
 		const ret =
-		'SELECT homework.homework_id, homework.name, homework.start_date, homework.end_date, homework.description,' +
-		'       hw_config.id AS `file_id`, hw_config.name AS `file_name`, hw_config.extension AS `file_extension`,' +
-		'       reduced_submit.submitted_name, reduced_submit.submitted_time ' +
-		'FROM homework ' +
-		'     LEFT JOIN hw_config ' +
-		'         ON homework.homework_id = hw_config.homework_id ' +
-		'     LEFT JOIN ( ' +
-		'         SELECT attachment_id, file_name AS `submitted_name`, MAX(submitted) AS `submitted_time` ' +
-		'         FROM submit_log ' +
-		'         WHERE student_id = \'' + student_id + '\' ' +
-		'         GROUP BY attachment_id ' +
-		'     ) AS reduced_submit ' +
-		'         ON hw_config.id = reduced_submit.attachment_id;';
+			'SELECT homework.homework_id, homework.name, homework.start_date, homework.end_date, homework.description,' +
+			'       hw_config.id AS `file_id`, hw_config.name AS `file_name`, hw_config.extension AS `file_extension`,' +
+			'       reduced_submit.submitted_name, reduced_submit.submitted_time ' +
+			'FROM homework ' +
+			'     LEFT JOIN hw_config ' +
+			'         ON homework.homework_id = hw_config.homework_id ' +
+			'     LEFT JOIN ( ' +
+			'         SELECT attachment_id, file_name AS `submitted_name`, MAX(submitted) AS `submitted_time` ' +
+			'         FROM submit_log ' +
+			'         WHERE student_id = \'' + student_id + '\' ' +
+			'         GROUP BY attachment_id ' +
+			'     ) AS reduced_submit ' +
+			'         ON hw_config.id = reduced_submit.attachment_id;';
 
 		return ret;
 	};
@@ -90,6 +90,13 @@ export class HWRoute extends BaseRoute {
 		dbClient.query(
 			req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery,
 			(err, searchResult) => {
+				if (err) {
+					// FIXME: error handling
+					console.error('[HWRoute::homework] : ', err);
+					res.sendStatus(500);
+					return;
+				}
+
 				console.log('\n[homework]');
 				console.log(searchResult);
 				console.log();
@@ -99,10 +106,11 @@ export class HWRoute extends BaseRoute {
 					id: number,
 					name: string,
 					startDate: string,
-					deadline: string,
+					dueDate: string,
+					deadline: Date,
 					description: string,
 					leftMillis: number,
-					attachments: Array<{id: number, name: string, extension: string, latestFile?: string, latestTime?: Date}>
+					attachments: Array<{ id: number, name: string, extension: string, latestFile?: string, latestTime?: Date }>
 				};
 				let homework = [];
 
@@ -112,7 +120,8 @@ export class HWRoute extends BaseRoute {
 							id: record.homework_id,
 							name: decodeURIComponent(record.name),
 							startDate: monthNames[record.start_date.getMonth()] + ' ' + record.start_date.getDate(),
-							deadline: monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
+							dueDate: monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
+							deadline: record.end_date,
 							description: record.description,
 							leftMillis: record.end_date - Date.now() + 24 * 60 * 59 * 1000,
 							attachments: []

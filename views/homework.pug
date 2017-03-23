@@ -5,48 +5,7 @@ block header
 	script(src='/js/jquery.form.min.js')
 	script(src='/js/bootbox.min.js')
 
-	style.
-		.card-header {
-			margin-bottom: 30px;
-		}
-
-		#btn-add {
-			margin-top: 0;
-		}
-
-		.homework-card {
-			margin-bottom: 40px;
-		}
-
-		.wrapped-text {
-			overflow-wrap: break-word;
-		}
-
-		.nopadding {
-			padding: 0 !important;
-			margin: 0 !important;
-		}
-
-		.btn-file {
-			position: relative;
-			overflow: hidden;
-		}
-
-		.btn-file input[type=file] {
-			position: absolute;
-			top: 0;
-			right: 0;
-			min-width: 100%;
-			min-height: 100%;
-			font-size: 100px;
-			text-align: right;
-			filter: alpha(opacity=0);
-			opacity: 0;
-			outline: none;
-			background: white;
-			cursor: inherit;
-			display: block;
-		}
+	link(rel='stylesheet', href='/css/card-style.css')
 
 
 block content
@@ -74,7 +33,7 @@ block content
 								h4
 									b Description
 								p
-									a.wrapped-text(href=homework.description)=homework.description
+									a.wrapped-text(target='_blank', href=homework.description)=homework.description
 
 							.col-xs-6.col-sm-4
 								h4
@@ -84,7 +43,7 @@ block content
 							.col-xs-6.col-sm-4
 								h4
 									b Deadline
-								p=homework.deadline
+								p=homework.dueDate
 
 					.col-xs-12
 						h4
@@ -93,18 +52,20 @@ block content
 								| Submit
 								| #[span.glyphicon.glyphicon-menu-down]
 
+				- const present = Date.now();
+
 				ul.list-group.collapse(id='collapseExample' + homework.id)
 					each attachment in homework.attachments
-						li.list-group-item
-							form.upload-form(action='/homework/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
+						form.upload-form(action='/homework/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
+							li.list-group-item(class=attachment.latestFile == null ? '' : 'list-group-item-success')
 								.row
 									.col-xs-12.col-sm-5.vcenter
-										h4.wrapped-text(class=attachment.latestFile == null ? '' : 'text-success')
+										h4.wrapped-text
 											| #[span.glyphicon.glyphicon-file]
 											| &nbsp;
 											| #{attachment.name}
 
-									if signIn
+									if signIn && homework.deadline > present
 										.col-xs-12.col-sm-7.vcenter
 											.form-group
 												.pull-right.input-group
@@ -128,41 +89,5 @@ block content
 						| #{Math.floor(homework.leftMillis / millis)} days left
 
 
-	script(type='text/javascript').
-		// wrap cards with row
-		const cards = $('.homework-card');
-		for (let i = 0; i < cards.length; i += 2) {
-			cards.slice(i, i + 2).wrapAll('<div class="row"></div>');
-		}
-
-		// input:file handling
-		const files = $(':file');
-		files.on('change', function () {
-			const input = $(this);
-			const label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
-
-			input.trigger('fileselect', label);
-		});
-
-		files.on('fileselect', function (event, label) {
-			const parent = $(this).parents('.input-group');
-			parent.find(':text').val(label);
-			parent.find('button:last').focus();
-		});
-
-
-		// card appender
-		$('.appender').click(function () {
-			const icon = $(this).find('span:last');
-
-			if (icon.hasClass('glyphicon-menu-down')) {
-				icon.removeClass('glyphicon-menu-down')
-					.addClass('glyphicon-menu-up');
-			}
-			else {
-				icon.removeClass('glyphicon-menu-up')
-					.addClass('glyphicon-menu-down');
-			}
-		});
-
+	script(src='/js/card-run.js')
 	script(src='/js/attachment_uploader.js')

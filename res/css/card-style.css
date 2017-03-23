@@ -1,0 +1,41 @@
+.card-header {
+	margin-bottom: 30px;
+}
+
+#btn-add {
+	margin-top: 0;
+}
+
+.homework-card {
+	margin-bottom: 40px;
+}
+
+.wrapped-text {
+	overflow-wrap: break-word;
+}
+
+.nopadding {
+	padding: 0 !important;
+	margin: 0 !important;
+}
+
+.btn-file {
+	position: relative;
+	overflow: hidden;
+}
+
+.btn-file input[type=file] {
+	position: absolute;
+	top: 0;
+	right: 0;
+	min-width: 100%;
+	min-height: 100%;
+	font-size: 100px;
+	text-align: right;
+	filter: alpha(opacity=0);
+	opacity: 0;
+	outline: none;
+	background: white;
+	cursor: inherit;
+	display: block;
+}

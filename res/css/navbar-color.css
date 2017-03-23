@@ -1,3 +1,7 @@
+/*
+https://work.smarchal.com/twbscolor/css/607d8b546e7aeceff1cfd8dc0
+ */
+
 .navbar-default {
 	background-color: #607d8b;
 	border-color: #546e7a;
@@ -9,7 +13,7 @@
 
 .navbar-default .navbar-brand:hover,
 .navbar-default .navbar-brand:focus {
-	color: #b0bec5;
+	color: #cfd8dc;
 }
 
 .navbar-default .navbar-text {
@@ -22,20 +26,20 @@
 
 .navbar-default .navbar-nav > li > a:hover,
 .navbar-default .navbar-nav > li > a:focus {
-	color: #b0bec5;
+	color: #cfd8dc;
 }
 
 .navbar-default .navbar-nav > .active > a,
 .navbar-default .navbar-nav > .active > a:hover,
 .navbar-default .navbar-nav > .active > a:focus {
-	color: #b0bec5;
+	color: #cfd8dc;
 	background-color: #546e7a;
 }
 
 .navbar-default .navbar-nav > .open > a,
 .navbar-default .navbar-nav > .open > a:hover,
 .navbar-default .navbar-nav > .open > a:focus {
-	color: #b0bec5;
+	color: #cfd8dc;
 	background-color: #546e7a;
 }
 
@@ -62,7 +66,7 @@
 }
 
 .navbar-default .navbar-link:hover {
-	color: #b0bec5;
+	color: #cfd8dc;
 }
 
 @media (max-width: 767px) {
@@ -72,13 +76,13 @@
 
 	.navbar-default .navbar-nav .open .dropdown-menu > li > a:hover,
 	.navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {
-		color: #b0bec5;
+		color: #cfd8dc;
 	}
 
 	.navbar-default .navbar-nav .open .dropdown-menu > .active > a,
 	.navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,
 	.navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
-		color: #b0bec5;
+		color: #cfd8dc;
 		background-color: #546e7a;
 	}
 }

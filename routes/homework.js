@@ -10,9 +10,9 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var route_1 = require("./route");
 var rest_api_1 = require("./rest_api");
-var monthNames = [
+var route_1 = require("./route");
+exports.monthNames = [
     "January", "February", "March",
     "April", "May", "June", "July",
     "August", "September", "October",
@@ -68,6 +68,12 @@ var HWRoute = (function (_super) {
         var _this = this;
         this.title = 'Homework List';
         rest_api_1.dbClient.query(req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery, function (err, searchResult) {
+            if (err) {
+                // FIXME: error handling
+                console.error('[HWRoute::homework] : ', err);
+                res.sendStatus(500);
+                return;
+            }
             console.log('\n[homework]');
             console.log(searchResult);
             console.log();
@@ -80,8 +86,9 @@ var HWRoute = (function (_super) {
                     currentObject = {
                         id: record.homework_id,
                         name: decodeURIComponent(record.name),
-                        startDate: monthNames[record.start_date.getMonth()] + ' ' + record.start_date.getDate(),
-                        deadline: monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
+                        startDate: exports.monthNames[record.start_date.getMonth()] + ' ' + record.start_date.getDate(),
+                        dueDate: exports.monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
+                        deadline: record.end_date,
                         description: record.description,
                         leftMillis: record.end_date - Date.now() + 24 * 60 * 59 * 1000,
                         attachments: []

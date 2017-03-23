@@ -1,13 +1,14 @@
 {
 	"name": "cp2017s",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"engines": {
 		"node": ">=6.10.0"
 	},
 	"private": true,
 	"scripts": {
-		"dev": "NODE_ENV=development nodemon ./bin/www",
-		"start": "node ./bin/www"
+		"dev": "NODE_ENV=development nodemon ./bin/www.js",
+		"run": "nodemon ./bin/www.js",
+		"start": "node ./bin/www.js"
 	},
 	"dependencies": {
 		"body-parser": ">=1.17.1",
@@ -22,6 +23,7 @@
 		"express": ">=4.15.2",
 		"express-fileupload": ">=0.1.2",
 		"express-session": ">=1.15.1",
+		"fs-extra": ">=2.1.2",
 		"google-auth-library": ">=0.10.0",
 		"jquery": ">=3.2.0",
 		"jquery-form": ">=4.1.0",
@@ -38,6 +40,7 @@
 		"@types/dockerode": ">=2.3.2",
 		"@types/errorhandler": ">=0.0.30",
 		"@types/express-session": ">=0.0.32",
+		"@types/fs-extra": ">=2.0.0",
 		"@types/jquery": ">=2.0.41",
 		"@types/less-middleware": ">=2.0.29",
 		"@types/morgan": ">=1.7.32",

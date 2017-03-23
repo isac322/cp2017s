@@ -3,15 +3,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var bodyParser = require("body-parser");
 var cookieParser = require("cookie-parser");
 var express = require("express");
+var expressSession = require("express-session");
+var fs_ext = require("fs-extra");
 var logger = require("morgan");
 var path = require("path");
-var expressSession = require("express-session");
-var Docker = require("dockerode");
-var index_1 = require("./routes/index");
+var exercise_1 = require("./routes/exercise");
 var homework_1 = require("./routes/homework");
-var attendance_1 = require("./routes/attendance");
+var index_1 = require("./routes/index");
 var rest_api_1 = require("./routes/rest_api");
 var fileUpload = require("express-fileupload");
+var Docker = require("dockerode");
+exports.docker = new Docker({ host: 'http://localhost', port: 2375 });
+exports.tempPath = path.join(__dirname, 'media', 'tmp');
+exports.exerciseSetPath = path.join(__dirname, 'media', 'test_set', 'exercise');
+exports.submittedExercisePath = path.join(__dirname, 'media', 'exercise');
+exports.submittedHomeworkPath = path.join(__dirname, 'media', 'homework');
 /**
  * The server.
  *
@@ -33,6 +39,7 @@ var Server = (function () {
         this.routes();
         //add api
         this.api();
+        this.createDir();
     }
     /**
      * Bootstrap the application.
@@ -56,7 +63,10 @@ var Server = (function () {
         this.app.post('/register', rest_api_1.register);
         this.app.post('/signout', rest_api_1.signOut);
         this.app.post('/homework', rest_api_1.createHW);
+        this.app.get('/homework/name', rest_api_1.hwNameChecker);
         this.app.post('/homework/:attachId', rest_api_1.uploadAttach);
+        this.app.post('/exercise', rest_api_1.runExercise);
+        this.app.post('/exercise/:attachId', rest_api_1.runExercise);
     };
     /**
      * Configure application
@@ -77,27 +87,29 @@ var Server = (function () {
         this.app.use(cookieParser());
         this.app.use(require('less-middleware')(path.join(__dirname, 'public')));
         this.app.use(express.static(path.join(__dirname, 'public')));
-        this.app.use('/js', express.static(path.join(__dirname, '/node_modules/bootstrap-validator/dist')));
-        this.app.use('/js', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/js')));
-        this.app.use('/js', express.static(path.join(__dirname, '/node_modules/jquery/dist/')));
-        this.app.use('/js', express.static(path.join(__dirname, '/node_modules/jquery-form/dist/')));
-        this.app.use('/js', express.static(path.join(__dirname, '/res/js/')));
-        this.app.use('/css', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/css')));
-        this.app.use('/css', express.static(path.join(__dirname, '/node_modules/font-awesome/css')));
-        this.app.use('/css', express.static(path.join(__dirname, '/res/css')));
-        this.app.use('/fonts', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/fonts')));
-        this.app.use('/fonts', express.static(path.join(__dirname, '/node_modules/font-awesome/fonts')));
+        this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap-validator', 'dist')));
+        this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'js')));
+        this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist', '')));
+        this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery-form', 'dist', '')));
+        this.app.use('/js', express.static(path.join(__dirname, 'res', 'js', '')));
+        this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'css')));
+        this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'font-awesome', 'css')));
+        this.app.use('/css', express.static(path.join(__dirname, 'res', 'css')));
+        this.app.use('/fonts', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'fonts')));
+        this.app.use('/fonts', express.static(path.join(__dirname, 'node_modules', 'font-awesome', 'fonts')));
         this.app.use(expressSession({
             secret: 'dcs%%*#',
             resave: false,
             saveUninitialized: true
         }));
-        var docker = new Docker({ host: 'http://localhost', port: 2375 });
-        docker.buildImage({
-            context: path.join(__dirname, '/judge_server'),
+        exports.docker.buildImage({
+            context: path.join(__dirname, 'judge_server'),
             src: ['Dockerfile']
         }, { t: 'judge_server' }, function (err, response) {
-            console.log(err);
+            if (err) {
+                console.log(err);
+            }
+            console.log(response.statusCode, response.statusMessage);
         });
     };
     /**
@@ -110,8 +122,37 @@ var Server = (function () {
         var router = express.Router();
         index_1.IndexRoute.create(router);
         homework_1.HWRoute.create(router);
-        attendance_1.AttendanceRoute.create(router);
+        exercise_1.ExerciseRoute.create(router);
         this.app.use(router);
+    };
+    /**
+     * Create directories
+     */
+    Server.prototype.createDir = function () {
+        fs_ext.mkdirp(exports.tempPath, function (err) {
+            if (err) {
+                // TODO: error handling
+                console.error(err);
+            }
+        });
+        fs_ext.mkdirp(exports.exerciseSetPath, function (err) {
+            if (err) {
+                // TODO: error handling
+                console.error(err);
+            }
+        });
+        fs_ext.mkdirp(exports.submittedExercisePath, function (err) {
+            if (err) {
+                // TODO: error handling
+                console.error(err);
+            }
+        });
+        fs_ext.mkdirp(exports.submittedHomeworkPath, function (err) {
+            if (err) {
+                // TODO: error handling
+                console.error(err);
+            }
+        });
     };
     return Server;
 }());

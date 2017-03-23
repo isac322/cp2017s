@@ -1,15 +1,27 @@
 import * as bodyParser from "body-parser";
 import * as cookieParser from "cookie-parser";
 import * as express from "express";
+import * as expressSession from "express-session";
+import * as fs_ext from "fs-extra";
 import * as logger from "morgan";
 import * as path from "path";
-import * as expressSession from "express-session";
-import * as Docker from "dockerode"
-import {IndexRoute} from "./routes/index";
+import {ExerciseRoute} from "./routes/exercise";
 import {HWRoute} from "./routes/homework";
-import {AttendanceRoute} from "./routes/attendance"
-import {signIn, register, signOut, createHW, uploadAttach} from "./routes/rest_api";
-import fileUpload = require('express-fileupload');
+import {IndexRoute} from "./routes/index";
+import {createHW, hwNameChecker, register, runExercise, signIn, signOut, uploadAttach} from "./routes/rest_api";
+import fileUpload = require('express-fileupload')
+
+const Docker = require("dockerode");
+
+
+export const docker = new Docker({host: 'http://localhost', port: 2375});
+
+export const tempPath = path.join(__dirname, 'media', 'tmp');
+export const exerciseSetPath = path.join(__dirname, 'media', 'test_set', 'exercise');
+
+export const submittedExercisePath = path.join(__dirname, 'media', 'exercise');
+export const submittedHomeworkPath = path.join(__dirname, 'media', 'homework');
+
 
 /**
  * The server.
@@ -50,6 +62,8 @@ export class Server {
 
 		//add api
 		this.api();
+
+		this.createDir();
 	}
 
 	/**
@@ -63,7 +77,10 @@ export class Server {
 		this.app.post('/register', register);
 		this.app.post('/signout', signOut);
 		this.app.post('/homework', createHW);
+		this.app.get('/homework/name', hwNameChecker);
 		this.app.post('/homework/:attachId', uploadAttach);
+		this.app.post('/exercise', runExercise);
+		this.app.post('/exercise/:attachId', runExercise);
 	}
 
 	/**
@@ -88,16 +105,16 @@ export class Server {
 		this.app.use(express.static(path.join(__dirname, 'public')));
 
 
-		this.app.use('/js', express.static(path.join(__dirname, '/node_modules/bootstrap-validator/dist')));
-		this.app.use('/js', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/js')));
-		this.app.use('/js', express.static(path.join(__dirname, '/node_modules/jquery/dist/')));
-		this.app.use('/js', express.static(path.join(__dirname, '/node_modules/jquery-form/dist/')));
-		this.app.use('/js', express.static(path.join(__dirname, '/res/js/')));
-		this.app.use('/css', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/css')));
-		this.app.use('/css', express.static(path.join(__dirname, '/node_modules/font-awesome/css')));
-		this.app.use('/css', express.static(path.join(__dirname, '/res/css')));
-		this.app.use('/fonts', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/fonts')));
-		this.app.use('/fonts', express.static(path.join(__dirname, '/node_modules/font-awesome/fonts')));
+		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap-validator', 'dist')));
+		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'js')));
+		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist', '')));
+		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery-form', 'dist', '')));
+		this.app.use('/js', express.static(path.join(__dirname, 'res', 'js', '')));
+		this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'css')));
+		this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'font-awesome', 'css')));
+		this.app.use('/css', express.static(path.join(__dirname, 'res', 'css')));
+		this.app.use('/fonts', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'fonts')));
+		this.app.use('/fonts', express.static(path.join(__dirname, 'node_modules', 'font-awesome', 'fonts')));
 
 		this.app.use(expressSession({
 			secret: 'dcs%%*#',
@@ -105,14 +122,20 @@ export class Server {
 			saveUninitialized: true
 		}));
 
-		const docker = new Docker({host: 'http://localhost', port: 2375});
+		docker.buildImage(
+			{
+				context: path.join(__dirname, 'judge_server'),
+				src: ['Dockerfile']
+			},
+			{t: 'judge_server'},
+			(err, response) => {
+				if (err) {
+					console.log(err);
+				}
 
-		docker.buildImage({
-			context: path.join(__dirname, '/judge_server'),
-			src: ['Dockerfile']
-		}, {t: 'judge_server'}, (err, response) => {
-			console.log(err);
-		});
+				console.log(response.statusCode, response.statusMessage);
+			}
+		);
 	}
 
 	/**
@@ -126,8 +149,42 @@ export class Server {
 
 		IndexRoute.create(router);
 		HWRoute.create(router);
-		AttendanceRoute.create(router);
+		ExerciseRoute.create(router);
 
 		this.app.use(router);
+	}
+
+
+	/**
+	 * Create directories
+	 */
+	public createDir() {
+		fs_ext.mkdirp(tempPath, (err: Error) => {
+			if (err) {
+				// TODO: error handling
+				console.error(err);
+			}
+		});
+
+		fs_ext.mkdirp(exerciseSetPath, (err: Error) => {
+			if (err) {
+				// TODO: error handling
+				console.error(err);
+			}
+		});
+
+		fs_ext.mkdirp(submittedExercisePath, (err: Error) => {
+			if (err) {
+				// TODO: error handling
+				console.error(err);
+			}
+		});
+
+		fs_ext.mkdirp(submittedHomeworkPath, (err: Error) => {
+			if (err) {
+				// TODO: error handling
+				console.error(err);
+			}
+		});
 	}
 }
