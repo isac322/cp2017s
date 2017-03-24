@@ -384,10 +384,6 @@ export function runExercise(req: Request, res: Response) {
 				res.sendStatus(500);
 				return;
 			}
-			else if (searchResult.length > 1) {
-				console.error('[rest_api::runExercise] search result\'s length is higher than 1');
-				return;
-			}
 
 
 			// a temporarily created shared path that contains source code to judge
