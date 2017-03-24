@@ -4,7 +4,9 @@ import * as fs from "fs";
 import * as fs_ext from "fs-extra";
 import {createConnection, escape, IConnection, IError} from "mysql";
 import * as path from "path";
+import charsetDetector = require('detect-character-encoding');
 import {docker, exerciseSetPath, tempPath} from "../app";
+import * as iconv from "iconv-lite"
 
 
 const webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
@@ -348,16 +350,26 @@ export function runExercise(req: Request, res: Response) {
 
 	const hash = crypto.createHash('sha512');
 	const file = req.files.attachment;
-	const hashedName = hash.update(file.data).digest('hex');
+	let fileContent: Buffer | string = file.data;
 	const attachId = req.params.attachId;
 
+	const encodingInfo: { encoding: string, confidence: number } = charsetDetector(fileContent);
 
-	file.mv(path.join('media', 'exercise', hashedName), (err) => {
+	console.log();
+	console.log(encodingInfo.encoding, encodingInfo.confidence);
+
+	if (encodingInfo.confidence >= 90) {
+		fileContent = iconv.decode(file.data, encodingInfo.encoding);
+	}
+
+	const hashedName = hash.update(fileContent).digest('hex');
+
+
+	fs.writeFile(path.join('media', 'exercise', hashedName), fileContent, {mode: 0o600}, (err: NodeJS.ErrnoException) => {
 		if (err) {
 			// FIXME: error handling
-			console.error('[rest_api::runExercise::file_move] : ', err);
+			console.error('[rest_api::runExercise::writeFile] : ', err);
 			res.sendStatus(500);
-			return;
 		}
 	});
 
@@ -400,7 +412,7 @@ export function runExercise(req: Request, res: Response) {
 			);
 
 			// copy given source code to shared folder
-			fs.writeFileSync(path.join(sourcePath, searchResult[0].name), file.data, {mode: 0o600});
+			fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, {mode: 0o600});
 
 
 			dbClient.query(
@@ -465,7 +477,6 @@ export function runExercise(req: Request, res: Response) {
 											// FIXME: error handling
 											console.error('[rest_api::runExercise::temp_remove] : ', err);
 											res.sendStatus(500);
-											return;
 										}
 									});
 
@@ -482,7 +493,6 @@ export function runExercise(req: Request, res: Response) {
 													// FIXME: error handling
 													console.error('[rest_api::runExercise::insert_judge_correct] : ', err);
 													res.sendStatus(500);
-													return;
 												}
 											});
 
@@ -494,7 +504,6 @@ export function runExercise(req: Request, res: Response) {
 													// FIXME: error handling
 													console.error('[rest_api::runExercise::insert_judge_correct] : ', err);
 													res.sendStatus(500);
-													return;
 												}
 											}
 										)
@@ -510,7 +519,6 @@ export function runExercise(req: Request, res: Response) {
 													// FIXME: error handling
 													console.error('[rest_api::runExercise::insert_judge_incorrect] : ', err);
 													res.sendStatus(500);
-													return;
 												}
 											});
 
@@ -545,11 +553,11 @@ export function runExercise(req: Request, res: Response) {
 											// FIXME: error handling
 											console.error('[rest_api::runExercise::remove_file] : ', err);
 											res.sendStatus(500);
-											return;
 										}
 									});
 
 									fs.exists(compileErrorFile, (exists: boolean) => {
+										// compile error
 										if (exists) {
 											fs.readFile(compileErrorFile, (err: NodeJS.ErrnoException, data: Buffer) => {
 												if (err) {
@@ -575,13 +583,15 @@ export function runExercise(req: Request, res: Response) {
 															// FIXME: error handling
 															console.error('[rest_api::runExercise::insert_compile_error] : ', err);
 															res.sendStatus(500);
-															return;
 														}
 													})
 											})
 										}
+										// something else
 										else {
-											// TODO: error handling
+											// FIXME: error handling
+											console.error('[rest_api::runExercise::something_else]');
+											res.sendStatus(500);
 										}
 									})
 								}
@@ -594,7 +604,6 @@ export function runExercise(req: Request, res: Response) {
 									// FIXME: error handling
 									console.error('[rest_api::runExercise::temp_remove] : ', err);
 									res.sendStatus(500);
-									return;
 								}
 							});
 

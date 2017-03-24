@@ -4,12 +4,14 @@ const $resultModal = $('#resultModal');
 const $resultModalHeader = $('#resultModalLabel');
 const $correctBody = $('#correctBody');
 const $incorrectBody = $('#incorrectBody');
+const $compileErrorBody = $('#compileErrorBody');
 const $errorBody = $('#errorBody');
 
 const $inputBox = $('#inputBox');
 const $outputBox = $('#outputBox');
 const $answerBox = $('#answerBox');
 
+const $compileErrorBox = $('#compileErrorBox');
 const $errorBox = $('#errorBox');
 
 $('.upload-form').validator().on('submit', function (e) {
@@ -46,6 +48,7 @@ $('.upload-form').validator().on('submit', function (e) {
 							200: function () {
 								$correctBody.show();
 								$incorrectBody.hide();
+								$compileErrorBody.hide();
 								$errorBody.hide();
 
 								$resultModalHeader.text('Correct!');
@@ -63,12 +66,17 @@ $('.upload-form').validator().on('submit', function (e) {
 								}
 								// TODO: link success info
 							},
+							// not sign in yet
+							401: function () {
+								document.location.href = '/';
+							},
 							// incorrect
 							406: function (jqXHR) {
 								const res = jqXHR.responseJSON;
 
 								$correctBody.hide();
 								$incorrectBody.show();
+								$compileErrorBody.hide();
 								$errorBody.hide();
 
 								$inputBox.text(res.input);
@@ -91,9 +99,10 @@ $('.upload-form').validator().on('submit', function (e) {
 
 								$correctBody.hide();
 								$incorrectBody.hide();
-								$errorBody.show();
+								$compileErrorBody.show();
+								$errorBody.hide();
 
-								$errorBox.text(res.errorMsg);
+								$compileErrorBox.text(res.errorMsg);
 
 								$resultModalHeader.text('Compile Error!');
 								$resultModal.modal();
@@ -108,12 +117,23 @@ $('.upload-form').validator().on('submit', function (e) {
 							500: function (jqXHR) {
 								$correctBody.hide();
 								$incorrectBody.hide();
+								$compileErrorBody.hide();
 								$errorBody.show();
 
-								$errorBox.text("Probably there were errors in your code. Call Manager if you get same problem");
+								$errorBox.html("It looks like there's an error in your code.<br>" +
+									"If you encounter the same problem, please contact the Web Manager.<br>" +
+									"It's mainly because of <strong>Korean characters</strong>. If you want to write in Korean, change the <strong>encoding of the file</strong> to <code>UTF-8</code>.<br>" +
+									"If you don't know about <strong>File Encoding</strong>, please delete all Korean characters in your code and resubmit.");
 
 								$resultModalHeader.text('Something\'s wrong!');
 								$resultModal.modal();
+
+
+								$sendBtn.button('reset');
+								$selectBtn.removeClass('disabled');
+
+								form.reset();
+								$form.validator('validate');
 							}
 							// TODO: handling errors
 						}

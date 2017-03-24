@@ -6,7 +6,7 @@ from os.path import join
 
 
 def compare(output_path: str, answer_path: str, result: dict) -> bool:
-    with open(output_path) as fp, open(answer_path) as answer:
+    with open(output_path, encoding='utf-8') as fp, open(answer_path, encoding='utf-8') as answer:
         whole_user_output = fp.read()
 
         user_output = tuple(map(str.rstrip, whole_user_output.rstrip().split('\n')))

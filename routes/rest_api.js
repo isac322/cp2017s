@@ -5,7 +5,9 @@ var fs = require("fs");
 var fs_ext = require("fs-extra");
 var mysql_1 = require("mysql");
 var path = require("path");
+var charsetDetector = require("detect-character-encoding");
 var app_1 = require("../app");
+var iconv = require("iconv-lite");
 var webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
 var CLIENT_ID = webConfig.google.clientId;
 var GoogleAuth = require('google-auth-library');
@@ -263,14 +265,20 @@ function runExercise(req, res) {
     }
     var hash = crypto.createHash('sha512');
     var file = req.files.attachment;
-    var hashedName = hash.update(file.data).digest('hex');
+    var fileContent = file.data;
     var attachId = req.params.attachId;
-    file.mv(path.join('media', 'exercise', hashedName), function (err) {
+    var encodingInfo = charsetDetector(fileContent);
+    console.log();
+    console.log(encodingInfo.encoding, encodingInfo.confidence);
+    if (encodingInfo.confidence >= 90) {
+        fileContent = iconv.decode(file.data, encodingInfo.encoding);
+    }
+    var hashedName = hash.update(fileContent).digest('hex');
+    fs.writeFile(path.join('media', 'exercise', hashedName), fileContent, { mode: 384 }, function (err) {
         if (err) {
             // FIXME: error handling
-            console.error('[rest_api::runExercise::file_move] : ', err);
+            console.error('[rest_api::runExercise::writeFile] : ', err);
             res.sendStatus(500);
-            return;
         }
     });
     // get information of this exercise by given id (attachId)
@@ -298,7 +306,7 @@ function runExercise(req, res) {
             test_set: searchResult[0].test_set_size
         }), { mode: 438 });
         // copy given source code to shared folder
-        fs.writeFileSync(path.join(sourcePath, searchResult[0].name), file.data, { mode: 384 });
+        fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, { mode: 384 });
         exports.dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name) VALUE (?, ?, ?, ?);', [req.session.studentId, attachId, req.session.email, hashedName], function (err, insertResult) {
             if (err) {
                 // FIXME: error handling
@@ -345,7 +353,6 @@ function runExercise(req, res) {
                                 // FIXME: error handling
                                 console.error('[rest_api::runExercise::temp_remove] : ', err);
                                 res.sendStatus(500);
-                                return;
                             }
                         });
                         // the judge was correct
@@ -356,7 +363,6 @@ function runExercise(req, res) {
                                     // FIXME: error handling
                                     console.error('[rest_api::runExercise::insert_judge_correct] : ', err);
                                     res.sendStatus(500);
-                                    return;
                                 }
                             });
                             exports.dbClient.query('INSERT IGNORE INTO exercise_quick_result (attach_id, student_id, result) VALUE (?, ?, ?);', [attachId, req.session.studentId, true], function (err, row) {
@@ -364,7 +370,6 @@ function runExercise(req, res) {
                                     // FIXME: error handling
                                     console.error('[rest_api::runExercise::insert_judge_correct] : ', err);
                                     res.sendStatus(500);
-                                    return;
                                 }
                             });
                         }
@@ -374,7 +379,6 @@ function runExercise(req, res) {
                                     // FIXME: error handling
                                     console.error('[rest_api::runExercise::insert_judge_incorrect] : ', err);
                                     res.sendStatus(500);
-                                    return;
                                 }
                             });
                             fs.readFile(path.join(answerPath, result_1.unmatchedIndex + '.out'), function (err, data) {
@@ -402,10 +406,10 @@ function runExercise(req, res) {
                                 // FIXME: error handling
                                 console.error('[rest_api::runExercise::remove_file] : ', err);
                                 res.sendStatus(500);
-                                return;
                             }
                         });
                         fs.exists(compileErrorFile_1, function (exists) {
+                            // compile error
                             if (exists) {
                                 fs.readFile(compileErrorFile_1, function (err, data) {
                                     if (err) {
@@ -424,13 +428,14 @@ function runExercise(req, res) {
                                             // FIXME: error handling
                                             console.error('[rest_api::runExercise::insert_compile_error] : ', err);
                                             res.sendStatus(500);
-                                            return;
                                         }
                                     });
                                 });
                             }
                             else {
-                                // TODO: error handling
+                                // FIXME: error handling
+                                console.error('[rest_api::runExercise::something_else]');
+                                res.sendStatus(500);
                             }
                         });
                     }
@@ -441,7 +446,6 @@ function runExercise(req, res) {
                         // FIXME: error handling
                         console.error('[rest_api::runExercise::temp_remove] : ', err);
                         res.sendStatus(500);
-                        return;
                     }
                 });
                 container.remove();
