@@ -281,10 +281,6 @@ function runExercise(req, res) {
             res.sendStatus(500);
             return;
         }
-        else if (searchResult.length > 1) {
-            console.error('[rest_api::runExercise] search result\'s length is higher than 1');
-            return;
-        }
         // a temporarily created shared path that contains source code to judge
         var sourcePath = fs.mkdtempSync(path.join(app_1.tempPath, req.session.studentId + '_'));
         // a temporarily created shared path that will contain output
