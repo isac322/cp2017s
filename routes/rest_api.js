@@ -125,7 +125,7 @@ function register(req, res) {
                 req.session.name = decodeURIComponent(selectResult[0].name);
                 req.session.signIn = true;
                 req.session.studentId = selectResult[0].student_id;
-                return res.redirect('/');
+                res.sendStatus(201);
             });
         });
     });

@@ -165,7 +165,7 @@ export function register(req: Request, res: Response) {
 							req.session.signIn = true;
 							req.session.studentId = selectResult[0].student_id;
 
-							return res.redirect('/');
+							res.sendStatus(201);
 						}
 					);
 				}

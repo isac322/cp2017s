@@ -101,7 +101,7 @@ block content
 					$form.ajaxSubmit({
 						statusCode: {
 							201: function () {
-								document.location.href = '/';
+								location.reload();
 							},
 							204: function () {
 								$registerBtn.button('reset');
@@ -113,7 +113,7 @@ block content
 								$errorModal.modal('show');
 							},
 							401: function () {
-								document.location.href = '/';
+								location.reload();
 							}
 							// TODO: handling errors
 						}
