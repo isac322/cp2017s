@@ -97,10 +97,14 @@ function register(req, res) {
         var email = payload['email'];
         var nameInGoogle = encodeURIComponent(payload['name']);
         exports.dbClient.query('SELECT * FROM user WHERE student_id = \'' + studentId + '\';', function (err, selectResult) {
-            if (err || selectResult.length != 1) {
+            if (err || selectResult.length > 1) {
                 // FIXME: error handling
                 console.error('[rest_api::register::select] : ', err);
                 res.sendStatus(500);
+                return;
+            }
+            else if (selectResult.length == 0) {
+                res.sendStatus(204);
                 return;
             }
             console.log('\n[register:outer]');

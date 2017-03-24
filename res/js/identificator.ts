@@ -39,11 +39,11 @@ function onSignIn(googleUser: any) {
 
 function signOut() {
 	auth2.signOut().then(() => {
-		console.log('User signed out.');
 		const xhr = new XMLHttpRequest();
 		xhr.open('POST', origin + '/signout');
 		xhr.onload = function () {
 			document.location.href = '/';
+			// error handling
 		};
 		xhr.send();
 	});

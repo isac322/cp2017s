@@ -31,11 +31,11 @@ function onSignIn(googleUser) {
 }
 function signOut() {
     auth2.signOut().then(function () {
-        console.log('User signed out.');
         var xhr = new XMLHttpRequest();
         xhr.open('POST', origin + '/signout');
         xhr.onload = function () {
             document.location.href = '/';
+            // error handling
         };
         xhr.send();
     });

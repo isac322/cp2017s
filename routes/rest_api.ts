@@ -128,10 +128,14 @@ export function register(req: Request, res: Response) {
 			dbClient.query(
 				'SELECT * FROM user WHERE student_id = \'' + studentId + '\';',
 				(err: IError, selectResult) => {
-					if (err || selectResult.length != 1) {
+					if (err || selectResult.length > 1) {
 						// FIXME: error handling
 						console.error('[rest_api::register::select] : ', err);
 						res.sendStatus(500);
+						return;
+					}
+					else if (selectResult.length == 0) {
+						res.sendStatus(204);
 						return;
 					}
 
@@ -367,7 +371,8 @@ export function runExercise(req: Request, res: Response) {
 				console.error('[rest_api::runExercise::select] : ', err);
 				res.sendStatus(500);
 				return;
-			} else if (searchResult.length > 1) {
+			}
+			else if (searchResult.length > 1) {
 				console.error('[rest_api::runExercise] search result\'s length is higher than 1');
 				return;
 			}
