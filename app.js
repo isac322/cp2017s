@@ -126,7 +126,7 @@ var Server = (function () {
         }));
         exports.docker.buildImage({
             context: path.join(__dirname, 'judge_server'),
-            src: ['Dockerfile']
+            src: ['Dockerfile', 'compare.py', 'judge.sh']
         }, { t: 'judge_server' }, function (err, response) {
             if (err) {
                 // TODO: error handling

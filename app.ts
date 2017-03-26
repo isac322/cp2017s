@@ -150,7 +150,7 @@ export class Server {
 		docker.buildImage(
 			{
 				context: path.join(__dirname, 'judge_server'),
-				src: ['Dockerfile']
+				src: ['Dockerfile', 'compare.py', 'judge.sh']
 			},
 			{t: 'judge_server'},
 			(err, response) => {
