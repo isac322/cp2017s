@@ -39,8 +39,7 @@ export const logger = new winston.Logger({
 			timestamp: true,
 			localTime: true,
 			maxFiles: 50,
-			level: 'debug',
-			zippedArchive: true
+			level: 'debug'
 		})
 	]
 });
@@ -215,7 +214,7 @@ export class Server {
 		fs_ext.mkdirp(logPath, (err: Error) => {
 			if (err) {
 				// TODO: error handling
-				logger.error(util.inspect(err, {showHidden: false, depth: 1}));
+				console.error(util.inspect(err, {showHidden: false, depth: 1}));
 			}
 		});
 	}

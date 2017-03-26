@@ -32,8 +32,7 @@ exports.logger = new winston.Logger({
             timestamp: true,
             localTime: true,
             maxFiles: 50,
-            level: 'debug',
-            zippedArchive: true
+            level: 'debug'
         })
     ]
 });
@@ -179,7 +178,7 @@ var Server = (function () {
         fs_ext.mkdirp(logPath, function (err) {
             if (err) {
                 // TODO: error handling
-                exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
+                console.error(util.inspect(err, { showHidden: false, depth: 1 }));
             }
         });
     };

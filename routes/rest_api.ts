@@ -146,8 +146,6 @@ export function register(req: Request, res: Response) {
 					logger.debug('[register:outer]');
 					logger.debug(util.inspect(selectResult, {showHidden: false, depth: 1}));
 
-					// TODO: check not listed student exception
-
 					dbClient.query(
 						'INSERT INTO email VALUES (?,?,?);',
 						[studentId, email, nameInGoogle],
@@ -259,27 +257,6 @@ export function uploadAttach(req: Request, res: Response) {
 	const file = req.files.attachment;
 	const hashedName = hash.update(file.data).digest('hex');
 	const attachmentId = req.params.attachId;
-
-	dbClient.query(
-		'SELECT homework.end_date ' +
-		'FROM homework JOIN hw_config ' +
-		'     ON hw_config.homework_id = homework.homework_id ' +
-		'WHERE hw_config.id = ?;',
-		attachmentId,
-		(err: IError, searchResult) => {
-			if (err) {
-				// FIXME: error handling
-				logger.error('[rest_api::uploadAttach::fetch_homework_info] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
-			}
-
-			logger.debug(searchResult);
-			logger.debug(searchResult[0].end_date);
-			logger.debug(typeof searchResult[0].end_date);
-
-			// TODO: if this upload already past deadline, discard the upload
-		}
-	);
 
 	dbClient.query(
 		'INSERT INTO submit_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);',

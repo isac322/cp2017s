@@ -113,7 +113,6 @@ function register(req, res) {
             }
             app_1.logger.debug('[register:outer]');
             app_1.logger.debug(util.inspect(selectResult, { showHidden: false, depth: 1 }));
-            // TODO: check not listed student exception
             exports.dbClient.query('INSERT INTO email VALUES (?,?,?);', [studentId, email, nameInGoogle], function (err, insertResult) {
                 if (err) {
                     // FIXME: error handling
@@ -197,20 +196,6 @@ function uploadAttach(req, res) {
     var file = req.files.attachment;
     var hashedName = hash.update(file.data).digest('hex');
     var attachmentId = req.params.attachId;
-    exports.dbClient.query('SELECT homework.end_date ' +
-        'FROM homework JOIN hw_config ' +
-        '     ON hw_config.homework_id = homework.homework_id ' +
-        'WHERE hw_config.id = ?;', attachmentId, function (err, searchResult) {
-        if (err) {
-            // FIXME: error handling
-            app_1.logger.error('[rest_api::uploadAttach::fetch_homework_info] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-        }
-        app_1.logger.debug(searchResult);
-        app_1.logger.debug(searchResult[0].end_date);
-        app_1.logger.debug(typeof searchResult[0].end_date);
-        // TODO: if this upload already past deadline, discard the upload
-    });
     exports.dbClient.query('INSERT INTO submit_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);', [req.session.studentId, attachmentId, req.session.email, hashedName], function (err, insertResult) {
         if (err) {
             // FIXME: error handling

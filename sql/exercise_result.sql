@@ -1,6 +1,6 @@
 CREATE TABLE exercise_result (
     id               MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    log_id           MEDIUMINT UNSIGNED NOT NULL,
+    log_id           MEDIUMINT UNSIGNED NOT NULL UNIQUE,
     result           BOOL               NOT NULL,
     created          TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP,
     error_msg        TEXT,

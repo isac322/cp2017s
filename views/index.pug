@@ -65,8 +65,13 @@ block content
 
 						.modal-footer
 							input#id_token-input(type='text', hidden='true', name='id_token', required)
-							button.btn.btn-default(type='button', data-dismiss='modal') Close
-							button.btn.btn-success#register-btn(type='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Registering...') Register
+							button.btn.btn-default(type='button', data-dismiss='modal')
+								| #[i.fa.fa-times(aria-hidden='true')]
+								| Close
+							button.btn.btn-success#register-btn(type='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Registering...')
+								| #[i.fa.fa-check(aria-hidden='true')]
+								| Submit
+
 
 		.modal.fade#error-modal(tabindex='-1', role='dialog', aria-labelledby="error-modal-title")
 			.modal-dialog(role='document')
@@ -83,12 +88,19 @@ block content
 								h4 You are not registered in our database. #[br] If you are a student of computer programming (#{yearNSeason}), please contact web administrator.
 
 					.modal-footer
-						button.btn.btn-default(type='button', data-dismiss='modal') Close
+						button.btn.btn-default(type='button', data-dismiss='modal')
+							| #[i.fa.fa-times(aria-hidden='true')]
+							| Close
 
 		script(type='text/javascript').
 			const $registerModal = $('#register-modal');
 			const $registerBtn = $('#register-btn');
 			const $errorModal = $('#error-modal');
+
+			$registerModal.on('shown.bs.modal', function () {
+				$('input:first').focus();
+			});
+
 
 			$('.register-form').validator().on('submit', function (e) {
 				if (!e.isDefaultPrevented()) {
