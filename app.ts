@@ -3,13 +3,17 @@ import * as cookieParser from "cookie-parser";
 import * as express from "express";
 import * as expressSession from "express-session";
 import * as fs_ext from "fs-extra";
-import * as logger from "morgan";
+import * as morgan from "morgan";
 import * as path from "path";
+import * as util from "util";
+import * as  winston from "winston";
 import {ExerciseRoute} from "./routes/exercise";
 import {HWRoute} from "./routes/homework";
 import {IndexRoute} from "./routes/index";
 import {createHW, hwNameChecker, register, runExercise, signIn, signOut, uploadAttach} from "./routes/rest_api";
 import fileUpload = require('express-fileupload')
+
+require('winston-daily-rotate-file');
 
 const Docker = require("dockerode");
 
@@ -22,6 +26,24 @@ export const exerciseSetPath = path.join(__dirname, 'media', 'test_set', 'exerci
 export const submittedExercisePath = path.join(__dirname, 'media', 'exercise');
 export const submittedHomeworkPath = path.join(__dirname, 'media', 'homework');
 
+const logPath = path.join(__dirname, 'logs');
+
+
+export const logger = new winston.Logger({
+	transports: [
+		new winston.transports.DailyRotateFile({
+			filename: path.join(logPath, 'log-'), // this path needs to be absolute
+			datePattern: 'yyyy-MM-dd.log',
+			colorize: true,
+			json: false,
+			timestamp: true,
+			localTime: true,
+			maxFiles: 50,
+			level: 'debug',
+			zippedArchive: true
+		})
+	]
+});
 
 /**
  * The server.
@@ -54,6 +76,8 @@ export class Server {
 		//create expressjs application
 		this.app = express();
 
+		this.createDir();
+
 		//configure application
 		this.config();
 
@@ -62,8 +86,6 @@ export class Server {
 
 		//add api
 		this.api();
-
-		this.createDir();
 	}
 
 	/**
@@ -96,13 +118,17 @@ export class Server {
 
 		// uncomment after placing your favicon in /public
 		//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-		this.app.use(logger('dev'));
+		this.app.use(morgan('dev', {
+			stream: {
+				write: (message: string) => {
+					logger.info(message.trim());
+				}
+			}
+		}));
 		this.app.use(fileUpload());
 		this.app.use(bodyParser.json());
 		this.app.use(bodyParser.urlencoded({extended: true}));
 		this.app.use(cookieParser());
-		this.app.use(require('less-middleware')(path.join(__dirname, 'public')));
-		this.app.use(express.static(path.join(__dirname, 'public')));
 
 
 		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap-validator', 'dist')));
@@ -130,10 +156,9 @@ export class Server {
 			{t: 'judge_server'},
 			(err, response) => {
 				if (err) {
-					console.log(err);
+					// TODO: error handling
+					logger.error(err);
 				}
-
-				console.log(response.statusCode, response.statusMessage);
 			}
 		);
 	}
@@ -162,28 +187,35 @@ export class Server {
 		fs_ext.mkdirp(tempPath, (err: Error) => {
 			if (err) {
 				// TODO: error handling
-				console.error(err);
+				logger.error(util.inspect(err, {showHidden: false, depth: 1}));
 			}
 		});
 
 		fs_ext.mkdirp(exerciseSetPath, (err: Error) => {
 			if (err) {
 				// TODO: error handling
-				console.error(err);
+				logger.error(util.inspect(err, {showHidden: false, depth: 1}));
 			}
 		});
 
 		fs_ext.mkdirp(submittedExercisePath, (err: Error) => {
 			if (err) {
 				// TODO: error handling
-				console.error(err);
+				logger.error(util.inspect(err, {showHidden: false, depth: 1}));
 			}
 		});
 
 		fs_ext.mkdirp(submittedHomeworkPath, (err: Error) => {
 			if (err) {
 				// TODO: error handling
-				console.error(err);
+				logger.error(util.inspect(err, {showHidden: false, depth: 1}));
+			}
+		});
+
+		fs_ext.mkdirp(logPath, (err: Error) => {
+			if (err) {
+				// TODO: error handling
+				logger.error(util.inspect(err, {showHidden: false, depth: 1}));
 			}
 		});
 	}

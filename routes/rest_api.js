@@ -3,11 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var crypto = require("crypto");
 var fs = require("fs");
 var fs_ext = require("fs-extra");
+var iconv = require("iconv-lite");
 var mysql_1 = require("mysql");
 var path = require("path");
-var charsetDetector = require("detect-character-encoding");
 var app_1 = require("../app");
-var iconv = require("iconv-lite");
+var util = require("util");
+var charsetDetector = require("detect-character-encoding");
 var webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
 var CLIENT_ID = webConfig.google.clientId;
 var GoogleAuth = require('google-auth-library');
@@ -42,11 +43,11 @@ function signIn(req, res) {
         exports.dbClient.query('SELECT * from email, user where email = "' + email + '" and user.student_id = email.student_id;', function (err, result) {
             if (err) {
                 // FIXME: error handling
-                console.error('[rest_api::signIn::select] : ', err);
+                app_1.logger.error('[rest_api::signIn::select] : ');
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             }
-            console.log('\n[signIn]');
-            console.log(result);
-            console.log();
+            app_1.logger.debug('[signIn]');
+            app_1.logger.debug(util.inspect(result, { showHidden: false, depth: 1 }));
             switch (result.length) {
                 case 0:
                     res.sendStatus(204);
@@ -101,7 +102,8 @@ function register(req, res) {
         exports.dbClient.query('SELECT * FROM user WHERE student_id = \'' + studentId + '\';', function (err, selectResult) {
             if (err || selectResult.length > 1) {
                 // FIXME: error handling
-                console.error('[rest_api::register::select] : ', err);
+                app_1.logger.error('[rest_api::register::select] : ');
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
                 return;
             }
@@ -109,19 +111,18 @@ function register(req, res) {
                 res.sendStatus(204);
                 return;
             }
-            console.log('\n[register:outer]');
-            console.log(selectResult);
-            console.log();
+            app_1.logger.debug('[register:outer]');
+            app_1.logger.debug(util.inspect(selectResult, { showHidden: false, depth: 1 }));
             // TODO: check not listed student exception
             exports.dbClient.query('INSERT INTO email VALUES (?,?,?);', [studentId, email, nameInGoogle], function (err, insertResult) {
                 if (err) {
                     // FIXME: error handling
-                    console.error('[rest_api::register::insert] : ', err);
+                    app_1.logger.error('[rest_api::register::insert] : ');
+                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                     res.sendStatus(500);
                 }
-                console.log('\n[register:inner]');
-                console.log(insertResult);
-                console.log();
+                app_1.logger.debug('[register:inner]');
+                app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
                 req.session.admin = selectResult[0].is_admin == '1';
                 req.session.email = email;
                 req.session.name = decodeURIComponent(selectResult[0].name);
@@ -151,13 +152,13 @@ function createHW(req, res) {
     exports.dbClient.query('INSERT INTO homework(name, start_date, end_date, author_id, author_email, description) VALUES(?,?,?,?,?,?);', [name, start_date, end_date, req.session.studentId, req.session.email, description], function (err, insertResult) {
         if (err) {
             // FIXME: error handling
-            console.error('[rest_api::createHW::outer_insert] : ', err);
+            app_1.logger.error('[rest_api::createHW::outer_insert] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
             return;
         }
-        console.log('\n[createHW:insert into homework]');
-        console.log(insertResult);
-        console.log();
+        app_1.logger.debug('[createHW:insert into homework]');
+        app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
         var homeworkId = insertResult.insertId;
         var values = [];
         for (var _i = 0, _a = req.body.attachment; _i < _a.length; _i++) {
@@ -169,13 +170,13 @@ function createHW(req, res) {
         exports.dbClient.query('INSERT INTO hw_config(homework_id, name, extension) VALUES ' + mysql_1.escape(values) + ';', function (err, result) {
             if (err) {
                 // FIXME: error handling
-                console.error('[rest_api::createHW::inner_insert] : ', err);
+                app_1.logger.error('[rest_api::createHW::inner_insert] : ');
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
                 return;
             }
-            console.log('\n[createHW:insert into hw_config]');
-            console.log(result);
-            console.log();
+            app_1.logger.debug('[createHW:insert into hw_config]');
+            app_1.logger.debug(util.inspect(result, { showHidden: false, depth: 1 }));
         });
         res.redirect('/homework');
     });
@@ -201,27 +202,30 @@ function uploadAttach(req, res) {
         '     ON hw_config.homework_id = homework.homework_id ' +
         'WHERE hw_config.id = ?;', attachmentId, function (err, searchResult) {
         if (err) {
-            console.log(err);
+            // FIXME: error handling
+            app_1.logger.error('[rest_api::uploadAttach::fetch_homework_info] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
         }
-        console.log(searchResult);
-        console.log(searchResult[0].end_date);
-        console.log(typeof searchResult[0].end_date);
+        app_1.logger.debug(searchResult);
+        app_1.logger.debug(searchResult[0].end_date);
+        app_1.logger.debug(typeof searchResult[0].end_date);
         // TODO: if this upload already past deadline, discard the upload
     });
     exports.dbClient.query('INSERT INTO submit_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);', [req.session.studentId, attachmentId, req.session.email, hashedName], function (err, insertResult) {
         if (err) {
             // FIXME: error handling
-            console.error('[rest_api::uploadAttach::insert] : ', err);
+            app_1.logger.error('[rest_api::uploadAttach::insert] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
             return;
         }
-        console.log('\n[uploadAttach:insert into submit_log]');
-        console.log(insertResult);
-        console.log();
+        app_1.logger.debug('[uploadAttach:insert into submit_log]');
+        app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
         file.mv(path.join('media', 'homework', hashedName), function (err) {
             if (err) {
                 // FIXME: error handling
-                console.error('[rest_api::uploadAttach::file_move] : ', err);
+                app_1.logger.error('[rest_api::uploadAttach::file_move] : ');
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
                 return;
             }
@@ -244,7 +248,8 @@ function hwNameChecker(req, res) {
     exports.dbClient.query('SELECT * FROM homework WHERE name = ?;', req.query.name, function (err, searchResult) {
         if (err) {
             // FIXME: error handling
-            console.error('[rest_api::hwNameChecker::select] : ', err);
+            app_1.logger.error('[rest_api::hwNameChecker::select] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
             return;
         }
@@ -268,8 +273,7 @@ function runExercise(req, res) {
     var fileContent = file.data;
     var attachId = req.params.attachId;
     var encodingInfo = charsetDetector(fileContent);
-    console.log();
-    console.log(encodingInfo.encoding, encodingInfo.confidence);
+    app_1.logger.debug(util.inspect(encodingInfo, { showHidden: false, depth: 1 }));
     if (encodingInfo.confidence >= 90) {
         fileContent = iconv.decode(file.data, encodingInfo.encoding);
     }
@@ -277,7 +281,8 @@ function runExercise(req, res) {
     fs.writeFile(path.join('media', 'exercise', hashedName), fileContent, { mode: 384 }, function (err) {
         if (err) {
             // FIXME: error handling
-            console.error('[rest_api::runExercise::writeFile] : ', err);
+            app_1.logger.error('[rest_api::runExercise::writeFile] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
         }
     });
@@ -285,7 +290,8 @@ function runExercise(req, res) {
     exports.dbClient.query('SELECT name, extension, test_set_size FROM exercise_config WHERE id = ?;', attachId, function (err, searchResult) {
         if (err) {
             // FIXME: error handling
-            console.error('[rest_api::runExercise::select] : ', err);
+            app_1.logger.error('[rest_api::runExercise::select] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
             return;
         }
@@ -306,15 +312,25 @@ function runExercise(req, res) {
         exports.dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name) VALUE (?, ?, ?, ?);', [req.session.studentId, attachId, req.session.email, hashedName], function (err, insertResult) {
             if (err) {
                 // FIXME: error handling
-                console.error('[rest_api::runExercise::insert] : ', err);
+                app_1.logger.error('[rest_api::runExercise::insert] : ');
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
                 return;
             }
-            console.log('\n[runExercise:insert into exercise_log]');
-            console.log(insertResult);
-            console.log();
+            app_1.logger.debug('[runExercise:insert into exercise_log]');
+            app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
             var logId = insertResult.insertId;
-            app_1.docker.run('judge_server', ['bash', './judge.sh'], [process.stdout, process.stderr], // TODO: redirect these
+            app_1.docker.run('judge_server', ['bash', './judge.sh'], [{
+                    write: function (message) {
+                        app_1.logger.debug('[rest_api::runExercise::docker.stdout]');
+                        app_1.logger.debug(message.toString());
+                    }
+                }, {
+                    write: function (message) {
+                        app_1.logger.error('[rest_api::runExercise::docker.stderr]');
+                        app_1.logger.error(message.toString());
+                    }
+                }], // TODO: redirect these
             {
                 Volumes: {
                     '/home/tester/source': {},
@@ -334,7 +350,8 @@ function runExercise(req, res) {
             }, function (err, data, container) {
                 if (err) {
                     // FIXME: error handling
-                    console.error('[rest_api::runExercise::docker_run] : ', err);
+                    app_1.logger.error('[rest_api::runExercise::docker_run] : ');
+                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                     res.sendStatus(500);
                     return;
                 }
@@ -347,7 +364,8 @@ function runExercise(req, res) {
                         fs_ext.remove(outputPath, function (err) {
                             if (err) {
                                 // FIXME: error handling
-                                console.error('[rest_api::runExercise::temp_remove] : ', err);
+                                app_1.logger.error('[rest_api::runExercise::temp_remove] : ');
+                                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                 res.sendStatus(500);
                             }
                         });
@@ -357,14 +375,16 @@ function runExercise(req, res) {
                             exports.dbClient.query('INSERT INTO exercise_result (log_id, result) VALUE (?,?);', [logId, true], function (err, row) {
                                 if (err) {
                                     // FIXME: error handling
-                                    console.error('[rest_api::runExercise::insert_judge_correct] : ', err);
+                                    app_1.logger.error('[rest_api::runExercise::insert_judge_correct] : ');
+                                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                     res.sendStatus(500);
                                 }
                             });
                             exports.dbClient.query('INSERT IGNORE INTO exercise_quick_result (attach_id, student_id, result) VALUE (?, ?, ?);', [attachId, req.session.studentId, true], function (err, row) {
                                 if (err) {
                                     // FIXME: error handling
-                                    console.error('[rest_api::runExercise::insert_judge_correct] : ', err);
+                                    app_1.logger.error('[rest_api::runExercise::insert_judge_correct] : ');
+                                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                     res.sendStatus(500);
                                 }
                             });
@@ -373,14 +393,16 @@ function runExercise(req, res) {
                             exports.dbClient.query('INSERT INTO exercise_result (log_id, result, unmatched_index, unmatched_output) VALUE (?, ?, ?, ?);', [logId, result_1.isMatched, result_1.unmatchedIndex, result_1.unmatchedOutput], function (err, row) {
                                 if (err) {
                                     // FIXME: error handling
-                                    console.error('[rest_api::runExercise::insert_judge_incorrect] : ', err);
+                                    app_1.logger.error('[rest_api::runExercise::insert_judge_incorrect] : ');
+                                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                     res.sendStatus(500);
                                 }
                             });
                             fs.readFile(path.join(answerPath, result_1.unmatchedIndex + '.out'), function (err, data) {
                                 if (err) {
                                     // FIXME: error handling
-                                    console.error('[rest_api::runExercise::read_file] : ', err);
+                                    app_1.logger.error('[rest_api::runExercise::read_file] : ');
+                                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                     res.sendStatus(500);
                                     return;
                                 }
@@ -400,7 +422,8 @@ function runExercise(req, res) {
                         fs_ext.remove(outputPath, function (err) {
                             if (err) {
                                 // FIXME: error handling
-                                console.error('[rest_api::runExercise::remove_file] : ', err);
+                                app_1.logger.error('[rest_api::runExercise::remove_file] : ');
+                                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                 res.sendStatus(500);
                             }
                         });
@@ -410,19 +433,22 @@ function runExercise(req, res) {
                                 fs.readFile(compileErrorFile_1, function (err, data) {
                                     if (err) {
                                         // FIXME: error handling
-                                        console.error('[rest_api::runExercise::read_file] : ', err);
+                                        app_1.logger.error('[rest_api::runExercise::read_file] : ');
+                                        app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                         res.sendStatus(500);
                                         return;
                                     }
                                     var errorStr = data.toString();
                                     res.setHeader('Content-Type', 'application/json');
-                                    res.status(400).send(JSON.stringify({
-                                        errorMsg: errorStr
-                                    }));
+                                    res.status(400).send(JSON.stringify({ errorMsg: errorStr }));
                                     exports.dbClient.query('INSERT INTO exercise_result(log_id, result, error_msg) VALUE(?,?,?);', [logId, false, errorStr], function (err, row) {
                                         if (err) {
                                             // FIXME: error handling
-                                            console.error('[rest_api::runExercise::insert_compile_error] : ', err);
+                                            app_1.logger.error('[rest_api::runExercise::insert_compile_error] : ');
+                                            app_1.logger.error(util.inspect(err, {
+                                                showHidden: false,
+                                                depth: null
+                                            }));
                                             res.sendStatus(500);
                                         }
                                     });
@@ -430,7 +456,7 @@ function runExercise(req, res) {
                             }
                             else {
                                 // FIXME: error handling
-                                console.error('[rest_api::runExercise::something_else]');
+                                app_1.logger.error('[rest_api::runExercise::something_else]');
                                 res.sendStatus(500);
                             }
                         });
@@ -440,7 +466,8 @@ function runExercise(req, res) {
                 fs_ext.remove(sourcePath, function (err) {
                     if (err) {
                         // FIXME: error handling
-                        console.error('[rest_api::runExercise::temp_remove] : ', err);
+                        app_1.logger.error('[rest_api::runExercise::temp_remove] : ');
+                        app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                         res.sendStatus(500);
                     }
                 });

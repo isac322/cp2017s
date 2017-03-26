@@ -1,4 +1,6 @@
 import {NextFunction, Request, Response, Router} from "express";
+import * as util from "util";
+import {logger} from "../app";
 import {dbClient} from "./rest_api";
 import {BaseRoute} from "./route";
 
@@ -50,7 +52,7 @@ export class HWRoute extends BaseRoute {
 	 */
 	public static create(router: Router) {
 		//log
-		console.log("[HWRoute::create] Creating homework route.");
+		logger.debug("[HWRoute::create] Creating homework route.");
 
 		const hwRouter = new HWRoute();
 
@@ -92,14 +94,14 @@ export class HWRoute extends BaseRoute {
 			(err, searchResult) => {
 				if (err) {
 					// FIXME: error handling
-					console.error('[HWRoute::homework] : ', err);
+					logger.error('[HWRoute::homework]');
+					logger.error(util.inspect(err, {showHidden: false, depth: null}));
 					res.sendStatus(500);
 					return;
 				}
 
-				console.log('\n[homework]');
-				console.log(searchResult);
-				console.log();
+				logger.debug('[homework]');
+				logger.debug(util.inspect(searchResult, {showHidden: false, depth: 1}));
 
 				let currentId = -1;
 				let currentObject: {
@@ -140,7 +142,7 @@ export class HWRoute extends BaseRoute {
 					});
 				}
 
-				console.log(homework);
+				logger.debug(util.inspect(homework, {showHidden: false, depth: 1}));
 
 				res.locals.homeworkList = homework;
 

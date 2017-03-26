@@ -10,6 +10,8 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var util = require("util");
+var app_1 = require("../app");
 var rest_api_1 = require("./rest_api");
 var route_1 = require("./route");
 exports.monthNames = [
@@ -45,7 +47,7 @@ var HWRoute = (function (_super) {
      */
     HWRoute.create = function (router) {
         //log
-        console.log("[HWRoute::create] Creating homework route.");
+        app_1.logger.debug("[HWRoute::create] Creating homework route.");
         var hwRouter = new HWRoute();
         //add homework page route
         router.get("/homework", function (req, res, next) {
@@ -70,13 +72,13 @@ var HWRoute = (function (_super) {
         rest_api_1.dbClient.query(req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery, function (err, searchResult) {
             if (err) {
                 // FIXME: error handling
-                console.error('[HWRoute::homework] : ', err);
+                app_1.logger.error('[HWRoute::homework]');
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
                 return;
             }
-            console.log('\n[homework]');
-            console.log(searchResult);
-            console.log();
+            app_1.logger.debug('[homework]');
+            app_1.logger.debug(util.inspect(searchResult, { showHidden: false, depth: 1 }));
             var currentId = -1;
             var currentObject;
             var homework = [];
@@ -104,7 +106,7 @@ var HWRoute = (function (_super) {
                     latestTime: record.submitted_time
                 });
             }
-            console.log(homework);
+            app_1.logger.debug(util.inspect(homework, { showHidden: false, depth: 1 }));
             res.locals.homeworkList = homework;
             //render template
             _this.render(req, res, 'homework');

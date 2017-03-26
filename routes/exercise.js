@@ -10,9 +10,11 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var route_1 = require("./route");
-var rest_api_1 = require("./rest_api");
+var util = require("util");
+var app_1 = require("../app");
 var homework_1 = require("./homework");
+var rest_api_1 = require("./rest_api");
+var route_1 = require("./route");
 /**
  * /exercise route
  *
@@ -40,7 +42,7 @@ var ExerciseRoute = (function (_super) {
      */
     ExerciseRoute.create = function (router) {
         //log
-        console.log("[ExerciseRoute::create] Creating exercise route.");
+        app_1.logger.debug("[ExerciseRoute::create] Creating exercise route.");
         //add exercise page route
         router.get("/exercise", function (req, res, next) {
             new ExerciseRoute().exercise(req, res, next);
@@ -76,13 +78,13 @@ var ExerciseRoute = (function (_super) {
             '        ON exercise_config.id = reduced_quick_result.attach_id;', req.session.studentId, function (err, searchResult) {
             if (err) {
                 // FIXME: error handling
-                console.error('[exercise::first_select] : ', err);
+                app_1.logger.error('[exercise::first_select]');
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
                 return;
             }
-            console.log('\n[exercise]');
-            console.log(searchResult);
-            console.log();
+            app_1.logger.debug('[exercise]');
+            app_1.logger.debug(util.inspect(searchResult, { showHidden: false, depth: 1 }));
             var currentId = -1;
             var currentObject;
             var exerciseList = [];
@@ -108,7 +110,7 @@ var ExerciseRoute = (function (_super) {
                     result: record.result
                 });
             }
-            console.log(exerciseList);
+            app_1.logger.debug(util.inspect(exerciseList, { showHidden: false, depth: 1 }));
             res.locals.exerciseList = exerciseList;
             //render template
             return _this.render(req, res, "exercise");

@@ -2,11 +2,12 @@ import * as crypto from "crypto";
 import {Request, Response} from "express";
 import * as fs from "fs";
 import * as fs_ext from "fs-extra";
+import * as iconv from "iconv-lite";
 import {createConnection, escape, IConnection, IError} from "mysql";
 import * as path from "path";
+import {docker, exerciseSetPath, logger, tempPath} from "../app";
+import * as util from "util";
 import charsetDetector = require('detect-character-encoding');
-import {docker, exerciseSetPath, tempPath} from "../app";
-import * as iconv from "iconv-lite"
 
 
 const webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
@@ -56,12 +57,12 @@ export function signIn(req: Request, res: Response) {
 				(err: IError, result) => {
 					if (err) {
 						// FIXME: error handling
-						console.error('[rest_api::signIn::select] : ', err);
+						logger.error('[rest_api::signIn::select] : ');
+						logger.error(util.inspect(err, {showHidden: false, depth: null}));
 					}
 
-					console.log('\n[signIn]');
-					console.log(result);
-					console.log();
+					logger.debug('[signIn]');
+					logger.debug(util.inspect(result, {showHidden: false, depth: 1}));
 
 					switch (result.length) {
 						case 0:
@@ -132,7 +133,8 @@ export function register(req: Request, res: Response) {
 				(err: IError, selectResult) => {
 					if (err || selectResult.length > 1) {
 						// FIXME: error handling
-						console.error('[rest_api::register::select] : ', err);
+						logger.error('[rest_api::register::select] : ');
+						logger.error(util.inspect(err, {showHidden: false, depth: null}));
 						res.sendStatus(500);
 						return;
 					}
@@ -141,9 +143,8 @@ export function register(req: Request, res: Response) {
 						return;
 					}
 
-					console.log('\n[register:outer]');
-					console.log(selectResult);
-					console.log();
+					logger.debug('[register:outer]');
+					logger.debug(util.inspect(selectResult, {showHidden: false, depth: 1}));
 
 					// TODO: check not listed student exception
 
@@ -153,13 +154,13 @@ export function register(req: Request, res: Response) {
 						(err: IError, insertResult) => {
 							if (err) {
 								// FIXME: error handling
-								console.error('[rest_api::register::insert] : ', err);
+								logger.error('[rest_api::register::insert] : ');
+								logger.error(util.inspect(err, {showHidden: false, depth: null}));
 								res.sendStatus(500);
 							}
 
-							console.log('\n[register:inner]');
-							console.log(insertResult);
-							console.log();
+							logger.debug('[register:inner]');
+							logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
 
 							req.session.admin = selectResult[0].is_admin == '1';
 							req.session.email = email;
@@ -199,14 +200,14 @@ export function createHW(req: Request, res: Response) {
 		(err: IError, insertResult) => {
 			if (err) {
 				// FIXME: error handling
-				console.error('[rest_api::createHW::outer_insert] : ', err);
+				logger.error('[rest_api::createHW::outer_insert] : ');
+				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
 			}
 
-			console.log('\n[createHW:insert into homework]');
-			console.log(insertResult);
-			console.log();
+			logger.debug('[createHW:insert into homework]');
+			logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
 
 			const homeworkId = insertResult.insertId;
 
@@ -224,14 +225,14 @@ export function createHW(req: Request, res: Response) {
 				(err: IError, result) => {
 					if (err) {
 						// FIXME: error handling
-						console.error('[rest_api::createHW::inner_insert] : ', err);
+						logger.error('[rest_api::createHW::inner_insert] : ');
+						logger.error(util.inspect(err, {showHidden: false, depth: null}));
 						res.sendStatus(500);
 						return;
 					}
 
-					console.log('\n[createHW:insert into hw_config]');
-					console.log(result);
-					console.log();
+					logger.debug('[createHW:insert into hw_config]');
+					logger.debug(util.inspect(result, {showHidden: false, depth: 1}));
 				}
 			);
 
@@ -267,12 +268,14 @@ export function uploadAttach(req: Request, res: Response) {
 		attachmentId,
 		(err: IError, searchResult) => {
 			if (err) {
-				console.log(err);
+				// FIXME: error handling
+				logger.error('[rest_api::uploadAttach::fetch_homework_info] : ');
+				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 			}
 
-			console.log(searchResult);
-			console.log(searchResult[0].end_date);
-			console.log(typeof searchResult[0].end_date);
+			logger.debug(searchResult);
+			logger.debug(searchResult[0].end_date);
+			logger.debug(typeof searchResult[0].end_date);
 
 			// TODO: if this upload already past deadline, discard the upload
 		}
@@ -284,19 +287,20 @@ export function uploadAttach(req: Request, res: Response) {
 		(err: IError, insertResult) => {
 			if (err) {
 				// FIXME: error handling
-				console.error('[rest_api::uploadAttach::insert] : ', err);
+				logger.error('[rest_api::uploadAttach::insert] : ');
+				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
 			}
 
-			console.log('\n[uploadAttach:insert into submit_log]');
-			console.log(insertResult);
-			console.log();
+			logger.debug('[uploadAttach:insert into submit_log]');
+			logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
 
 			file.mv(path.join('media', 'homework', hashedName), (err) => {
 				if (err) {
 					// FIXME: error handling
-					console.error('[rest_api::uploadAttach::file_move] : ', err);
+					logger.error('[rest_api::uploadAttach::file_move] : ');
+					logger.error(util.inspect(err, {showHidden: false, depth: null}));
 					res.sendStatus(500);
 					return;
 				}
@@ -325,7 +329,8 @@ export function hwNameChecker(req: Request, res: Response) {
 		(err: IError, searchResult) => {
 			if (err) {
 				// FIXME: error handling
-				console.error('[rest_api::hwNameChecker::select] : ', err);
+				logger.error('[rest_api::hwNameChecker::select] : ');
+				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
 			}
@@ -355,8 +360,7 @@ export function runExercise(req: Request, res: Response) {
 
 	const encodingInfo: { encoding: string, confidence: number } = charsetDetector(fileContent);
 
-	console.log();
-	console.log(encodingInfo.encoding, encodingInfo.confidence);
+	logger.debug(util.inspect(encodingInfo, {showHidden: false, depth: 1}));
 
 	if (encodingInfo.confidence >= 90) {
 		fileContent = iconv.decode(file.data, encodingInfo.encoding);
@@ -368,7 +372,8 @@ export function runExercise(req: Request, res: Response) {
 	fs.writeFile(path.join('media', 'exercise', hashedName), fileContent, {mode: 0o600}, (err: NodeJS.ErrnoException) => {
 		if (err) {
 			// FIXME: error handling
-			console.error('[rest_api::runExercise::writeFile] : ', err);
+			logger.error('[rest_api::runExercise::writeFile] : ');
+			logger.error(util.inspect(err, {showHidden: false, depth: null}));
 			res.sendStatus(500);
 		}
 	});
@@ -380,7 +385,8 @@ export function runExercise(req: Request, res: Response) {
 		(err: IError, searchResult) => {
 			if (err) {
 				// FIXME: error handling
-				console.error('[rest_api::runExercise::select] : ', err);
+				logger.error('[rest_api::runExercise::select] : ');
+				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
 			}
@@ -417,15 +423,15 @@ export function runExercise(req: Request, res: Response) {
 				(err: IError, insertResult) => {
 					if (err) {
 						// FIXME: error handling
-						console.error('[rest_api::runExercise::insert] : ', err);
+						logger.error('[rest_api::runExercise::insert] : ');
+						logger.error(util.inspect(err, {showHidden: false, depth: null}));
 						res.sendStatus(500);
 						return;
 					}
 
 
-					console.log('\n[runExercise:insert into exercise_log]');
-					console.log(insertResult);
-					console.log();
+					logger.debug('[runExercise:insert into exercise_log]');
+					logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
 
 
 					const logId = insertResult.insertId;
@@ -433,7 +439,17 @@ export function runExercise(req: Request, res: Response) {
 					docker.run(
 						'judge_server',
 						['bash', './judge.sh'],
-						[process.stdout, process.stderr], // TODO: redirect these
+						[{
+							write: (message: NodeBuffer) => {
+								logger.debug('[rest_api::runExercise::docker.stdout]');
+								logger.debug(message.toString());
+							}
+						}, {
+							write: (message: NodeBuffer) => {
+								logger.error('[rest_api::runExercise::docker.stderr]');
+								logger.error(message.toString());
+							}
+						}], // TODO: redirect these
 						{
 							Volumes: {
 								'/home/tester/source': {},
@@ -454,7 +470,8 @@ export function runExercise(req: Request, res: Response) {
 						(err, data, container) => {
 							if (err) {
 								// FIXME: error handling
-								console.error('[rest_api::runExercise::docker_run] : ', err);
+								logger.error('[rest_api::runExercise::docker_run] : ');
+								logger.error(util.inspect(err, {showHidden: false, depth: null}));
 								res.sendStatus(500);
 								return;
 							}
@@ -471,7 +488,8 @@ export function runExercise(req: Request, res: Response) {
 									fs_ext.remove(outputPath, (err: Error) => {
 										if (err) {
 											// FIXME: error handling
-											console.error('[rest_api::runExercise::temp_remove] : ', err);
+											logger.error('[rest_api::runExercise::temp_remove] : ');
+											logger.error(util.inspect(err, {showHidden: false, depth: null}));
 											res.sendStatus(500);
 										}
 									});
@@ -487,7 +505,8 @@ export function runExercise(req: Request, res: Response) {
 											(err, row) => {
 												if (err) {
 													// FIXME: error handling
-													console.error('[rest_api::runExercise::insert_judge_correct] : ', err);
+													logger.error('[rest_api::runExercise::insert_judge_correct] : ');
+													logger.error(util.inspect(err, {showHidden: false, depth: null}));
 													res.sendStatus(500);
 												}
 											});
@@ -498,7 +517,8 @@ export function runExercise(req: Request, res: Response) {
 											(err, row) => {
 												if (err) {
 													// FIXME: error handling
-													console.error('[rest_api::runExercise::insert_judge_correct] : ', err);
+													logger.error('[rest_api::runExercise::insert_judge_correct] : ');
+													logger.error(util.inspect(err, {showHidden: false, depth: null}));
 													res.sendStatus(500);
 												}
 											}
@@ -513,7 +533,8 @@ export function runExercise(req: Request, res: Response) {
 											(err, row) => {
 												if (err) {
 													// FIXME: error handling
-													console.error('[rest_api::runExercise::insert_judge_incorrect] : ', err);
+													logger.error('[rest_api::runExercise::insert_judge_incorrect] : ');
+													logger.error(util.inspect(err, {showHidden: false, depth: null}));
 													res.sendStatus(500);
 												}
 											});
@@ -523,7 +544,8 @@ export function runExercise(req: Request, res: Response) {
 											(err: NodeJS.ErrnoException, data: Buffer) => {
 												if (err) {
 													// FIXME: error handling
-													console.error('[rest_api::runExercise::read_file] : ', err);
+													logger.error('[rest_api::runExercise::read_file] : ');
+													logger.error(util.inspect(err, {showHidden: false, depth: null}));
 													res.sendStatus(500);
 													return;
 												}
@@ -547,7 +569,8 @@ export function runExercise(req: Request, res: Response) {
 									fs_ext.remove(outputPath, (err: Error) => {
 										if (err) {
 											// FIXME: error handling
-											console.error('[rest_api::runExercise::remove_file] : ', err);
+											logger.error('[rest_api::runExercise::remove_file] : ');
+											logger.error(util.inspect(err, {showHidden: false, depth: null}));
 											res.sendStatus(500);
 										}
 									});
@@ -558,7 +581,8 @@ export function runExercise(req: Request, res: Response) {
 											fs.readFile(compileErrorFile, (err: NodeJS.ErrnoException, data: Buffer) => {
 												if (err) {
 													// FIXME: error handling
-													console.error('[rest_api::runExercise::read_file] : ', err);
+													logger.error('[rest_api::runExercise::read_file] : ');
+													logger.error(util.inspect(err, {showHidden: false, depth: null}));
 													res.sendStatus(500);
 													return;
 												}
@@ -566,9 +590,7 @@ export function runExercise(req: Request, res: Response) {
 												const errorStr = data.toString();
 
 												res.setHeader('Content-Type', 'application/json');
-												res.status(400).send(JSON.stringify({
-													errorMsg: errorStr
-												}));
+												res.status(400).send(JSON.stringify({errorMsg: errorStr}));
 
 
 												dbClient.query(
@@ -577,7 +599,11 @@ export function runExercise(req: Request, res: Response) {
 													(err, row) => {
 														if (err) {
 															// FIXME: error handling
-															console.error('[rest_api::runExercise::insert_compile_error] : ', err);
+															logger.error('[rest_api::runExercise::insert_compile_error] : ');
+															logger.error(util.inspect(err, {
+																showHidden: false,
+																depth: null
+															}));
 															res.sendStatus(500);
 														}
 													})
@@ -586,7 +612,7 @@ export function runExercise(req: Request, res: Response) {
 										// something else
 										else {
 											// FIXME: error handling
-											console.error('[rest_api::runExercise::something_else]');
+											logger.error('[rest_api::runExercise::something_else]');
 											res.sendStatus(500);
 										}
 									})
@@ -598,7 +624,8 @@ export function runExercise(req: Request, res: Response) {
 							fs_ext.remove(sourcePath, (err: Error) => {
 								if (err) {
 									// FIXME: error handling
-									console.error('[rest_api::runExercise::temp_remove] : ', err);
+									logger.error('[rest_api::runExercise::temp_remove] : ');
+									logger.error(util.inspect(err, {showHidden: false, depth: null}));
 									res.sendStatus(500);
 								}
 							});

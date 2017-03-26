@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
+import {logger} from "../app";
 
 
 /**
@@ -18,7 +19,7 @@ export class IndexRoute extends BaseRoute {
 	 */
 	public static create(router: Router) {
 		//log
-		console.log("[IndexRoute::create] Creating index route.");
+		logger.debug("[IndexRoute::create] Creating index route.");
 
 		//add home page route
 		router.get("/", (req: Request, res: Response, next: NextFunction) => {

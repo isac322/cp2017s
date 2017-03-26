@@ -5,19 +5,38 @@ var cookieParser = require("cookie-parser");
 var express = require("express");
 var expressSession = require("express-session");
 var fs_ext = require("fs-extra");
-var logger = require("morgan");
+var morgan = require("morgan");
 var path = require("path");
+var util = require("util");
+var winston = require("winston");
 var exercise_1 = require("./routes/exercise");
 var homework_1 = require("./routes/homework");
 var index_1 = require("./routes/index");
 var rest_api_1 = require("./routes/rest_api");
 var fileUpload = require("express-fileupload");
+require('winston-daily-rotate-file');
 var Docker = require("dockerode");
 exports.docker = new Docker({ host: 'http://localhost', port: 2375 });
 exports.tempPath = path.join(__dirname, 'media', 'tmp');
 exports.exerciseSetPath = path.join(__dirname, 'media', 'test_set', 'exercise');
 exports.submittedExercisePath = path.join(__dirname, 'media', 'exercise');
 exports.submittedHomeworkPath = path.join(__dirname, 'media', 'homework');
+var logPath = path.join(__dirname, 'logs');
+exports.logger = new winston.Logger({
+    transports: [
+        new winston.transports.DailyRotateFile({
+            filename: path.join(logPath, 'log-'),
+            datePattern: 'yyyy-MM-dd.log',
+            colorize: true,
+            json: false,
+            timestamp: true,
+            localTime: true,
+            maxFiles: 50,
+            level: 'debug',
+            zippedArchive: true
+        })
+    ]
+});
 /**
  * The server.
  *
@@ -33,13 +52,13 @@ var Server = (function () {
     function Server() {
         //create expressjs application
         this.app = express();
+        this.createDir();
         //configure application
         this.config();
         //add routes
         this.routes();
         //add api
         this.api();
-        this.createDir();
     }
     /**
      * Bootstrap the application.
@@ -80,13 +99,17 @@ var Server = (function () {
         this.app.set('view engine', 'pug');
         // uncomment after placing your favicon in /public
         //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-        this.app.use(logger('dev'));
+        this.app.use(morgan('dev', {
+            stream: {
+                write: function (message) {
+                    exports.logger.info(message.trim());
+                }
+            }
+        }));
         this.app.use(fileUpload());
         this.app.use(bodyParser.json());
         this.app.use(bodyParser.urlencoded({ extended: true }));
         this.app.use(cookieParser());
-        this.app.use(require('less-middleware')(path.join(__dirname, 'public')));
-        this.app.use(express.static(path.join(__dirname, 'public')));
         this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap-validator', 'dist')));
         this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'js')));
         this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist', '')));
@@ -107,9 +130,9 @@ var Server = (function () {
             src: ['Dockerfile']
         }, { t: 'judge_server' }, function (err, response) {
             if (err) {
-                console.log(err);
+                // TODO: error handling
+                exports.logger.error(err);
             }
-            console.log(response.statusCode, response.statusMessage);
         });
     };
     /**
@@ -132,25 +155,31 @@ var Server = (function () {
         fs_ext.mkdirp(exports.tempPath, function (err) {
             if (err) {
                 // TODO: error handling
-                console.error(err);
+                exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
             }
         });
         fs_ext.mkdirp(exports.exerciseSetPath, function (err) {
             if (err) {
                 // TODO: error handling
-                console.error(err);
+                exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
             }
         });
         fs_ext.mkdirp(exports.submittedExercisePath, function (err) {
             if (err) {
                 // TODO: error handling
-                console.error(err);
+                exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
             }
         });
         fs_ext.mkdirp(exports.submittedHomeworkPath, function (err) {
             if (err) {
                 // TODO: error handling
-                console.error(err);
+                exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
+            }
+        });
+        fs_ext.mkdirp(logPath, function (err) {
+            if (err) {
+                // TODO: error handling
+                exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
             }
         });
     };

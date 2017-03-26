@@ -1,8 +1,10 @@
 import {NextFunction, Request, Response, Router} from "express";
-import {BaseRoute} from "./route";
-import {dbClient} from "./rest_api";
 import {IError} from "mysql";
+import * as util from "util";
+import {logger} from "../app";
 import {monthNames} from "./homework";
+import {dbClient} from "./rest_api";
+import {BaseRoute} from "./route";
 
 
 /**
@@ -21,7 +23,7 @@ export class ExerciseRoute extends BaseRoute {
 	 */
 	public static create(router: Router) {
 		//log
-		console.log("[ExerciseRoute::create] Creating exercise route.");
+		logger.debug("[ExerciseRoute::create] Creating exercise route.");
 
 		//add exercise page route
 		router.get("/exercise", (req: Request, res: Response, next: NextFunction) => {
@@ -74,14 +76,14 @@ export class ExerciseRoute extends BaseRoute {
 			(err: IError, searchResult) => {
 				if (err) {
 					// FIXME: error handling
-					console.error('[exercise::first_select] : ', err);
+					logger.error('[exercise::first_select]');
+					logger.error(util.inspect(err, {showHidden: false, depth: null}));
 					res.sendStatus(500);
 					return;
 				}
 
-				console.log('\n[exercise]');
-				console.log(searchResult);
-				console.log();
+				logger.debug('[exercise]');
+				logger.debug(util.inspect(searchResult, {showHidden: false, depth: 1}));
 
 				let currentId = -1;
 				let currentObject: {
@@ -92,7 +94,7 @@ export class ExerciseRoute extends BaseRoute {
 					deadline: Date,
 					description: string,
 					leftMillis: number,
-					attachments: Array<{id: number, name: string, result?: boolean}>
+					attachments: Array<{ id: number, name: string, result?: boolean }>
 				};
 				let exerciseList = [];
 
@@ -120,7 +122,7 @@ export class ExerciseRoute extends BaseRoute {
 					});
 				}
 
-				console.log(exerciseList);
+				logger.debug(util.inspect(exerciseList, {showHidden: false, depth: 1}));
 
 				res.locals.exerciseList = exerciseList;
 

@@ -11,6 +11,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var route_1 = require("./route");
+var app_1 = require("../app");
 /**
  * / route
  *
@@ -38,7 +39,7 @@ var IndexRoute = (function (_super) {
      */
     IndexRoute.create = function (router) {
         //log
-        console.log("[IndexRoute::create] Creating index route.");
+        app_1.logger.debug("[IndexRoute::create] Creating index route.");
         //add home page route
         router.get("/", function (req, res, next) {
             new IndexRoute().index(req, res, next);
