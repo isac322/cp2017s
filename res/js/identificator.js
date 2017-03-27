@@ -3,6 +3,8 @@ gapi.load('auth2', function () {
     auth2 = gapi.auth2.init();
     if ('next' in window)
         next();
+    if ('next2' in window)
+        next2();
 });
 var origin = location.protocol + '//' + location.host;
 function onSignIn(googleUser) {

@@ -14,7 +14,9 @@ RUN apt-get install g++ oracle-java8-installer python3 jq -y
 RUN rm -rf /var/lib/apt/lists/*
 RUN rm -rf /var/cache/oracle-jdk8-installer
 RUN apt-get clean
-RUN groupadd tester && useradd -m -g tester tester
+
+ARG uid=1000
+RUN groupadd -g ${uid} tester && useradd -m -g tester -u ${uid} tester
 
 COPY judge.sh /home/tester/
 COPY compare.py /home/tester/

@@ -12,6 +12,7 @@ import {HWRoute} from "./routes/homework";
 import {IndexRoute} from "./routes/index";
 import {createHW, hwNameChecker, register, runExercise, signIn, signOut, uploadAttach} from "./routes/rest_api";
 import fileUpload = require('express-fileupload')
+import {ProfileRoute} from "./routes/profile";
 
 require('winston-daily-rotate-file');
 
@@ -152,7 +153,10 @@ export class Server {
 				context: path.join(__dirname, 'judge_server'),
 				src: ['Dockerfile', 'compare.py', 'judge.sh']
 			},
-			{t: 'judge_server'},
+			{
+				t: 'judge_server',
+				buildargs: {uid: process.getuid().toString()}
+			},
 			(err, response) => {
 				if (err) {
 					// TODO: error handling
@@ -174,6 +178,7 @@ export class Server {
 		IndexRoute.create(router);
 		HWRoute.create(router);
 		ExerciseRoute.create(router);
+		ProfileRoute.create(router);
 
 		this.app.use(router);
 	}

@@ -1,0 +1,20 @@
+extends layout
+
+block content
+	div
+		// Nav tabs
+		ul.nav.nav-tabs(role='tablist')
+			li.active(role='presentation')
+				a(href='#home', aria-controls='home', role='tab', data-toggle='tab') Home
+			li(role='presentation')
+				a(href='#accounts', aria-controls='accounts', role='tab', data-toggle='tab') Accounts
+			li(role='presentation')
+				a(href='#submissions', aria-controls='submissions', role='tab', data-toggle='tab') Submissions
+			li(role='presentation')
+				a(href='#settings', aria-controls='settings', role='tab', data-toggle='tab') Settings
+		// Tab panes
+		.tab-content
+			#home.tab-pane.active(role='tabpanel') ...
+			#accounts.tab-pane(role='tabpanel') ...
+			#submissions.tab-pane(role='tabpanel') ...
+			#settings.tab-pane(role='tabpanel') ...

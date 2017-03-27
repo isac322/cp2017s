@@ -4,6 +4,8 @@ gapi.load('auth2', () => {
 	auth2 = gapi.auth2.init();
 	if ('next' in window)
 		next();
+	if ('next2' in window)
+		next2();
 });
 
 const origin = location.protocol + '//' + location.host;

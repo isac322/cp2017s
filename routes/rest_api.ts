@@ -339,8 +339,11 @@ export function runExercise(req: Request, res: Response) {
 
 	logger.debug(util.inspect(encodingInfo, {showHidden: false, depth: 1}));
 
-	if (encodingInfo.confidence >= 90) {
+	if (encodingInfo.encoding == 'UTF-8') {
 		fileContent = iconv.decode(file.data, encodingInfo.encoding);
+	}
+	else {
+		fileContent = iconv.decode(file.data, 'EUC-KR');
 	}
 
 	const hashedName = hash.update(fileContent).digest('hex');

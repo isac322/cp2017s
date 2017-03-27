@@ -259,8 +259,11 @@ function runExercise(req, res) {
     var attachId = req.params.attachId;
     var encodingInfo = charsetDetector(fileContent);
     app_1.logger.debug(util.inspect(encodingInfo, { showHidden: false, depth: 1 }));
-    if (encodingInfo.confidence >= 90) {
+    if (encodingInfo.encoding == 'UTF-8') {
         fileContent = iconv.decode(file.data, encodingInfo.encoding);
+    }
+    else {
+        fileContent = iconv.decode(file.data, 'EUC-KR');
     }
     var hashedName = hash.update(fileContent).digest('hex');
     fs.writeFile(path.join('media', 'exercise', hashedName), fileContent, { mode: 384 }, function (err) {

@@ -14,6 +14,7 @@ var homework_1 = require("./routes/homework");
 var index_1 = require("./routes/index");
 var rest_api_1 = require("./routes/rest_api");
 var fileUpload = require("express-fileupload");
+var profile_1 = require("./routes/profile");
 require('winston-daily-rotate-file');
 var Docker = require("dockerode");
 exports.docker = new Docker({ host: 'http://localhost', port: 2375 });
@@ -127,7 +128,10 @@ var Server = (function () {
         exports.docker.buildImage({
             context: path.join(__dirname, 'judge_server'),
             src: ['Dockerfile', 'compare.py', 'judge.sh']
-        }, { t: 'judge_server' }, function (err, response) {
+        }, {
+            t: 'judge_server',
+            buildargs: { uid: process.getuid().toString() }
+        }, function (err, response) {
             if (err) {
                 // TODO: error handling
                 exports.logger.error(err);
@@ -145,6 +149,7 @@ var Server = (function () {
         index_1.IndexRoute.create(router);
         homework_1.HWRoute.create(router);
         exercise_1.ExerciseRoute.create(router);
+        profile_1.ProfileRoute.create(router);
         this.app.use(router);
     };
     /**

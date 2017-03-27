@@ -76,15 +76,22 @@ html
 						li
 							a(target='_blank', href=classPage) #[span.glyphicon.glyphicon-link(aria-hidden="true")] Class Page
 						if signIn
-							li.dropdown
+							li.dropdown(class=navPos == 99 ? 'active' : undefined)
 								a.dropdown-toggle(href='#', data-toggle='dropdown', role='button', aria-haspopup='true', aria-expanded='false') #{name}
 									span.caret
 								ul.dropdown-menu
 									li
-										a(href='#') Action
+										a(href='/profile') Profile
 									li.divider(role='separator')
 									li
 										a(href='#', onclick='signOut();') Sign out
+						else
+							li
+								a#login-anchor(href='#') #[i.fa.fa-google(aria-hidden="true")] Sign In
+								script(type='text/javascript').
+									next2 = function () {
+										auth2.attachClickHandler(document.getElementById('login-anchor'), {}, onSignIn);
+									};
 
 		.container
 			block content
