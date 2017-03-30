@@ -32,7 +32,9 @@ block content
 								h4
 									b Description
 								p
-									a.wrapped-text(target='_blank', href=homework.description)=homework.description
+									each desc in homework.description
+										a.wrapped-text(target='_blank', href=desc)=desc
+										br
 
 							.col-xs-6.col-sm-4
 								h4

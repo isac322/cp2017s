@@ -63,7 +63,7 @@ block content
 											| &nbsp;
 											| #{attachment.name}
 
-									if signIn && exercise.deadline > present
+									if signIn && exercise.leftMillis >= 0
 										.col-xs-12.col-sm-7.vcenter
 											.form-group
 												.pull-right.input-group

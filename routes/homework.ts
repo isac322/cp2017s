@@ -110,7 +110,7 @@ export class HWRoute extends BaseRoute {
 					startDate: string,
 					dueDate: string,
 					deadline: Date,
-					description: string,
+					description: Array<string>,
 					leftMillis: number,
 					attachments: Array<{ id: number, name: string, extension: string, latestFile?: string, latestTime?: Date }>
 				};
@@ -124,7 +124,7 @@ export class HWRoute extends BaseRoute {
 							startDate: monthNames[record.start_date.getMonth()] + ' ' + record.start_date.getDate(),
 							dueDate: monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
 							deadline: record.end_date,
-							description: record.description,
+							description: record.description.split('|'),
 							leftMillis: record.end_date - Date.now() + 24 * 60 * 59 * 1000,
 							attachments: []
 						};
