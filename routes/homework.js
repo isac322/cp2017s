@@ -77,8 +77,6 @@ var HWRoute = (function (_super) {
                 res.sendStatus(500);
                 return;
             }
-            app_1.logger.debug('[homework]');
-            app_1.logger.debug(util.inspect(searchResult, { showHidden: false, depth: 1 }));
             var currentId = -1;
             var currentObject;
             var homework = [];

@@ -82,9 +82,6 @@ export class ExerciseRoute extends BaseRoute {
 					return;
 				}
 
-				logger.debug('[exercise]');
-				logger.debug(util.inspect(searchResult, {showHidden: false, depth: 1}));
-
 				let currentId = -1;
 				let currentObject: {
 					id: number,
@@ -92,27 +89,27 @@ export class ExerciseRoute extends BaseRoute {
 					startDate: string,
 					dueDate: string,
 					deadline: Date,
-					description: string,
+					description: Array<string>,
 					leftMillis: number,
 					attachments: Array<{ id: number, name: string, result?: boolean }>
 				};
 				let exerciseList = [];
 
 				for (let record of searchResult) {
-					if (record.homework_id != currentId) {
+					if (record.id != currentId) {
 						currentObject = {
 							id: record.id,
 							name: decodeURIComponent(record.name),
 							startDate: monthNames[record.start_date.getMonth()] + ' ' + record.start_date.getDate(),
 							dueDate: monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
 							deadline: record.end_date,
-							description: record.description,
+							description: record.description.split('|'),
 							leftMillis: record.end_date - Date.now() + 24 * 60 * 59 * 1000,
 							attachments: []
 						};
 						exerciseList.push(currentObject);
 
-						currentId = record.homework_id;
+						currentId = record.id;
 					}
 
 					currentObject.attachments.push({

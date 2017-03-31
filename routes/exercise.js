@@ -83,26 +83,24 @@ var ExerciseRoute = (function (_super) {
                 res.sendStatus(500);
                 return;
             }
-            app_1.logger.debug('[exercise]');
-            app_1.logger.debug(util.inspect(searchResult, { showHidden: false, depth: 1 }));
             var currentId = -1;
             var currentObject;
             var exerciseList = [];
             for (var _i = 0, searchResult_1 = searchResult; _i < searchResult_1.length; _i++) {
                 var record = searchResult_1[_i];
-                if (record.homework_id != currentId) {
+                if (record.id != currentId) {
                     currentObject = {
                         id: record.id,
                         name: decodeURIComponent(record.name),
                         startDate: homework_1.monthNames[record.start_date.getMonth()] + ' ' + record.start_date.getDate(),
                         dueDate: homework_1.monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
                         deadline: record.end_date,
-                        description: record.description,
+                        description: record.description.split('|'),
                         leftMillis: record.end_date - Date.now() + 24 * 60 * 59 * 1000,
                         attachments: []
                     };
                     exerciseList.push(currentObject);
-                    currentId = record.homework_id;
+                    currentId = record.id;
                 }
                 currentObject.attachments.push({
                     id: record.attach_id,

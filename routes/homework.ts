@@ -100,9 +100,6 @@ export class HWRoute extends BaseRoute {
 					return;
 				}
 
-				logger.debug('[homework]');
-				logger.debug(util.inspect(searchResult, {showHidden: false, depth: 1}));
-
 				let currentId = -1;
 				let currentObject: {
 					id: number,
