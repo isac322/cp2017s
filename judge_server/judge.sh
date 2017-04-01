@@ -18,10 +18,14 @@ if [ ${extension}='cpp' ]; then
 
 	if [ -f a.out ]; then
 		for (( i=1; i <= ${inputNum}; i++ )); do
-			./a.out < ./input/${i}.in > ./tmp/${i}.out 2> /dev/null
-		done
+			./a.out < ./input/${i}.in > ./tmp/output.txt
 
-		./compare.py ./tmp ./answer ${inputNum}
+			./compare.py ./tmp/output.txt ./answer/${i}.out ${i}
+
+			if [ $? -eq 1 ]; then
+				break
+			fi
+		done
 	else
 		cp ./tmp/compile_error.log ./output/compile_error.log
 	fi

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
+# coding: UTF-8
 
-import sys
 import json
-from os.path import join
+import sys
 
 
-def compare(output_path: str, answer_path: str, result: dict) -> bool:
+def compare(output_path: str, answer_path: str, index: int) -> dict:
     with open(output_path, encoding='utf-8') as fp, open(answer_path, encoding='utf-8') as answer:
         whole_user_output = fp.read()
 
@@ -13,36 +13,30 @@ def compare(output_path: str, answer_path: str, result: dict) -> bool:
         answer_output = tuple(map(str.rstrip, answer.read().rstrip().split('\n')))
 
         if len(user_output) != len(answer_output):
-            result['isMatched'] = False
-            result['unmatchedOutput'] = whole_user_output
-            return False
+            return {'isMatched': False, 'unmatchedOutput': whole_user_output, 'unmatchedIndex': index}
 
         for user_line, ans_line in zip(user_output, answer_output):
             if user_line != ans_line:
-                result['isMatched'] = False
-                result['unmatchedOutput'] = whole_user_output
-                return False
+                return {'isMatched': False, 'unmatchedOutput': whole_user_output, 'unmatchedIndex': index}
 
-    return True
+    return {'isMatched': True, 'unmatchedOutput': None, 'unmatchedIndex': None}
 
 
 def main():
-    outputs = sys.argv[1]
-    answers = sys.argv[2]
-    output_num = int(sys.argv[3])
+    output = sys.argv[1]
+    answer = sys.argv[2]
+    data_index = int(sys.argv[3])
 
-    result = {'isMatched': True, 'unmatchedIndex': None, 'unmatchedOutput': None}
-
-    for i in range(output_num):
-        file_name = '{}.out'.format(i + 1)
-
-        if not compare(join(outputs, file_name), join(answers, file_name), result):
-            result['unmatchedIndex'] = i + 1
-            break
+    result = compare(output, answer, data_index)
 
     with open('output/result.json', 'w', encoding='UTF-8') as fp:
         fp.write(json.dumps(result, ensure_ascii=False))
 
+    if result['isMatched']:
+        return 0
+    else:
+        return 1
+
 
 if __name__ == '__main__':
-    main()
+    exit(main())
