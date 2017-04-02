@@ -32,6 +32,14 @@ def main():
     if return_code is 0:
         result = compare(output, answer, data_index)
 
+        with open(error_log, encoding='UTF-8') as fp:
+            log = fp.read()
+
+            if len(log) == 0:
+                log = None
+
+            result['errorLog'] = log
+
     else:
         with open(error_log, encoding='UTF-8') as fp:
             log = fp.readlines()
@@ -39,6 +47,9 @@ def main():
                 log = log[:-1]
 
             log = str.join('', log)
+
+            if len(log) == 0:
+                log = None
 
             result = {'isMatched': False, 'returnCode': return_code, 'errorLog': log}
 

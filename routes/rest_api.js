@@ -378,13 +378,16 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                 // the judge was correct
                 if (result.isMatched) {
                     res.sendStatus(200);
-                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type) VALUE (?,?);', [logId, 0], function (err) {
+                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type, runtime_error) VALUE (?, ?, ?);', [logId, 0, result.errorLog], function (err) {
                         if (err) {
                             // FIXME: error handling
                             app_1.logger.error('[rest_api::runExercise::insert_judge_correct] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                         }
                     });
+                    if (result.errorLog) {
+                        app_1.logger.error('[rest_api::runExercise::insert_judge_correct-found_error] ' + logId);
+                    }
                     exports.dbClient.query('INSERT IGNORE INTO exercise_quick_result (attach_id, student_id, result) VALUE (?, ?, ?);', [attachId, studentId, true], function (err) {
                         if (err) {
                             // FIXME: error handling
@@ -443,7 +446,7 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                             });
                         });
                     });
-                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type, unmatched_index, unmatched_output) VALUE (?, ?, ?, ?);', [logId, 1, result.unmatchedIndex, result.unmatchedOutput], function (err) {
+                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type, unmatched_index, unmatched_output, runtime_error) VALUE (?, ?, ?, ?, ?);', [logId, 1, result.unmatchedIndex, result.unmatchedOutput, result.errorLog], function (err) {
                         if (err) {
                             // FIXME: error handling
                             app_1.logger.error('[rest_api::runExercise::insert_judge_incorrect] : ');

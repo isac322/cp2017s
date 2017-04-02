@@ -506,8 +506,8 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 					res.sendStatus(200);
 
 					dbClient.query(
-						'INSERT INTO exercise_result (log_id, type) VALUE (?,?);',
-						[logId, 0],
+						'INSERT INTO exercise_result (log_id, type, runtime_error) VALUE (?, ?, ?);',
+						[logId, 0, result.errorLog],
 						(err) => {
 							if (err) {
 								// FIXME: error handling
@@ -515,6 +515,10 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 								logger.error(util.inspect(err, {showHidden: false, depth: null}));
 							}
 						});
+
+					if (result.errorLog) {
+						logger.error('[rest_api::runExercise::insert_judge_correct-found_error] ' + logId);
+					}
 
 					dbClient.query(
 						'INSERT IGNORE INTO exercise_quick_result (attach_id, student_id, result) VALUE (?, ?, ?);',
@@ -597,8 +601,8 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 						});
 
 					dbClient.query(
-						'INSERT INTO exercise_result (log_id, type, unmatched_index, unmatched_output) VALUE (?, ?, ?, ?);',
-						[logId, 1, result.unmatchedIndex, result.unmatchedOutput],
+						'INSERT INTO exercise_result (log_id, type, unmatched_index, unmatched_output, runtime_error) VALUE (?, ?, ?, ?, ?);',
+						[logId, 1, result.unmatchedIndex, result.unmatchedOutput, result.errorLog],
 						(err) => {
 							if (err) {
 								// FIXME: error handling
