@@ -19,15 +19,28 @@ def compare(output_path: str, answer_path: str, index: int) -> dict:
             if user_line != ans_line:
                 return {'isMatched': False, 'unmatchedOutput': whole_user_output, 'unmatchedIndex': index}
 
-    return {'isMatched': True, 'unmatchedOutput': None, 'unmatchedIndex': None}
+    return {'isMatched': True}
 
 
 def main():
     output = sys.argv[1]
     answer = sys.argv[2]
     data_index = int(sys.argv[3])
+    return_code = int(sys.argv[4])
+    error_log = sys.argv[5]
 
-    result = compare(output, answer, data_index)
+    if return_code is 0:
+        result = compare(output, answer, data_index)
+
+    else:
+        with open(error_log, encoding='UTF-8') as fp:
+            log = fp.readlines()
+            if len(log) > 0:
+                log = log[:-1]
+
+            log = str.join('', log)
+
+            result = {'isMatched': False, 'returnCode': return_code, 'errorLog': log}
 
     with open('output/result.json', 'w', encoding='UTF-8') as fp:
         fp.write(json.dumps(result, ensure_ascii=False))

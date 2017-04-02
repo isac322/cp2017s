@@ -64,10 +64,7 @@ export class ExerciseRoute extends BaseRoute {
 			'FROM exercise JOIN exercise_config ' +
 			'        ON exercise.id = exercise_config.exercise_id ' +
 			'    LEFT JOIN ( ' +
-			'                  SELECT ' +
-			'                      attach_id, ' +
-			'                      student_id, ' +
-			'                      result ' +
+			'                  SELECT * ' +
 			'                  FROM exercise_quick_result ' +
 			'                  WHERE student_id = ? ' +
 			'              ) AS reduced_quick_result ' +

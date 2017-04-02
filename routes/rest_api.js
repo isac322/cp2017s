@@ -257,6 +257,7 @@ function runExercise(req, res) {
     var file = req.files.attachment;
     var fileContent = file.data;
     var attachId = req.params.attachId;
+    var studentId = req.session.studentId;
     var encodingInfo = charsetDetector(fileContent);
     app_1.logger.debug(util.inspect(encodingInfo, { showHidden: false, depth: 1 }));
     if (encodingInfo.encoding == 'UTF-8') {
@@ -307,7 +308,6 @@ function runExercise(req, res) {
             }
             app_1.logger.debug('[runExercise:insert into exercise_log]');
             app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
-            var logId = insertResult.insertId;
             app_1.docker.run('judge_server', ['bash', './judge.sh'], [{
                     write: function (message) {
                         app_1.logger.debug('[rest_api::runExercise::docker.stdout]');
@@ -343,113 +343,7 @@ function runExercise(req, res) {
                     res.sendStatus(500);
                     return;
                 }
-                var resultFile = path.join(outputPath, 'result.json');
-                fs.exists(resultFile, function (exists) {
-                    // if result.js is exist, it means that this judge was successful
-                    if (exists) {
-                        var result_1 = JSON.parse(fs.readFileSync(resultFile, 'utf-8'));
-                        // remove output temporary folder
-                        fs_ext.remove(outputPath, function (err) {
-                            if (err) {
-                                // FIXME: error handling
-                                app_1.logger.error('[rest_api::runExercise::temp_remove] : ');
-                                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                                res.sendStatus(500);
-                            }
-                        });
-                        // the judge was correct
-                        if (result_1.isMatched) {
-                            res.sendStatus(200);
-                            exports.dbClient.query('INSERT INTO exercise_result (log_id, result) VALUE (?,?);', [logId, true], function (err, row) {
-                                if (err) {
-                                    // FIXME: error handling
-                                    app_1.logger.error('[rest_api::runExercise::insert_judge_correct] : ');
-                                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                                    res.sendStatus(500);
-                                }
-                            });
-                            exports.dbClient.query('INSERT IGNORE INTO exercise_quick_result (attach_id, student_id, result) VALUE (?, ?, ?);', [attachId, req.session.studentId, true], function (err, row) {
-                                if (err) {
-                                    // FIXME: error handling
-                                    app_1.logger.error('[rest_api::runExercise::insert_judge_correct] : ');
-                                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                                    res.sendStatus(500);
-                                }
-                            });
-                        }
-                        else {
-                            exports.dbClient.query('INSERT INTO exercise_result (log_id, result, unmatched_index, unmatched_output) VALUE (?, ?, ?, ?);', [logId, result_1.isMatched, result_1.unmatchedIndex, result_1.unmatchedOutput], function (err, row) {
-                                if (err) {
-                                    // FIXME: error handling
-                                    app_1.logger.error('[rest_api::runExercise::insert_judge_incorrect] : ');
-                                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                                    res.sendStatus(500);
-                                }
-                            });
-                            fs.readFile(path.join(answerPath, result_1.unmatchedIndex + '.out'), function (err, data) {
-                                if (err) {
-                                    // FIXME: error handling
-                                    app_1.logger.error('[rest_api::runExercise::read_file] : ');
-                                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                                    res.sendStatus(500);
-                                    return;
-                                }
-                                res.setHeader('Content-Type', 'application/json');
-                                res.status(406).send(JSON.stringify({
-                                    unmatchedIndex: result_1.unmatchedIndex,
-                                    unmatchedOutput: result_1.unmatchedOutput,
-                                    answerOutput: data.toString(),
-                                    input: fs.readFileSync(path.join(inputPath, result_1.unmatchedIndex + '.in'), 'utf-8')
-                                }));
-                            });
-                        }
-                    }
-                    else {
-                        var compileErrorFile_1 = path.join(outputPath, 'compile_error.log');
-                        // remove output temporary folder
-                        fs_ext.remove(outputPath, function (err) {
-                            if (err) {
-                                // FIXME: error handling
-                                app_1.logger.error('[rest_api::runExercise::remove_file] : ');
-                                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                                res.sendStatus(500);
-                            }
-                        });
-                        fs.exists(compileErrorFile_1, function (exists) {
-                            // compile error
-                            if (exists) {
-                                fs.readFile(compileErrorFile_1, function (err, data) {
-                                    if (err) {
-                                        // FIXME: error handling
-                                        app_1.logger.error('[rest_api::runExercise::read_file] : ');
-                                        app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                                        res.sendStatus(500);
-                                        return;
-                                    }
-                                    var errorStr = data.toString();
-                                    res.setHeader('Content-Type', 'application/json');
-                                    res.status(400).send(JSON.stringify({ errorMsg: errorStr }));
-                                    exports.dbClient.query('INSERT INTO exercise_result(log_id, result, error_msg) VALUE(?,?,?);', [logId, false, errorStr], function (err, row) {
-                                        if (err) {
-                                            // FIXME: error handling
-                                            app_1.logger.error('[rest_api::runExercise::insert_compile_error] : ');
-                                            app_1.logger.error(util.inspect(err, {
-                                                showHidden: false,
-                                                depth: null
-                                            }));
-                                            res.sendStatus(500);
-                                        }
-                                    });
-                                });
-                            }
-                            else {
-                                // FIXME: error handling
-                                app_1.logger.error('[rest_api::runExercise::something_else]');
-                                res.sendStatus(500);
-                            }
-                        });
-                    }
-                });
+                handleResult(res, insertResult.insertId, attachId, studentId, answerPath, inputPath, outputPath);
                 // remove input temporary folder
                 fs_ext.remove(sourcePath, function (err) {
                     if (err) {
@@ -465,3 +359,140 @@ function runExercise(req, res) {
     });
 }
 exports.runExercise = runExercise;
+function handleResult(res, logId, attachId, studentId, answerPath, inputPath, outputPath) {
+    var resultFile = path.join(outputPath, 'result.json');
+    fs.exists(resultFile, function (exists) {
+        // if result.js is exist, it means that this judge was successful
+        if (exists) {
+            fs.readFile(resultFile, 'UTF-8', function (err, data) {
+                var result = JSON.parse(data.toString());
+                // remove output temporary folder
+                fs_ext.remove(outputPath, function (err) {
+                    if (err) {
+                        // FIXME: error handling
+                        app_1.logger.error('[rest_api::runExercise::temp_remove] : ');
+                        app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                        res.sendStatus(500);
+                    }
+                });
+                // the judge was correct
+                if (result.isMatched) {
+                    res.sendStatus(200);
+                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type) VALUE (?,?);', [logId, 0], function (err) {
+                        if (err) {
+                            // FIXME: error handling
+                            app_1.logger.error('[rest_api::runExercise::insert_judge_correct] : ');
+                            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                        }
+                    });
+                    exports.dbClient.query('INSERT IGNORE INTO exercise_quick_result (attach_id, student_id, result) VALUE (?, ?, ?);', [attachId, studentId, true], function (err) {
+                        if (err) {
+                            // FIXME: error handling
+                            app_1.logger.error('[rest_api::runExercise::insert_judge_correct] : ');
+                            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                        }
+                    });
+                }
+                else if ('returnCode' in result) {
+                    if (result.returnCode == 124) {
+                        res.sendStatus(408);
+                        exports.dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, runtime_error) VALUE (?, ?, ?, ?);', [logId, 3, result.returnCode, result.errorLog], function (err) {
+                            if (err) {
+                                // FIXME: error handling
+                                app_1.logger.error('[rest_api::runExercise::insert_judge_timeout] : ');
+                                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                            }
+                        });
+                    }
+                    else {
+                        res.status(412).json({
+                            errorLog: result.errorLog,
+                            returnCode: result.returnCode
+                        });
+                        exports.dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, runtime_error) VALUE (?, ?, ?, ?);', [logId, 4, result.returnCode, result.errorLog], function (err) {
+                            if (err) {
+                                // FIXME: error handling
+                                app_1.logger.error('[rest_api::runExercise::insert_judge_runtime_error] : ');
+                                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                            }
+                        });
+                    }
+                }
+                else {
+                    fs.readFile(path.join(answerPath, result.unmatchedIndex + '.out'), 'UTF-8', function (err, data) {
+                        if (err) {
+                            // FIXME: error handling
+                            app_1.logger.error('[rest_api::runExercise::read_file] : ');
+                            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                            res.sendStatus(500);
+                            return;
+                        }
+                        var answerOutput = data.toString();
+                        fs.readFile(path.join(inputPath, result.unmatchedIndex + '.in'), 'UTF-8', function (err, data) {
+                            if (err) {
+                                // FIXME: error handling
+                                app_1.logger.error('[rest_api::runExercise::read_file::read_file] : ');
+                                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                                res.sendStatus(500);
+                                return;
+                            }
+                            res.status(406).json({
+                                unmatchedOutput: result.unmatchedOutput,
+                                answerOutput: answerOutput,
+                                input: data.toString()
+                            });
+                        });
+                    });
+                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type, unmatched_index, unmatched_output) VALUE (?, ?, ?, ?);', [logId, 1, result.unmatchedIndex, result.unmatchedOutput], function (err) {
+                        if (err) {
+                            // FIXME: error handling
+                            app_1.logger.error('[rest_api::runExercise::insert_judge_incorrect] : ');
+                            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                        }
+                    });
+                }
+            });
+        }
+        else {
+            var compileErrorFile_1 = path.join(outputPath, 'compile_error.log');
+            // remove output temporary folder
+            fs_ext.remove(outputPath, function (err) {
+                if (err) {
+                    // FIXME: error handling
+                    app_1.logger.error('[rest_api::runExercise::remove_file] : ');
+                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                    res.sendStatus(500);
+                }
+            });
+            fs.exists(compileErrorFile_1, function (exists) {
+                // compile error
+                if (exists) {
+                    fs.readFile(compileErrorFile_1, function (err, data) {
+                        if (err) {
+                            // FIXME: error handling
+                            app_1.logger.error('[rest_api::runExercise::read_file] : ');
+                            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                            res.sendStatus(500);
+                            return;
+                        }
+                        var errorStr = data.toString();
+                        res.status(400).json({ errorMsg: errorStr });
+                        exports.dbClient.query('INSERT INTO exercise_result(log_id, type, compile_error) VALUE(?,?,?);', [logId, 2, errorStr], function (err) {
+                            if (err) {
+                                // FIXME: error handling
+                                app_1.logger.error('[rest_api::runExercise::insert_compile_error] : ');
+                                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                                res.sendStatus(500);
+                            }
+                        });
+                    });
+                }
+                else {
+                    // FIXME: error handling
+                    app_1.logger.error('[rest_api::runExercise::something_else]');
+                    res.sendStatus(500);
+                }
+            });
+        }
+    });
+}

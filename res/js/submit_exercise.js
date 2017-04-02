@@ -10,6 +10,7 @@ const $resultModal = $('#resultModal');
 const $resultModalHeader = $('#resultModalLabel');
 const $correctBody = $('#correctBody');
 const $incorrectBody = $('#incorrectBody');
+const $runtimeErrorBody = $('#runtimeErrorBody');
 const $compileErrorBody = $('#compileErrorBody');
 const $errorBody = $('#errorBody');
 
@@ -18,6 +19,8 @@ const $outputBox = $('#outputBox');
 const $answerBox = $('#answerBox');
 
 const $compileErrorBox = $('#compileErrorBox');
+const $runtimeErrorSignal = $('#runtimeErrorSignal');
+const $runtimeErrorBox = $('#runtimeErrorBox');
 const $errorBox = $('#errorBox');
 
 
@@ -53,12 +56,11 @@ $('.upload-form').validator().on('submit', function (e) {
 					200: function () {
 						$correctBody.show();
 						$incorrectBody.hide();
+						$runtimeErrorBody.hide();
 						$compileErrorBody.hide();
 						$errorBody.hide();
 
-						if ($resultModalHeader.hasClass('text-danger')) {
-							$resultModalHeader.removeClass('text-danger');
-						}
+						$resultModalHeader.removeClass('text-danger');
 						$resultModalHeader.addClass('text-success');
 
 						$resultModalHeader.html('<i class="fa fa-check-circle" aria-hidden="true"></i> Correct!');
@@ -86,6 +88,7 @@ $('.upload-form').validator().on('submit', function (e) {
 
 						$correctBody.hide();
 						$incorrectBody.show();
+						$runtimeErrorBody.hide();
 						$compileErrorBody.hide();
 						$errorBody.hide();
 
@@ -93,12 +96,60 @@ $('.upload-form').validator().on('submit', function (e) {
 						$outputBox.text(res.unmatchedOutput);
 						$answerBox.text(res.answerOutput);
 
-						if ($resultModalHeader.hasClass('text-success')) {
-							$resultModalHeader.removeClass('text-success');
-						}
+						$resultModalHeader.removeClass('text-success');
 						$resultModalHeader.addClass('text-danger');
 
 						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Incorrect!');
+						$resultModal.modal();
+
+
+						$sendBtn.button('reset');
+						$selectBtn.removeClass('disabled');
+
+						form.reset();
+						$form.validator('validate');
+					},
+					// timeout
+					408:function () {
+						$correctBody.hide();
+						$incorrectBody.hide();
+						$runtimeErrorBody.hide();
+						$compileErrorBody.hide();
+						$errorBody.show();
+
+						$errorBox.html("Timeout.");
+
+						$resultModalHeader.removeClass('text-success');
+						$resultModalHeader.addClass('text-danger');
+
+						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Timeout!');
+						$resultModal.modal();
+
+
+						$sendBtn.button('reset');
+						$selectBtn.removeClass('disabled');
+
+						form.reset();
+						$form.validator('validate');
+					},
+					// runtime error
+					412: function (jqXHR) {
+						const res = jqXHR.responseJSON;
+
+						$correctBody.hide();
+						$incorrectBody.hide();
+						$runtimeErrorBody.show();
+						$compileErrorBody.hide();
+						$errorBody.hide();
+
+
+						$runtimeErrorSignal.text(res.returnCode);
+						$runtimeErrorBox.text(res.errorLog);
+
+						$resultModalHeader.removeClass('text-success');
+						$resultModalHeader.addClass('text-danger');
+
+						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Runtime Error!');
 						$resultModal.modal();
 
 
@@ -114,15 +165,14 @@ $('.upload-form').validator().on('submit', function (e) {
 
 						$correctBody.hide();
 						$incorrectBody.hide();
+						$runtimeErrorBody.hide();
 						$compileErrorBody.show();
 						$errorBody.hide();
 
 						$compileErrorBox.text(res.errorMsg);
 
 
-						if ($resultModalHeader.hasClass('text-success')) {
-							$resultModalHeader.removeClass('text-success');
-						}
+						$resultModalHeader.removeClass('text-success');
 						$resultModalHeader.addClass('text-danger');
 
 						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Compile Error!');
@@ -135,9 +185,11 @@ $('.upload-form').validator().on('submit', function (e) {
 						form.reset();
 						$form.validator('validate');
 					},
-					500: function (jqXHR) {
+					// server error
+					500: function () {
 						$correctBody.hide();
 						$incorrectBody.hide();
+						$runtimeErrorBody.hide();
 						$compileErrorBody.hide();
 						$errorBody.show();
 
@@ -147,9 +199,7 @@ $('.upload-form').validator().on('submit', function (e) {
 							"If you don't know about <strong>File Encoding</strong>, please delete all Korean characters in your code and resubmit.");
 
 
-						if ($resultModalHeader.hasClass('text-success')) {
-							$resultModalHeader.removeClass('text-success');
-						}
+						$resultModalHeader.removeClass('text-success');
 						$resultModalHeader.addClass('text-danger');
 
 						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Something\'s wrong!');

@@ -18,9 +18,9 @@ if [ ${extension}='cpp' ]; then
 
 	if [ -f a.out ]; then
 		for (( i=1; i <= ${inputNum}; i++ )); do
-			./a.out < ./input/${i}.in > ./tmp/output.txt
+			timeout 1 ./a.out < ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
 
-			./compare.py ./tmp/output.txt ./answer/${i}.out ${i}
+			./compare.py ./tmp/output.log ./answer/${i}.out ${i} $? ./tmp/error.log
 
 			if [ $? -eq 1 ]; then
 				break
