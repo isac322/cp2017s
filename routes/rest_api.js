@@ -206,7 +206,7 @@ function uploadAttach(req, res) {
         }
         app_1.logger.debug('[uploadAttach:insert into submit_log]');
         app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
-        file.mv(path.join('media', 'homework', hashedName), function (err) {
+        file.mv(path.join(app_1.submittedHomeworkPath, hashedName), function (err) {
             if (err) {
                 // FIXME: error handling
                 app_1.logger.error('[rest_api::uploadAttach::file_move] : ');
@@ -255,11 +255,20 @@ function runExercise(req, res) {
     }
     var hash = crypto.createHash('sha512');
     var file = req.files.attachment;
-    var fileContent = file.data;
     var attachId = req.params.attachId;
     var studentId = req.session.studentId;
-    var encodingInfo = charsetDetector(fileContent);
+    var encodingInfo = charsetDetector(file.data);
     app_1.logger.debug(util.inspect(encodingInfo, { showHidden: false, depth: 1 }));
+    var hashedOriginal = crypto.createHash('sha512').update(file.data).digest('hex');
+    // backup original file
+    fs.writeFile(path.join(app_1.submittedExerciseOriginalPath, hashedOriginal), file.data, { mode: 384 }, function (err) {
+        if (err) {
+            // FIXME: error handling
+            app_1.logger.error('[rest_api::runExercise::writeOriginalFile] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+        }
+    });
+    var fileContent;
     if (encodingInfo.encoding == 'UTF-8') {
         fileContent = iconv.decode(file.data, encodingInfo.encoding);
     }
@@ -267,12 +276,11 @@ function runExercise(req, res) {
         fileContent = iconv.decode(file.data, 'EUC-KR');
     }
     var hashedName = hash.update(fileContent).digest('hex');
-    fs.writeFile(path.join('media', 'exercise', hashedName), fileContent, { mode: 384 }, function (err) {
+    fs.writeFile(path.join(app_1.submittedExercisePath, hashedName), fileContent, { mode: 384 }, function (err) {
         if (err) {
             // FIXME: error handling
             app_1.logger.error('[rest_api::runExercise::writeFile] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-            res.sendStatus(500);
         }
     });
     // get information of this exercise by given id (attachId)
@@ -298,7 +306,7 @@ function runExercise(req, res) {
         }), { mode: 438 });
         // copy given source code to shared folder
         fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, { mode: 384 });
-        exports.dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name) VALUE (?, ?, ?, ?);', [req.session.studentId, attachId, req.session.email, hashedName], function (err, insertResult) {
+        exports.dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);', [req.session.studentId, attachId, req.session.email, hashedName, hashedOriginal], function (err, insertResult) {
             if (err) {
                 // FIXME: error handling
                 app_1.logger.error('[rest_api::runExercise::insert] : ');

@@ -25,9 +25,13 @@ export const tempPath = path.join(__dirname, 'media', 'tmp');
 export const exerciseSetPath = path.join(__dirname, 'media', 'test_set', 'exercise');
 
 export const submittedExercisePath = path.join(__dirname, 'media', 'exercise');
+export const submittedExerciseOriginalPath = path.join(__dirname, 'media', 'exercise_origin');
 export const submittedHomeworkPath = path.join(__dirname, 'media', 'homework');
 
 const logPath = path.join(__dirname, 'logs');
+
+const requiredPath = [tempPath, exerciseSetPath, submittedHomeworkPath, submittedExercisePath,
+	submittedExerciseOriginalPath, logPath];
 
 
 export const logger = new winston.Logger({
@@ -185,42 +189,17 @@ export class Server {
 
 
 	/**
-	 * Create directories
+	 * Create required directories
 	 */
 	public createDir() {
-		fs_ext.mkdirp(tempPath, (err: Error) => {
-			if (err) {
-				// TODO: error handling
-				logger.error(util.inspect(err, {showHidden: false, depth: 1}));
-			}
-		});
-
-		fs_ext.mkdirp(exerciseSetPath, (err: Error) => {
-			if (err) {
-				// TODO: error handling
-				logger.error(util.inspect(err, {showHidden: false, depth: 1}));
-			}
-		});
-
-		fs_ext.mkdirp(submittedExercisePath, (err: Error) => {
-			if (err) {
-				// TODO: error handling
-				logger.error(util.inspect(err, {showHidden: false, depth: 1}));
-			}
-		});
-
-		fs_ext.mkdirp(submittedHomeworkPath, (err: Error) => {
-			if (err) {
-				// TODO: error handling
-				logger.error(util.inspect(err, {showHidden: false, depth: 1}));
-			}
-		});
-
-		fs_ext.mkdirp(logPath, (err: Error) => {
-			if (err) {
-				// TODO: error handling
-				console.error(util.inspect(err, {showHidden: false, depth: 1}));
-			}
-		});
+		for (const path of requiredPath) {
+			console.log('creating ' + path);
+			fs_ext.mkdirp(path, (err: Error) => {
+				if (err) {
+					// TODO: error handling
+					logger.error(util.inspect(err, {showHidden: false, depth: 1}));
+				}
+			});
+		}
 	}
 }

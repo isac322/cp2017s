@@ -35,15 +35,15 @@ def main():
         with open(error_log, encoding='UTF-8') as fp:
             log = fp.read()
 
-            if len(log) == 0:
-                log = None
+        if len(log) == 0 or log == '\n':
+            log = None
 
-            result['errorLog'] = log
+        result['errorLog'] = log
 
     else:
         with open(error_log, encoding='UTF-8') as fp:
             log = fp.readlines()
-            if len(log) > 0:
+            if return_code != 124 and len(log) > 0:
                 log = log[:-1]
 
             log = str.join('', log)

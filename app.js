@@ -21,8 +21,11 @@ exports.docker = new Docker({ host: 'http://localhost', port: 2375 });
 exports.tempPath = path.join(__dirname, 'media', 'tmp');
 exports.exerciseSetPath = path.join(__dirname, 'media', 'test_set', 'exercise');
 exports.submittedExercisePath = path.join(__dirname, 'media', 'exercise');
+exports.submittedExerciseOriginalPath = path.join(__dirname, 'media', 'exercise_origin');
 exports.submittedHomeworkPath = path.join(__dirname, 'media', 'homework');
 var logPath = path.join(__dirname, 'logs');
+var requiredPath = [exports.tempPath, exports.exerciseSetPath, exports.submittedHomeworkPath, exports.submittedExercisePath,
+    exports.submittedExerciseOriginalPath, logPath];
 exports.logger = new winston.Logger({
     transports: [
         new winston.transports.DailyRotateFile({
@@ -153,39 +156,19 @@ var Server = (function () {
         this.app.use(router);
     };
     /**
-     * Create directories
+     * Create required directories
      */
     Server.prototype.createDir = function () {
-        fs_ext.mkdirp(exports.tempPath, function (err) {
-            if (err) {
-                // TODO: error handling
-                exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
-            }
-        });
-        fs_ext.mkdirp(exports.exerciseSetPath, function (err) {
-            if (err) {
-                // TODO: error handling
-                exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
-            }
-        });
-        fs_ext.mkdirp(exports.submittedExercisePath, function (err) {
-            if (err) {
-                // TODO: error handling
-                exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
-            }
-        });
-        fs_ext.mkdirp(exports.submittedHomeworkPath, function (err) {
-            if (err) {
-                // TODO: error handling
-                exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
-            }
-        });
-        fs_ext.mkdirp(logPath, function (err) {
-            if (err) {
-                // TODO: error handling
-                console.error(util.inspect(err, { showHidden: false, depth: 1 }));
-            }
-        });
+        for (var _i = 0, requiredPath_1 = requiredPath; _i < requiredPath_1.length; _i++) {
+            var path_1 = requiredPath_1[_i];
+            console.log('creating ' + path_1);
+            fs_ext.mkdirp(path_1, function (err) {
+                if (err) {
+                    // TODO: error handling
+                    exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
+                }
+            });
+        }
     };
     return Server;
 }());

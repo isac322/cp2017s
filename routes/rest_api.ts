@@ -5,7 +5,10 @@ import * as fs_ext from "fs-extra";
 import * as iconv from "iconv-lite";
 import {createConnection, escape, IConnection, IError} from "mysql";
 import * as path from "path";
-import {docker, exerciseSetPath, logger, tempPath} from "../app";
+import {
+	docker, exerciseSetPath, logger, submittedExerciseOriginalPath, submittedExercisePath, submittedHomeworkPath,
+	tempPath
+} from "../app";
 import * as util from "util";
 import charsetDetector = require('detect-character-encoding');
 
@@ -273,7 +276,7 @@ export function uploadAttach(req: Request, res: Response) {
 			logger.debug('[uploadAttach:insert into submit_log]');
 			logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
 
-			file.mv(path.join('media', 'homework', hashedName), (err) => {
+			file.mv(path.join(submittedHomeworkPath, hashedName), (err) => {
 				if (err) {
 					// FIXME: error handling
 					logger.error('[rest_api::uploadAttach::file_move] : ');
@@ -332,15 +335,28 @@ export function runExercise(req: Request, res: Response) {
 
 	const hash = crypto.createHash('sha512');
 	const file = req.files.attachment;
-	let fileContent: Buffer | string = file.data;
 	const attachId = req.params.attachId;
 
 	const studentId = req.session.studentId;
 
-	const encodingInfo: { encoding: string, confidence: number } = charsetDetector(fileContent);
-
+	const encodingInfo: { encoding: string, confidence: number } = charsetDetector(file.data);
 	logger.debug(util.inspect(encodingInfo, {showHidden: false, depth: 1}));
 
+
+	const hashedOriginal = crypto.createHash('sha512').update(file.data).digest('hex');
+
+	// backup original file
+	fs.writeFile(path.join(submittedExerciseOriginalPath, hashedOriginal), file.data, {mode: 0o600},
+		(err: NodeJS.ErrnoException) => {
+			if (err) {
+				// FIXME: error handling
+				logger.error('[rest_api::runExercise::writeOriginalFile] : ');
+				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+			}
+		});
+
+
+	let fileContent: string;
 	if (encodingInfo.encoding == 'UTF-8') {
 		fileContent = iconv.decode(file.data, encodingInfo.encoding);
 	}
@@ -351,12 +367,11 @@ export function runExercise(req: Request, res: Response) {
 	const hashedName = hash.update(fileContent).digest('hex');
 
 
-	fs.writeFile(path.join('media', 'exercise', hashedName), fileContent, {mode: 0o600}, (err: NodeJS.ErrnoException) => {
+	fs.writeFile(path.join(submittedExercisePath, hashedName), fileContent, {mode: 0o600}, (err: NodeJS.ErrnoException) => {
 		if (err) {
 			// FIXME: error handling
 			logger.error('[rest_api::runExercise::writeFile] : ');
 			logger.error(util.inspect(err, {showHidden: false, depth: null}));
-			res.sendStatus(500);
 		}
 	});
 
@@ -400,8 +415,8 @@ export function runExercise(req: Request, res: Response) {
 
 
 			dbClient.query(
-				'INSERT INTO exercise_log (student_id, attachment_id, email, file_name) VALUE (?, ?, ?, ?);',
-				[req.session.studentId, attachId, req.session.email, hashedName],
+				'INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);',
+				[req.session.studentId, attachId, req.session.email, hashedName, hashedOriginal],
 				(err: IError, insertResult) => {
 					if (err) {
 						// FIXME: error handling
