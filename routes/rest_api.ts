@@ -479,7 +479,6 @@ export function runExercise(req: Request, res: Response) {
 									// FIXME: error handling
 									logger.error('[rest_api::runExercise::temp_remove] : ');
 									logger.error(util.inspect(err, {showHidden: false, depth: null}));
-									res.sendStatus(500);
 								}
 							});
 
@@ -502,7 +501,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 			fs.readFile(resultFile, 'UTF-8', (err: NodeJS.ErrnoException, data: Buffer) => {
 				const result: {
 					isMatched: boolean, errorLog?: string, returnCode?: number,
-					unmatchedIndex?: number, unmatchedOutput?: string
+					inputIndex?: number, userOutput?: string
 				} = JSON.parse(data.toString());
 
 				// remove output temporary folder
@@ -550,12 +549,24 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 
 				// or if runtime exceptions occur
 				else if ('returnCode' in result) {
+					// timeout
 					if (result.returnCode == 124) {
-						res.sendStatus(408);
+						fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8',
+							(err: NodeJS.ErrnoException, data: Buffer) => {
+								if (err) {
+									// FIXME: error handling
+									logger.error('[rest_api::runExercise::read_file::read_file:timeout] : ');
+									logger.error(util.inspect(err, {showHidden: false, depth: null}));
+									res.sendStatus(500);
+									return;
+								}
+
+								res.status(408).json({input: data.toString()});
+							});
 
 						dbClient.query(
-							'INSERT INTO exercise_result (log_id, type, return_code, runtime_error) VALUE (?, ?, ?, ?);',
-							[logId, 3, result.returnCode, result.errorLog],
+							'INSERT INTO exercise_result (log_id, type, return_code, unmatched_index) VALUE (?, ?, ?, ?);',
+							[logId, 3, result.returnCode, result.inputIndex],
 							(err) => {
 								if (err) {
 									// FIXME: error handling
@@ -564,15 +575,28 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 								}
 							});
 					}
+					// runtime error
 					else {
-						res.status(412).json({
-							errorLog: result.errorLog,
-							returnCode: result.returnCode
-						});
+						fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8',
+							(err: NodeJS.ErrnoException, data: Buffer) => {
+								if (err) {
+									// FIXME: error handling
+									logger.error('[rest_api::runExercise::read_file::read_file:runtimeError] : ');
+									logger.error(util.inspect(err, {showHidden: false, depth: null}));
+									res.sendStatus(500);
+									return;
+								}
+
+								res.status(412).json({
+									input: data.toString(),
+									errorLog: result.errorLog,
+									returnCode: result.returnCode
+								});
+							});
 
 						dbClient.query(
-							'INSERT INTO exercise_result (log_id, type, return_code, runtime_error) VALUE (?, ?, ?, ?);',
-							[logId, 4, result.returnCode, result.errorLog],
+							'INSERT INTO exercise_result (log_id, type, return_code, runtime_error, unmatched_index) VALUE (?, ?, ?, ?, ?);',
+							[logId, 4, result.returnCode, result.errorLog, result.inputIndex],
 							(err) => {
 								if (err) {
 									// FIXME: error handling
@@ -585,7 +609,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 
 				// or it was incorrect
 				else {
-					fs.readFile(path.join(answerPath, result.unmatchedIndex + '.out'), 'UTF-8',
+					fs.readFile(path.join(answerPath, result.inputIndex + '.out'), 'UTF-8',
 						(err: NodeJS.ErrnoException, data: Buffer) => {
 							if (err) {
 								// FIXME: error handling
@@ -597,7 +621,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 
 							const answerOutput = data.toString();
 
-							fs.readFile(path.join(inputPath, result.unmatchedIndex + '.in'), 'UTF-8',
+							fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8',
 								(err: NodeJS.ErrnoException, data: Buffer) => {
 									if (err) {
 										// FIXME: error handling
@@ -608,7 +632,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 									}
 
 									res.status(406).json({
-										unmatchedOutput: result.unmatchedOutput,
+										userOutput: result.userOutput,
 										answerOutput: answerOutput,
 										input: data.toString()
 									});
@@ -617,7 +641,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 
 					dbClient.query(
 						'INSERT INTO exercise_result (log_id, type, unmatched_index, unmatched_output, runtime_error) VALUE (?, ?, ?, ?, ?);',
-						[logId, 1, result.unmatchedIndex, result.unmatchedOutput, result.errorLog],
+						[logId, 1, result.inputIndex, result.userOutput, result.errorLog],
 						(err) => {
 							if (err) {
 								// FIXME: error handling
@@ -629,24 +653,14 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 			});
 		}
 
-		// or it can be compile error or internal server error
+		// or it can be compile error or run command error or internal server error
 		else {
-			const compileErrorFile = path.join(outputPath, 'compile_error.log');
+			const errorLogFile = path.join(outputPath, 'error.log');
 
-			// remove output temporary folder
-			fs_ext.remove(outputPath, (err: Error) => {
-				if (err) {
-					// FIXME: error handling
-					logger.error('[rest_api::runExercise::remove_file] : ');
-					logger.error(util.inspect(err, {showHidden: false, depth: null}));
-					res.sendStatus(500);
-				}
-			});
-
-			fs.exists(compileErrorFile, (exists: boolean) => {
-				// compile error
+			fs.exists(errorLogFile, (exists: boolean) => {
+				// script error
 				if (exists) {
-					fs.readFile(compileErrorFile, (err: NodeJS.ErrnoException, data: Buffer) => {
+					fs.readFile(errorLogFile, (err: NodeJS.ErrnoException, data: Buffer) => {
 						if (err) {
 							// FIXME: error handling
 							logger.error('[rest_api::runExercise::read_file] : ');
@@ -655,32 +669,86 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 							return;
 						}
 
-						const errorStr = data.toString();
+						// remove output temporary folder
+						fs_ext.remove(outputPath, (err: Error) => {
+							if (err) {
+								// FIXME: error handling
+								logger.error('[rest_api::runExercise::remove_file] : ');
+								logger.error(util.inspect(err, {showHidden: false, depth: null}));
+							}
+						});
 
-						res.status(400).json({errorMsg: errorStr});
+
+						const errorStr = data.toString('UTF-8');
+
+						console.log(errorStr);
+
+						res.status(417).json({errorMsg: errorStr});
 
 
 						dbClient.query(
-							'INSERT INTO exercise_result(log_id, type, compile_error) VALUE(?,?,?);',
-							[logId, 2, errorStr],
+							'INSERT INTO exercise_result(log_id, type, script_error) VALUE(?, ?, ?);',
+							[logId, 5, errorStr],
 							(err) => {
 								if (err) {
 									// FIXME: error handling
-									logger.error('[rest_api::runExercise::insert_compile_error] : ');
+									logger.error('[rest_api::runExercise::insert_script_error] : ');
+									logger.error(util.inspect(err, {showHidden: false, depth: null}));
+								}
+							});
+					});
+				}
+				else {
+					const compileErrorFile = path.join(outputPath, 'compile_error.log');
+
+					fs.exists(compileErrorFile, (exists: boolean) => {
+						// compile error
+						if (exists) {
+							fs.readFile(compileErrorFile, (err: NodeJS.ErrnoException, data: Buffer) => {
+								if (err) {
+									// FIXME: error handling
+									logger.error('[rest_api::runExercise::read_file] : ');
 									logger.error(util.inspect(err, {showHidden: false, depth: null}));
 									res.sendStatus(500);
+									return;
 								}
-							})
-					})
-				}
 
-				// something else
-				else {
-					// FIXME: error handling
-					logger.error('[rest_api::runExercise::something_else]');
-					res.sendStatus(500);
+								// remove output temporary folder
+								fs_ext.remove(outputPath, (err: Error) => {
+									if (err) {
+										// FIXME: error handling
+										logger.error('[rest_api::runExercise::remove_file] : ');
+										logger.error(util.inspect(err, {showHidden: false, depth: null}));
+									}
+								});
+
+								const errorStr = data.toString('UTF-8');
+
+								res.status(400).json({errorMsg: errorStr});
+
+
+								dbClient.query(
+									'INSERT INTO exercise_result(log_id, type, compile_error) VALUE(?,?,?);',
+									[logId, 2, errorStr],
+									(err) => {
+										if (err) {
+											// FIXME: error handling
+											logger.error('[rest_api::runExercise::insert_compile_error] : ');
+											logger.error(util.inspect(err, {showHidden: false, depth: null}));
+										}
+									});
+							})
+						}
+
+						// something else
+						else {
+							// FIXME: error handling
+							logger.error('[rest_api::runExercise::something_else]');
+							res.sendStatus(500);
+						}
+					});
 				}
-			})
+			});
 		}
 	});
 }

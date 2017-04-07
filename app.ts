@@ -11,15 +11,17 @@ import {ExerciseRoute} from "./routes/exercise";
 import {HWRoute} from "./routes/homework";
 import {IndexRoute} from "./routes/index";
 import {createHW, hwNameChecker, register, runExercise, signIn, signOut, uploadAttach} from "./routes/rest_api";
-import fileUpload = require('express-fileupload')
 import {ProfileRoute} from "./routes/profile";
+import * as fs from "fs";
+import fileUpload = require('express-fileupload')
 
 require('winston-daily-rotate-file');
 
 const Docker = require("dockerode");
 
 
-export const docker = new Docker({host: 'http://localhost', port: 2375});
+const dockerConfig = JSON.parse(fs.readFileSync('config/docker.json', 'utf-8'));
+export const docker = new Docker(dockerConfig);
 
 export const tempPath = path.join(__dirname, 'media', 'tmp');
 export const exerciseSetPath = path.join(__dirname, 'media', 'test_set', 'exercise');
@@ -193,7 +195,6 @@ export class Server {
 	 */
 	public createDir() {
 		for (const path of requiredPath) {
-			console.log('creating ' + path);
 			fs_ext.mkdirp(path, (err: Error) => {
 				if (err) {
 					// TODO: error handling

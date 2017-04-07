@@ -5,6 +5,7 @@ CREATE TABLE exercise_result (
 	return_code      INT                NOT NULL,
 	runtime_error    TEXT,
 	compile_error    TEXT,
+	script_error     TEXT,
 	unmatched_index  INT UNSIGNED,
 	unmatched_output TEXT,
 	created          TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP,

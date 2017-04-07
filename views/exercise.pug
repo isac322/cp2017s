@@ -52,8 +52,6 @@ block content
 								| Submit
 								| #[span.glyphicon.glyphicon-menu-down]
 
-				- const present = Date.now();
-
 				ul.list-group.collapse(id='collapseExample' + exercise.id)
 					each attachment in exercise.attachments
 						form.upload-form(action='/exercise/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
@@ -96,32 +94,43 @@ block content
 					button.close(type='button', data-dismiss='modal', aria-label='Close')
 						span(aria-hidden='true') ×
 					h2#resultModalLabel.modal-title
-				.modal-body
+				.modal-body.row
 					#correctBody
-						h3 Correct!
+						.col-xs-12
+							h3 Correct!
 					#incorrectBody
-						label(for='inputBox') Input
-						pre#inputBox.col-xs-12
-						.row
-							.col-xs-12.col-md-6
-								label(for='outputBox') Your output
-								pre#outputBox
-							.col-xs-12.col-md-6
-								label(for='answerBox') Answer output
-								pre#answerBox
-					#compileErrorBody
-						pre#compileErrorBox
-					#runtimeErrorBody
-						.row
-							.col-xs-12
-								label(for='runtimeErrorSignal') Error signal
-								pre#runtimeErrorSignal.col-xs-12
+						.col-xs-12
+							label(for='inputBox') Input
+							pre#inputBox
 
-							.col-xs-12
-								label(for='runtimeErrorBox') Error log
-								pre#runtimeErrorBox.col-xs-12
+						.col-xs-12.col-md-6
+							label(for='outputBox') Your output
+							pre#outputBox
+						.col-xs-12.col-md-6
+							label(for='answerBox') Answer output
+							pre#answerBox
+					#compileErrorBody
+						.col-xs-12
+							pre#compileErrorBox
+					#runtimeErrorBody
+						.col-xs-12
+							label(for='runtimeErrorSignal') Return value of #[code main()]
+							pre#runtimeErrorSignal
+
+						.col-xs-12
+							label(for='runtimeErrorBox') Error log
+							pre#runtimeErrorBox
+
+						.col-xs-12
+							label(for='runtimeErrorInputBox') Input
+							pre#runtimeErrorInputBox
+					#timeoutBody
+						.col-xs-
+							label(for='timeoutInputBox') Input
+							pre#timeoutInputBox
 					#errorBody
-						h4#errorBox
+						.col-xs-12
+							h3#errorBox
 				.modal-footer
 					button.btn.btn-default(type='button', data-dismiss='modal') Close
 

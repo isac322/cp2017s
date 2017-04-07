@@ -13,11 +13,13 @@ var exercise_1 = require("./routes/exercise");
 var homework_1 = require("./routes/homework");
 var index_1 = require("./routes/index");
 var rest_api_1 = require("./routes/rest_api");
-var fileUpload = require("express-fileupload");
 var profile_1 = require("./routes/profile");
+var fs = require("fs");
+var fileUpload = require("express-fileupload");
 require('winston-daily-rotate-file');
 var Docker = require("dockerode");
-exports.docker = new Docker({ host: 'http://localhost', port: 2375 });
+var dockerConfig = JSON.parse(fs.readFileSync('config/docker.json', 'utf-8'));
+exports.docker = new Docker(dockerConfig);
 exports.tempPath = path.join(__dirname, 'media', 'tmp');
 exports.exerciseSetPath = path.join(__dirname, 'media', 'test_set', 'exercise');
 exports.submittedExercisePath = path.join(__dirname, 'media', 'exercise');
@@ -161,7 +163,6 @@ var Server = (function () {
     Server.prototype.createDir = function () {
         for (var _i = 0, requiredPath_1 = requiredPath; _i < requiredPath_1.length; _i++) {
             var path_1 = requiredPath_1[_i];
-            console.log('creating ' + path_1);
             fs_ext.mkdirp(path_1, function (err) {
                 if (err) {
                     // TODO: error handling

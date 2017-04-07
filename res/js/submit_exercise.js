@@ -12,6 +12,7 @@ const $correctBody = $('#correctBody');
 const $incorrectBody = $('#incorrectBody');
 const $runtimeErrorBody = $('#runtimeErrorBody');
 const $compileErrorBody = $('#compileErrorBody');
+const $timeoutBody = $('#timeoutBody');
 const $errorBody = $('#errorBody');
 
 const $inputBox = $('#inputBox');
@@ -21,6 +22,8 @@ const $answerBox = $('#answerBox');
 const $compileErrorBox = $('#compileErrorBox');
 const $runtimeErrorSignal = $('#runtimeErrorSignal');
 const $runtimeErrorBox = $('#runtimeErrorBox');
+const $runtimeErrorInputBox = $('#runtimeErrorInputBox');
+const $timeoutInputBox = $('#timeoutInputBox');
 const $errorBox = $('#errorBox');
 
 
@@ -58,12 +61,13 @@ $('.upload-form').validator().on('submit', function (e) {
 						$incorrectBody.hide();
 						$runtimeErrorBody.hide();
 						$compileErrorBody.hide();
+						$timeoutBody.hide();
 						$errorBody.hide();
 
 						$resultModalHeader.removeClass('text-danger');
 						$resultModalHeader.addClass('text-success');
 
-						$resultModalHeader.html('<i class="fa fa-check-circle" aria-hidden="true"></i> Correct!');
+						$resultModalHeader.html('<i class="fa fa-check-circle" aria-hidden="true"></i> Correct !');
 						$resultModal.modal();
 
 
@@ -73,9 +77,7 @@ $('.upload-form').validator().on('submit', function (e) {
 						form.reset();
 						$form.validator('validate');
 
-						if (!$listItem.hasClass('list-group-item-success')) {
-							$listItem.addClass('list-group-item-success');
-						}
+						$listItem.addClass('list-group-item-success');
 						// TODO: link success info
 					},
 					// not sign in yet
@@ -90,16 +92,17 @@ $('.upload-form').validator().on('submit', function (e) {
 						$incorrectBody.show();
 						$runtimeErrorBody.hide();
 						$compileErrorBody.hide();
+						$timeoutBody.hide();
 						$errorBody.hide();
 
 						$inputBox.text(res.input);
-						$outputBox.text(res.unmatchedOutput);
+						$outputBox.text(res.userOutput);
 						$answerBox.text(res.answerOutput);
 
 						$resultModalHeader.removeClass('text-success');
 						$resultModalHeader.addClass('text-danger');
 
-						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Incorrect!');
+						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Incorrect !');
 						$resultModal.modal();
 
 
@@ -110,19 +113,22 @@ $('.upload-form').validator().on('submit', function (e) {
 						$form.validator('validate');
 					},
 					// timeout
-					408:function () {
+					408: function (jqXHR) {
+						const res = jqXHR.responseJSON;
+
 						$correctBody.hide();
 						$incorrectBody.hide();
 						$runtimeErrorBody.hide();
 						$compileErrorBody.hide();
-						$errorBody.show();
+						$timeoutBody.show();
+						$errorBody.hide();
 
-						$errorBox.html("Timeout.");
+						$timeoutInputBox.text(res.input);
 
 						$resultModalHeader.removeClass('text-success');
 						$resultModalHeader.addClass('text-danger');
 
-						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Timeout!');
+						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Timeout !');
 						$resultModal.modal();
 
 
@@ -140,16 +146,18 @@ $('.upload-form').validator().on('submit', function (e) {
 						$incorrectBody.hide();
 						$runtimeErrorBody.show();
 						$compileErrorBody.hide();
+						$timeoutBody.hide();
 						$errorBody.hide();
 
 
 						$runtimeErrorSignal.text(res.returnCode);
 						$runtimeErrorBox.text(res.errorLog);
+						$runtimeErrorInputBox.text(res.input);
 
 						$resultModalHeader.removeClass('text-success');
 						$resultModalHeader.addClass('text-danger');
 
-						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Runtime Error!');
+						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Runtime Error !');
 						$resultModal.modal();
 
 
@@ -167,6 +175,7 @@ $('.upload-form').validator().on('submit', function (e) {
 						$incorrectBody.hide();
 						$runtimeErrorBody.hide();
 						$compileErrorBody.show();
+						$timeoutBody.hide();
 						$errorBody.hide();
 
 						$compileErrorBox.text(res.errorMsg);
@@ -175,7 +184,34 @@ $('.upload-form').validator().on('submit', function (e) {
 						$resultModalHeader.removeClass('text-success');
 						$resultModalHeader.addClass('text-danger');
 
-						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Compile Error!');
+						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Compile Error !');
+						$resultModal.modal();
+
+
+						$sendBtn.button('reset');
+						$selectBtn.removeClass('disabled');
+
+						form.reset();
+						$form.validator('validate');
+					},
+					// compile error
+					417: function (jqXHR) {
+						const res = jqXHR.responseJSON;
+
+						$correctBody.hide();
+						$incorrectBody.hide();
+						$runtimeErrorBody.hide();
+						$compileErrorBody.show();
+						$timeoutBody.hide();
+						$errorBody.hide();
+
+						$compileErrorBox.text(res.errorMsg.replace('/\n/g', '<br>'));
+
+
+						$resultModalHeader.removeClass('text-success');
+						$resultModalHeader.addClass('text-danger');
+
+						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Fail to run !');
 						$resultModal.modal();
 
 
@@ -191,6 +227,7 @@ $('.upload-form').validator().on('submit', function (e) {
 						$incorrectBody.hide();
 						$runtimeErrorBody.hide();
 						$compileErrorBody.hide();
+						$timeoutBody.hide();
 						$errorBody.show();
 
 						$errorBox.html("It looks like there's an error in your code.<br>" +
@@ -202,7 +239,7 @@ $('.upload-form').validator().on('submit', function (e) {
 						$resultModalHeader.removeClass('text-success');
 						$resultModalHeader.addClass('text-danger');
 
-						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Something\'s wrong!');
+						$resultModalHeader.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Something\'s wrong !');
 						$resultModal.modal();
 
 
