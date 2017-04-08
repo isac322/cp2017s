@@ -343,17 +343,7 @@ export function runExercise(req: Request, res: Response) {
 	logger.debug(util.inspect(encodingInfo, {showHidden: false, depth: 1}));
 
 
-	const hashedOriginal = crypto.createHash('sha512').update(file.data).digest('hex');
-
-	// backup original file
-	fs.writeFile(path.join(submittedExerciseOriginalPath, hashedOriginal), file.data, {mode: 0o600},
-		(err: NodeJS.ErrnoException) => {
-			if (err) {
-				// FIXME: error handling
-				logger.error('[rest_api::runExercise::writeOriginalFile] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
-			}
-		});
+	let hashedOriginal = crypto.createHash('sha512').update(file.data).digest('hex');
 
 
 	let fileContent: string;
@@ -365,6 +355,22 @@ export function runExercise(req: Request, res: Response) {
 	}
 
 	const hashedName = hash.update(fileContent).digest('hex');
+
+
+	if (hashedName == hashedOriginal) {
+		hashedOriginal = null;
+	}
+	else {
+		// backup original file
+		fs.writeFile(path.join(submittedExerciseOriginalPath, hashedOriginal), file.data, {mode: 0o600},
+			(err: NodeJS.ErrnoException) => {
+				if (err) {
+					// FIXME: error handling
+					logger.error('[rest_api::runExercise::writeOriginalFile] : ');
+					logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				}
+			});
+	}
 
 
 	fs.writeFile(path.join(submittedExercisePath, hashedName), fileContent, {mode: 0o600}, (err: NodeJS.ErrnoException) => {
@@ -405,7 +411,7 @@ export function runExercise(req: Request, res: Response) {
 				JSON.stringify({
 					sourceName: searchResult[0].name,
 					extension: searchResult[0].extension,
-					test_set: searchResult[0].test_set_size
+					testSetSize: searchResult[0].test_set_size
 				}),
 				{mode: 0o666}
 			);

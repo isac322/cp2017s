@@ -57,7 +57,7 @@ def main():
     else:
         with open(error_log, encoding='UTF-8') as fp:
             log = fp.readlines()
-            if return_code != 124 and len(log) > 0:
+            if return_code > 128 and len(log) > 0:
                 log = log[:-1]
 
             if return_code - 128 in SIGNALS:

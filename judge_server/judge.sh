@@ -2,7 +2,7 @@
 
 name=`jq -r .sourceName ./source/config.json`
 extension=`jq -r .extension ./source/config.json`
-inputNum=`jq -r .test_set ./source/config.json`
+inputNum=`jq -r .testSetSize ./source/config.json`
 
 mkdir tmp
 
@@ -34,7 +34,7 @@ elif [ ${extension} = 'java' ]; then
 	cd ./source
 	ret=`file ${name}`
 	if test "${ret#*text}" != "$ret"; then
-		javac ${name} -d ../ 2> ../tmp/compile_error.log
+		javac -encoding UTF-8 ${name} -d ../ 2> ../tmp/compile_error.log
 	else
 		echo "It's not a source code" > ../tmp/error.log
 	fi
