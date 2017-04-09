@@ -19,10 +19,10 @@ export class IndexRoute extends BaseRoute {
 	 */
 	public static create(router: Router) {
 		//log
-		logger.debug("[IndexRoute::create] Creating index route.");
+		logger.debug('[IndexRoute::create] Creating index route.');
 
 		//add home page route
-		router.get("/", (req: Request, res: Response, next: NextFunction) => {
+		router.get('/', (req: Request, res: Response, next: NextFunction) => {
 			new IndexRoute().index(req, res, next);
 		});
 	}
@@ -51,6 +51,6 @@ export class IndexRoute extends BaseRoute {
 		this.title = 'SNU Computer Programming';
 
 		//render template
-		this.render(req, res, "index");
+		this.render(req, res, 'index');
 	}
 }

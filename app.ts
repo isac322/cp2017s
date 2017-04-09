@@ -14,6 +14,7 @@ import {createHW, hwNameChecker, register, runExercise, signIn, signOut, uploadA
 import {ProfileRoute} from "./routes/profile";
 import * as fs from "fs";
 import fileUpload = require('express-fileupload')
+import {HistoryRoute} from "./routes/history";
 
 require('winston-daily-rotate-file');
 
@@ -139,11 +140,13 @@ export class Server {
 
 		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap-validator', 'dist')));
 		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'js')));
-		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist', '')));
-		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery-form', 'dist', '')));
+		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist')));
+		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery-form', 'dist')));
+		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap-select', 'dist', 'js')));
 		this.app.use('/js', express.static(path.join(__dirname, 'res', 'js', '')));
 		this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'css')));
 		this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'font-awesome', 'css')));
+		this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'bootstrap-select', 'dist', 'css')));
 		this.app.use('/css', express.static(path.join(__dirname, 'res', 'css')));
 		this.app.use('/fonts', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'fonts')));
 		this.app.use('/fonts', express.static(path.join(__dirname, 'node_modules', 'font-awesome', 'fonts')));
@@ -185,6 +188,7 @@ export class Server {
 		HWRoute.create(router);
 		ExerciseRoute.create(router);
 		ProfileRoute.create(router);
+		HistoryRoute.create(router);
 
 		this.app.use(router);
 	}

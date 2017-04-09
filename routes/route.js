@@ -24,7 +24,7 @@ var BaseRoute = (function () {
      */
     function BaseRoute() {
         //initialize variables
-        this.title = "SNU Computer Programming";
+        this.title = 'SNU Computer Programming';
     }
     /**
      * Render a page.
@@ -38,7 +38,7 @@ var BaseRoute = (function () {
      */
     BaseRoute.prototype.render = function (req, res, view) {
         //add constants
-        res.locals.BASE_URL = "/";
+        res.locals.BASE_URL = '/';
         // add variables
         res.locals.title = this.title;
         res.locals.navPos = this.navPos;

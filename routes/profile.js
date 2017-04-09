@@ -39,7 +39,7 @@ var ProfileRoute = (function (_super) {
      */
     ProfileRoute.create = function (router) {
         //log
-        app_1.logger.debug("[ProfileRoute::create] Creating profile route.");
+        app_1.logger.debug('[ProfileRoute::create] Creating profile route.');
         //add home page route
         router.get('/profile', function (req, res, next) {
             new ProfileRoute().profile(req, res, next);
@@ -60,7 +60,7 @@ var ProfileRoute = (function (_super) {
             return res.redirect('/');
         }
         //render template
-        this.render(req, res, "profile");
+        this.render(req, res, 'profile');
     };
     return ProfileRoute;
 }(route_1.BaseRoute));

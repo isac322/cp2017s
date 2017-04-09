@@ -47,10 +47,10 @@ var HWRoute = (function (_super) {
      */
     HWRoute.create = function (router) {
         //log
-        app_1.logger.debug("[HWRoute::create] Creating homework route.");
+        app_1.logger.debug('[HWRoute::create] Creating homework route.');
         var hwRouter = new HWRoute();
         //add homework page route
-        router.get("/homework", function (req, res, next) {
+        router.get('/homework', function (req, res, next) {
             hwRouter.homework(req, res, next);
         });
         router.get('/homework/add', function (req, res, next) {

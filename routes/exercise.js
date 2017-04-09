@@ -42,9 +42,9 @@ var ExerciseRoute = (function (_super) {
      */
     ExerciseRoute.create = function (router) {
         //log
-        app_1.logger.debug("[ExerciseRoute::create] Creating exercise route.");
+        app_1.logger.debug('[ExerciseRoute::create] Creating exercise route.');
         //add exercise page route
-        router.get("/exercise", function (req, res, next) {
+        router.get('/exercise', function (req, res, next) {
             new ExerciseRoute().exercise(req, res, next);
         });
     };
@@ -107,7 +107,7 @@ var ExerciseRoute = (function (_super) {
             app_1.logger.debug(util.inspect(exerciseList, { showHidden: false, depth: 1 }));
             res.locals.exerciseList = exerciseList;
             //render template
-            return _this.render(req, res, "exercise");
+            return _this.render(req, res, 'exercise');
         });
     };
     return ExerciseRoute;

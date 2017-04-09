@@ -16,6 +16,7 @@ var rest_api_1 = require("./routes/rest_api");
 var profile_1 = require("./routes/profile");
 var fs = require("fs");
 var fileUpload = require("express-fileupload");
+var history_1 = require("./routes/history");
 require('winston-daily-rotate-file');
 var Docker = require("dockerode");
 var dockerConfig = JSON.parse(fs.readFileSync('config/docker.json', 'utf-8'));
@@ -117,11 +118,13 @@ var Server = (function () {
         this.app.use(cookieParser());
         this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap-validator', 'dist')));
         this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'js')));
-        this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist', '')));
-        this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery-form', 'dist', '')));
+        this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist')));
+        this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery-form', 'dist')));
+        this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap-select', 'dist', 'js')));
         this.app.use('/js', express.static(path.join(__dirname, 'res', 'js', '')));
         this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'css')));
         this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'font-awesome', 'css')));
+        this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'bootstrap-select', 'dist', 'css')));
         this.app.use('/css', express.static(path.join(__dirname, 'res', 'css')));
         this.app.use('/fonts', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'fonts')));
         this.app.use('/fonts', express.static(path.join(__dirname, 'node_modules', 'font-awesome', 'fonts')));
@@ -155,6 +158,7 @@ var Server = (function () {
         homework_1.HWRoute.create(router);
         exercise_1.ExerciseRoute.create(router);
         profile_1.ProfileRoute.create(router);
+        history_1.HistoryRoute.create(router);
         this.app.use(router);
     };
     /**

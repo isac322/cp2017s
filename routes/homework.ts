@@ -52,12 +52,12 @@ export class HWRoute extends BaseRoute {
 	 */
 	public static create(router: Router) {
 		//log
-		logger.debug("[HWRoute::create] Creating homework route.");
+		logger.debug('[HWRoute::create] Creating homework route.');
 
 		const hwRouter = new HWRoute();
 
 		//add homework page route
-		router.get("/homework", (req: Request, res: Response, next: NextFunction) => {
+		router.get('/homework', (req: Request, res: Response, next: NextFunction) => {
 			hwRouter.homework(req, res, next);
 		});
 

@@ -71,6 +71,8 @@ html
 						if signIn
 							li(class=navPos == 3 ? 'active' : undefined)
 								a(href='/exercise') Exercise
+							li(class=navPos == 4 ? 'active' : undefined)
+								a(href='/history') History
 
 					ul.nav.navbar-nav.navbar-right
 						li
@@ -99,16 +101,16 @@ html
 
 		footer.footer
 			.container
-				address.text-muted.col-xs-12.col-sm-3.col-lg-2
+				address.text-muted.col-xs-12.col-sm-3
 					strong Assistants
 					each assistant in assistants
 						br
 						a(href='mailto:' + assistant)=assistant
-				address.text-muted.col-xs-12.col-sm-3.col-lg-2
+				address.text-muted.col-xs-12.col-sm-3
 					strong DSCLAB
 					br
 					a(target='_blank', href='http://dcslab.snu.ac.kr/') http://dcslab.snu.ac.kr/
-				address.text-muted.col-xs-12.col-sm-3.col-md-3.col-lg-2
+				address.text-muted.col-xs-12.col-sm-3
 					strong Web Manager
 					br
 					a(href='mailto:' + webManager)=webManager

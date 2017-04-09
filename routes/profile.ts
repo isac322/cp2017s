@@ -19,7 +19,7 @@ export class ProfileRoute extends BaseRoute {
 	 */
 	public static create(router: Router) {
 		//log
-		logger.debug("[ProfileRoute::create] Creating profile route.");
+		logger.debug('[ProfileRoute::create] Creating profile route.');
 
 		//add home page route
 		router.get('/profile', (req: Request, res: Response, next: NextFunction) => {
@@ -56,6 +56,6 @@ export class ProfileRoute extends BaseRoute {
 
 
 		//render template
-		this.render(req, res, "profile");
+		this.render(req, res, 'profile');
 	}
 }

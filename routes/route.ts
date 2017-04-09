@@ -29,7 +29,7 @@ export class BaseRoute {
 	 */
 	constructor() {
 		//initialize variables
-		this.title = "SNU Computer Programming";
+		this.title = 'SNU Computer Programming';
 	}
 
 	/**
@@ -44,7 +44,7 @@ export class BaseRoute {
 	 */
 	public render(req: Request, res: Response, view: string) {
 		//add constants
-		res.locals.BASE_URL = "/";
+		res.locals.BASE_URL = '/';
 
 		// add variables
 		res.locals.title = this.title;

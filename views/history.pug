@@ -1,0 +1,95 @@
+extends layout
+
+block header
+	script(src='/js/bootstrap-select.min.js')
+	link(rel='stylesheet', href='/css/bootstrap-select.min.css')
+
+block content
+	.col-xs-12.page-header
+		h2.text-info
+			b Submission History
+
+	.row
+		.col-xs-12.col-sm-6.col-md-2.form-group
+			label(for='selectCategory') Category
+			select.form-control.selectpicker#selectCategory
+				option All
+				option Homework
+				option Exercise
+
+		.col-xs-12.col-sm-6.col-md-5.form-group
+			label(for='selectId')
+				| Problem ID
+				| #[small.text-muted (Multiple selection)]
+			select.form-control.selectpicker#selectId(multiple, title='All', data-selected-text-format='count > 3', data-size='10')
+				optgroup(label='Homework')
+					each file in homeworkList
+						option(title=file.fileName, value=file.fileName, data-subtext=file.fileName)=decodeURIComponent(file.homeworkName)
+
+				optgroup(label='Exercise')
+					each file in exerciseList
+						option(title=file.fileName, value=file.fileName, data-subtext=file.fileName)=decodeURIComponent(file.exerciseName)
+
+		.col-xs-12.col-sm-6.col-md-2.form-group
+			label(for='selectResult')
+				| Result
+				| #[small.text-muted (Multiple selection)]
+			select.form-control.selectpicker#selectResult(multiple, title='All', data-selected-text-format='count > 2')
+				option Correct
+				option Incorrect
+				option Timeout
+				option Compile Error
+				option Runtime Error
+				option Fail to run
+
+		.col-xs-12.col-sm-6.col-md-3.form-group
+			label(for='selectEmail')
+				| Email
+				| #[small.text-muted (Multiple selection)]
+			select.form-control.selectpicker#selectEmail(multiple, title='All')
+				each email in emailList
+					option(value=email.email)=email.email
+
+	if admin
+		.row
+			.col-xs-12.form-group
+				label(for='selectUser') User
+				select.form-control.selectpicker#selectUser(multiple, data-actions-box='true', data-live-search='true')
+					each user in userList
+						option(value=user.student_id, data-subtext=user.student_id)=decodeURIComponent(user.name)
+
+	.row
+		.col-xs-12
+			.table-responsive
+				table.table.table-bordered.table-striped.table-hover#resultTable
+					thead
+						tr
+							th.col-xs-1 ID
+							th.col-xs-1 Category
+							th File name
+							th.col-xs-2 Result
+							th Timestamp
+							th Email
+					tr
+						th(scope='row') 1
+						td test1
+						td test1
+						td Runtime Error
+						td test1
+						td test1
+					tr
+						th(scope='row') 2
+						td test2
+						td test2
+						td test2
+						td test2
+						td test2
+					tr
+						th(scope='row') 2543
+						td test3
+						td test3
+						td Compile Error
+						td test3
+						td test3
+
+	script(src='/js/submission_history.js')

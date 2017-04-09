@@ -36,30 +36,31 @@ block content
 			b Create Homework
 
 	form#create-hw(action='/homework', method='POST', data-toggle="validator", role='form')
-		// homework name
-		.col-xs-12.col-md-6
+		.form-horizontal
+			// homework name
 			.form-group.has-feedback
-				label.control-label(for='hw_name') Homework Name
-				input.form-control.input-lg#hw_name(type='text', placeholder='Name', name='name', data-remote='name', required)
-				span.glyphicon.form-control-feedback(aria-hidden='true')
+				label.control-label.col-xs-12.col-sm-2(for='hw_name') Homework Name
+				.col-xs-12.col-sm-10
+					input.form-control.input-lg#hw_name(type='text', placeholder='Name', name='name', data-remote='name', required)
+					span.glyphicon.form-control-feedback(aria-hidden='true')
 
-		// description pdf URL
-		.col-xs-12.col-md-6
+			// description pdf URL
 			.form-group.has-feedback
-				label.control-label(for='description_url') Description URL
-				input.form-control#description_url(type='url', placeholder='URL', name='description', required)
-				span.glyphicon.form-control-feedback(aria-hidden='true')
+				label.control-label.col-xs-12.col-sm-2(for='description_url') Description URL
+				.col-xs-12.col-sm-10
+					input.form-control#description_url(type='url', placeholder='URL', name='description', required)
+					span.glyphicon.form-control-feedback(aria-hidden='true')
 
-		// start and due dates
-		.col-xs-12.col-md-6
+			// start and due dates
 			.form-group.has-feedback
-				label.control-label(for='date_picker') Start and Due dates
-				.input-daterange.input-group#date_picker
-					input.date-input.form-control#start-date(type='text', placeholder='Start date', name='start', required)
-					span.input-group-addon to
-					input.date-input.form-control#due-date(type='text', placeholder='Due date', name='due', required)
-				span.glyphicon.form-control-feedback(aria-hidden='true')
-				.help-block#diff-date
+				label.control-label.col-xs-12.col-sm-2(for='date_picker') Start and Due dates
+				.col-xs-12.col-sm-10
+					.input-daterange.input-group#date_picker
+						input.date-input.form-control#start-date(type='text', placeholder='Start date', name='start', required)
+						span.input-group-addon to
+						input.date-input.form-control#due-date(type='text', placeholder='Due date', name='due', required)
+					span.glyphicon.form-control-feedback(aria-hidden='true')
+					.help-block#diff-date
 
 				script(src='/js/date_picker_init.js')
 

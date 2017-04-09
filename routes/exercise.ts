@@ -23,10 +23,10 @@ export class ExerciseRoute extends BaseRoute {
 	 */
 	public static create(router: Router) {
 		//log
-		logger.debug("[ExerciseRoute::create] Creating exercise route.");
+		logger.debug('[ExerciseRoute::create] Creating exercise route.');
 
 		//add exercise page route
-		router.get("/exercise", (req: Request, res: Response, next: NextFunction) => {
+		router.get('/exercise', (req: Request, res: Response, next: NextFunction) => {
 			new ExerciseRoute().exercise(req, res, next);
 		});
 	}
@@ -119,7 +119,7 @@ export class ExerciseRoute extends BaseRoute {
 				res.locals.exerciseList = exerciseList;
 
 				//render template
-				return this.render(req, res, "exercise");
+				return this.render(req, res, 'exercise');
 			}
 		);
 	}

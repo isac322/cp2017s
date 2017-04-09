@@ -39,9 +39,9 @@ var IndexRoute = (function (_super) {
      */
     IndexRoute.create = function (router) {
         //log
-        app_1.logger.debug("[IndexRoute::create] Creating index route.");
+        app_1.logger.debug('[IndexRoute::create] Creating index route.');
         //add home page route
-        router.get("/", function (req, res, next) {
+        router.get('/', function (req, res, next) {
             new IndexRoute().index(req, res, next);
         });
     };
@@ -57,7 +57,7 @@ var IndexRoute = (function (_super) {
     IndexRoute.prototype.index = function (req, res, next) {
         this.title = 'SNU Computer Programming';
         //render template
-        this.render(req, res, "index");
+        this.render(req, res, 'index');
     };
     return IndexRoute;
 }(route_1.BaseRoute));
