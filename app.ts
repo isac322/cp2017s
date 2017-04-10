@@ -10,7 +10,10 @@ import * as  winston from "winston";
 import {ExerciseRoute} from "./routes/exercise";
 import {HWRoute} from "./routes/homework";
 import {IndexRoute} from "./routes/index";
-import {createHW, hwNameChecker, register, runExercise, signIn, signOut, uploadAttach} from "./routes/rest_api";
+import {
+	createHW, historyList, hwNameChecker, register, runExercise, signIn, signOut,
+	uploadAttach
+} from "./routes/rest_api";
 import {ProfileRoute} from "./routes/profile";
 import * as fs from "fs";
 import fileUpload = require('express-fileupload')
@@ -110,6 +113,7 @@ export class Server {
 		this.app.post('/homework/:attachId', uploadAttach);
 		this.app.post('/exercise', runExercise);
 		this.app.post('/exercise/:attachId', runExercise);
+		this.app.get('/history/list', historyList);
 	}
 
 	/**

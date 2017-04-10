@@ -94,7 +94,7 @@ export class HistoryRoute extends BaseRoute {
 
 
 		dbClient.query(
-			'SELECT homework.name AS `homeworkName`, hw_config.name AS `fileName` ' +
+			'SELECT homework.name AS `homeworkName`, hw_config.name AS `fileName`, hw_config.id ' +
 			'FROM homework JOIN hw_config ON homework.homework_id = hw_config.homework_id;',
 			(err: IError, homeworkList) => {
 				if (err) {
@@ -109,7 +109,7 @@ export class HistoryRoute extends BaseRoute {
 
 
 				dbClient.query(
-					'SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName` ' +
+					'SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
 					'FROM exercise JOIN exercise_config ON exercise.id = exercise_config.exercise_id',
 					(err: IError, exerciseList) => {
 						if (err) {

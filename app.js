@@ -92,6 +92,7 @@ var Server = (function () {
         this.app.post('/homework/:attachId', rest_api_1.uploadAttach);
         this.app.post('/exercise', rest_api_1.runExercise);
         this.app.post('/exercise/:attachId', rest_api_1.runExercise);
+        this.app.get('/history/list', rest_api_1.historyList);
     };
     /**
      * Configure application

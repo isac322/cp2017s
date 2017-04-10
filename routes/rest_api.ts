@@ -6,7 +6,12 @@ import * as iconv from "iconv-lite";
 import {createConnection, escape, IConnection, IError} from "mysql";
 import * as path from "path";
 import {
-	docker, exerciseSetPath, logger, submittedExerciseOriginalPath, submittedExercisePath, submittedHomeworkPath,
+	docker,
+	exerciseSetPath,
+	logger,
+	submittedExerciseOriginalPath,
+	submittedExercisePath,
+	submittedHomeworkPath,
 	tempPath
 } from "../app";
 import * as util from "util";
@@ -757,4 +762,60 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 			});
 		}
 	});
+}
+
+
+/**
+ * Give history data.
+ *
+ * @method historyList
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+export function historyList(req: Request, res: Response) {
+	if (!req.session.signIn) {
+		return res.sendStatus(401);
+	}
+
+	console.log(req.query);
+
+	const query: {
+		hw: Array<string> | string,
+		ex: Array<string> | string,
+		r: Array<string> | string,
+		e: Array<string> | string,
+		u: Array<string> | string
+	} = req.query;
+
+	let queryStr = '';
+	if (query.ex) {
+		if (typeof query.ex === 'string') queryStr += ' AND attachment_id = ' + query.ex;
+		else queryStr += ' AND attachment_id IN ' + escape([query.ex]);
+	}
+	if (query.r) {
+		if (typeof query.r === 'string') queryStr += ' AND type = ' + query.r;
+		else queryStr += ' AND type IN ' + escape([query.r]);
+	}
+	if (query.e) {
+		if (typeof query.e === 'string') queryStr += ' AND email = ' + escape(query.e);
+		else queryStr += ' AND email IN ' + escape([query.e]);
+	}
+
+	dbClient.query(
+		'SELECT exercise_log.id, student_id, email, file_name, submitted, name, extension, type ' +
+		'FROM exercise_log ' +
+		'    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
+		'    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
+		'WHERE student_id=? ' + queryStr,
+		req.session.studentId,
+		(err: IError, result) => {
+			if (err) {
+				console.error(err);
+				return;
+			}
+
+			console.log(result);
+		});
+
+	return res.sendStatus(200);
 }

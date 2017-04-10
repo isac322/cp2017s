@@ -564,3 +564,49 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
         }
     });
 }
+/**
+ * Give history data.
+ *
+ * @method historyList
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+function historyList(req, res) {
+    if (!req.session.signIn) {
+        return res.sendStatus(401);
+    }
+    console.log(req.query);
+    var query = req.query;
+    var queryStr = '';
+    if (query.ex) {
+        if (typeof query.ex === 'string')
+            queryStr += ' AND attachment_id = ' + query.ex;
+        else
+            queryStr += ' AND attachment_id IN ' + mysql_1.escape([query.ex]);
+    }
+    if (query.r) {
+        if (typeof query.r === 'string')
+            queryStr += ' AND type = ' + query.r;
+        else
+            queryStr += ' AND type IN ' + mysql_1.escape([query.r]);
+    }
+    if (query.e) {
+        if (typeof query.e === 'string')
+            queryStr += ' AND email = ' + mysql_1.escape(query.e);
+        else
+            queryStr += ' AND email IN ' + mysql_1.escape([query.e]);
+    }
+    exports.dbClient.query('SELECT exercise_log.id, student_id, email, file_name, submitted, name, extension, type ' +
+        'FROM exercise_log ' +
+        '    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
+        '    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
+        'WHERE student_id=? ' + queryStr, req.session.studentId, function (err, result) {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        console.log(result);
+    });
+    return res.sendStatus(200);
+}
+exports.historyList = historyList;
