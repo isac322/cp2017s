@@ -22,11 +22,11 @@ block content
 				| Problem ID
 				| #[small.text-muted (Multiple selection)]
 			select.form-control.selectpicker#selectId(multiple, title='All', data-selected-text-format='count > 3', data-size='10')
-				optgroup(label='Homework')
+				optgroup(label='Homework')#homeworkGroup
 					each file in homeworkList
 						option(title=file.fileName, value=file.fileName, data-subtext=file.fileName)=decodeURIComponent(file.homeworkName)
 
-				optgroup(label='Exercise')
+				optgroup(label='Exercise')#exerciseGroup
 					each file in exerciseList
 						option(title=file.fileName, value=file.fileName, data-subtext=file.fileName)=decodeURIComponent(file.exerciseName)
 
@@ -35,12 +35,9 @@ block content
 				| Result
 				| #[small.text-muted (Multiple selection)]
 			select.form-control.selectpicker#selectResult(multiple, title='All', data-selected-text-format='count > 2')
-				option Correct
-				option Incorrect
-				option Timeout
-				option Compile Error
-				option Runtime Error
-				option Fail to run
+				- const results = ['Correct', 'Incorrect', 'Compile Error', 'Timeout', 'Runtime Error', 'Fail to run'];
+				each result, index in results
+					option(value=index)=result
 
 		.col-xs-12.col-sm-6.col-md-3.form-group
 			label(for='selectEmail')
@@ -66,30 +63,31 @@ block content
 						tr
 							th.col-xs-1 ID
 							th.col-xs-1 Category
-							th File name
+							th File name #[small.text-muted (Click to see)]
 							th.col-xs-2 Result
 							th Timestamp
 							th Email
-					tr
-						th(scope='row') 1
-						td test1
-						td test1
-						td Runtime Error
-						td test1
-						td test1
-					tr
-						th(scope='row') 2
-						td test2
-						td test2
-						td test2
-						td test2
-						td test2
-					tr
-						th(scope='row') 2543
-						td test3
-						td test3
-						td Compile Error
-						td test3
-						td test3
+					tbody
+						tr
+							th(scope='row') 1
+							td test1
+							td test1
+							td Runtime Error
+							td test1
+							td test1
+						tr
+							th(scope='row') 2
+							td test2
+							td test2
+							td test2
+							td test2
+							td test2
+						tr
+							th(scope='row') 2543
+							td test3
+							td test3
+							td Compile Error
+							td test3
+							td test3
 
 	script(src='/js/submission_history.js')

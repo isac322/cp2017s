@@ -20,3 +20,24 @@ $selects.on('hide.bs.select', function (event) {
 	console.log($email.val());
 	console.log($user.val());
 });
+
+const $homeworkGroup = $('#homeworkGroup');
+const $exerciseGroup = $('#exerciseGroup');
+
+$category.change(function (event) {
+	if ($category.val() === 'All') {
+		console.log(1);
+		$homeworkGroup.show();
+		$exerciseGroup.show();
+	}
+	else if ($category.val() === 'Homework') {
+		console.log(2);
+		$homeworkGroup.show();
+		$exerciseGroup.hide();
+	}
+	else if ($category.val() === 'Exercise') {
+		console.log(3);
+		$homeworkGroup.hide();
+		$exerciseGroup.show();
+	}
+});
