@@ -6,6 +6,7 @@ const $category = $('#selectCategory');
 const $id = $('#selectId');
 const $result = $('#selectResult');
 const $email = $('#selectEmail');
+const $user = $('#selectUser');
 
 
 let prevQuery = location.search;
@@ -36,6 +37,9 @@ const queryHandler = (data: Array<Data>) => {
 
 		$resultTable.append(rows[index].row);
 	});
+
+	$selects.prop('disabled', false);
+	$selects.selectpicker('refresh');
 };
 
 class Row {
@@ -57,6 +61,7 @@ class Row {
 	private resultTd: HTMLTableDataCellElement;
 	private timestampTd: HTMLTableDataCellElement;
 	private emailTd: HTMLTableDataCellElement;
+	private userTd: HTMLTableDataCellElement;
 
 	public constructor(value: Data, category: string) {
 		this.idTd = document.createElement('th');
@@ -66,6 +71,7 @@ class Row {
 		this.resultTd = document.createElement('td');
 		this.timestampTd = document.createElement('td');
 		this.emailTd = document.createElement('td');
+		this.userTd = document.createElement('td');
 
 		this.setData(value, category);
 
@@ -77,6 +83,7 @@ class Row {
 		this.row.appendChild(this.resultTd);
 		this.row.appendChild(this.timestampTd);
 		this.row.appendChild(this.emailTd);
+		this.row.appendChild(this.userTd);
 	}
 
 	public setData(value: Data, category: string) {
@@ -108,7 +115,8 @@ $selects.on('hide.bs.select', () => {
 	if (prevQuery !== newQuery) {
 		$.ajax('history/list' + genQuery(), {success: queryHandler});
 		prevQuery = newQuery;
-
+	}
+	else {
 		$selects.prop('disabled', false);
 		$selects.selectpicker('refresh');
 	}
@@ -163,7 +171,13 @@ function genQuery(): string {
 		emailQuery += 'e=' + elem.value + '&';
 	});
 
-	return '?' + homeworkQuery + exerciseQuery + resultQuery + emailQuery;
+	// user
+	let userQuery = '';
+	$user.children(':selected').each((index: number, elem: HTMLOptionElement) => {
+		userQuery += 'u=' + elem.value + '&';
+	});
+
+	return '?' + homeworkQuery + exerciseQuery + resultQuery + emailQuery + userQuery;
 }
 
 

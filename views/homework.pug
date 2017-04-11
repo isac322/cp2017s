@@ -66,14 +66,13 @@ block content
 											| &nbsp;
 											| #{attachment.name}
 
-									if signIn && homework.deadline > present
+									if signIn && homework.leftMillis >= 0
 										.col-xs-12.col-sm-7.vcenter
 											.form-group
 												.pull-right.input-group
 													input.form-control(type='text', data-validate='false', readonly)
 													.input-group-btn
-														span.btn.btn-default.btn-file
-															| Select
+														span.btn.btn-default.btn-file Select
 															input(type='file' name='attachment', hidden, required)
 														button.btn.btn-primary(type='submit', role='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Sending...') Submit
 

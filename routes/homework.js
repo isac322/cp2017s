@@ -88,9 +88,8 @@ var HWRoute = (function (_super) {
                         name: decodeURIComponent(record.name),
                         startDate: exports.monthNames[record.start_date.getMonth()] + ' ' + record.start_date.getDate(),
                         dueDate: exports.monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
-                        deadline: record.end_date,
                         description: record.description.split('|'),
-                        leftMillis: record.end_date - Date.now() + 24 * 60 * 59 * 1000,
+                        leftMillis: record.end_date - Date.now() + 24 * 60 * 60 * 1000,
                         attachments: []
                     };
                     homework.push(currentObject);

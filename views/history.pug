@@ -58,7 +58,7 @@ block content
 	.row
 		.col-xs-12
 			.table-responsive
-				table.table.table-bordered.table-striped.table-hover#resultTable
+				table.table.table-bordered.table-striped.table-hover
 					thead
 						tr
 							th.col-xs-1 ID
@@ -69,34 +69,10 @@ block content
 							th Email
 							if admin
 								th User
-					tbody
-						tr
-							th(scope='row') 1
-							td test1
-							td test1
-							td Runtime Error
-							td test1
-							td test1
-							if admin
-								td User
-						tr
-							th(scope='row') 2
-							td test2
-							td test2
-							td test2
-							td test2
-							td test2
-							if admin
-								td User
-						tr
-							th(scope='row') 2543
-							td test3
-							td test3
-							td Compile Error
-							td test3
-							td test3
-							if admin
-								td User
+					tbody#resultTable
 
 
-	script(src='/js/submission_history.js')
+	if admin
+		script(src='/js/submission_history_admin.js')
+	else
+		script(src='/js/submission_history.js')

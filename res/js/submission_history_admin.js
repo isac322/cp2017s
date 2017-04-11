@@ -4,6 +4,7 @@ var $category = $('#selectCategory');
 var $id = $('#selectId');
 var $result = $('#selectResult');
 var $email = $('#selectEmail');
+var $user = $('#selectUser');
 var prevQuery = location.search;
 var rows = [];
 var Data = (function () {
@@ -22,6 +23,8 @@ var queryHandler = function (data) {
         }
         $resultTable.append(rows[index].row);
     });
+    $selects.prop('disabled', false);
+    $selects.selectpicker('refresh');
 };
 var Row = (function () {
     function Row(value, category) {
@@ -32,6 +35,7 @@ var Row = (function () {
         this.resultTd = document.createElement('td');
         this.timestampTd = document.createElement('td');
         this.emailTd = document.createElement('td');
+        this.userTd = document.createElement('td');
         this.setData(value, category);
         this.row = document.createElement('tr');
         this.row.appendChild(this.idTd);
@@ -40,6 +44,7 @@ var Row = (function () {
         this.row.appendChild(this.resultTd);
         this.row.appendChild(this.timestampTd);
         this.row.appendChild(this.emailTd);
+        this.row.appendChild(this.userTd);
     }
     Row.prototype.setData = function (value, category) {
         this.id = value.id;
@@ -68,6 +73,8 @@ $selects.on('hide.bs.select', function () {
     if (prevQuery !== newQuery) {
         $.ajax('history/list' + genQuery(), { success: queryHandler });
         prevQuery = newQuery;
+    }
+    else {
         $selects.prop('disabled', false);
         $selects.selectpicker('refresh');
     }
@@ -111,6 +118,11 @@ function genQuery() {
     $email.children(':selected').each(function (index, elem) {
         emailQuery += 'e=' + elem.value + '&';
     });
-    return '?' + homeworkQuery + exerciseQuery + resultQuery + emailQuery;
+    // user
+    var userQuery = '';
+    $user.children(':selected').each(function (index, elem) {
+        userQuery += 'u=' + elem.value + '&';
+    });
+    return '?' + homeworkQuery + exerciseQuery + resultQuery + emailQuery + userQuery;
 }
 $.ajax('history/list' + prevQuery, { success: queryHandler });

@@ -788,17 +788,20 @@ export function historyList(req: Request, res: Response) {
 	} = req.query;
 
 	let queryStr = '';
+
+	if (req.session.admin && query.u) queryStr += 'student_id IN (' + escape(query.u) + ')';
+	else queryStr += 'student_id=' + escape(req.session.studentId);
+
 	if (query.ex) queryStr += ' AND attachment_id IN (' + escape(query.ex) + ')';
 	if (query.r) queryStr += ' AND type IN (' + escape(query.r) + ')';
 	if (query.e) queryStr += ' AND email IN (' + escape(query.e) + ')';
 
 	dbClient.query(
-		'SELECT exercise_log.id, student_id, email, file_name, submitted, name, extension, type ' +
+		'SELECT exercise_log.id, student_id AS `studentId`, email, file_name AS `hashedName`, submitted AS `timestamp`, name AS `fileName`, extension, type AS `result` ' +
 		'FROM exercise_log ' +
 		'    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
 		'    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
-		'WHERE student_id=? ' + queryStr,
-		req.session.studentId,
+		'WHERE ' + queryStr,
 		(err: IError, result) => {
 			if (err) {
 				console.error(err);
