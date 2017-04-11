@@ -578,24 +578,12 @@ function historyList(req, res) {
     console.log(req.query);
     var query = req.query;
     var queryStr = '';
-    if (query.ex) {
-        if (typeof query.ex === 'string')
-            queryStr += ' AND attachment_id = ' + query.ex;
-        else
-            queryStr += ' AND attachment_id IN ' + mysql_1.escape([query.ex]);
-    }
-    if (query.r) {
-        if (typeof query.r === 'string')
-            queryStr += ' AND type = ' + query.r;
-        else
-            queryStr += ' AND type IN ' + mysql_1.escape([query.r]);
-    }
-    if (query.e) {
-        if (typeof query.e === 'string')
-            queryStr += ' AND email = ' + mysql_1.escape(query.e);
-        else
-            queryStr += ' AND email IN ' + mysql_1.escape([query.e]);
-    }
+    if (query.ex)
+        queryStr += ' AND attachment_id IN (' + mysql_1.escape(query.ex) + ')';
+    if (query.r)
+        queryStr += ' AND type IN (' + mysql_1.escape(query.r) + ')';
+    if (query.e)
+        queryStr += ' AND email IN (' + mysql_1.escape(query.e) + ')';
     exports.dbClient.query('SELECT exercise_log.id, student_id, email, file_name, submitted, name, extension, type ' +
         'FROM exercise_log ' +
         '    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
@@ -605,8 +593,7 @@ function historyList(req, res) {
             console.error(err);
             return;
         }
-        console.log(result);
+        res.json(result);
     });
-    return res.sendStatus(200);
 }
 exports.historyList = historyList;

@@ -8,15 +8,13 @@ gapi.load('auth2', () => {
 		next2();
 });
 
-const origin = location.protocol + '//' + location.host;
-
 function onSignIn(googleUser: any) {
 	const name = googleUser.getBasicProfile().getName();
 	const id_token = googleUser.getAuthResponse().id_token;
 	const xhr = new XMLHttpRequest();
 	const btn = $('#login-btn').button('loading');
 
-	xhr.open('POST', origin + '/signin');
+	xhr.open('POST', 'signin');
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	xhr.onload = () => {
 		switch (xhr.status) {
@@ -42,10 +40,9 @@ function onSignIn(googleUser: any) {
 function signOut() {
 	auth2.signOut().then(() => {
 		const xhr = new XMLHttpRequest();
-		xhr.open('POST', origin + '/signout');
+		xhr.open('POST', 'signout');
 		xhr.onload = function () {
 			document.location.href = '/';
-			// error handling
 		};
 		xhr.send();
 	});

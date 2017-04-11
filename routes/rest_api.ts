@@ -788,18 +788,9 @@ export function historyList(req: Request, res: Response) {
 	} = req.query;
 
 	let queryStr = '';
-	if (query.ex) {
-		if (typeof query.ex === 'string') queryStr += ' AND attachment_id = ' + query.ex;
-		else queryStr += ' AND attachment_id IN ' + escape([query.ex]);
-	}
-	if (query.r) {
-		if (typeof query.r === 'string') queryStr += ' AND type = ' + query.r;
-		else queryStr += ' AND type IN ' + escape([query.r]);
-	}
-	if (query.e) {
-		if (typeof query.e === 'string') queryStr += ' AND email = ' + escape(query.e);
-		else queryStr += ' AND email IN ' + escape([query.e]);
-	}
+	if (query.ex) queryStr += ' AND attachment_id IN (' + escape(query.ex) + ')';
+	if (query.r) queryStr += ' AND type IN (' + escape(query.r) + ')';
+	if (query.e) queryStr += ' AND email IN (' + escape(query.e) + ')';
 
 	dbClient.query(
 		'SELECT exercise_log.id, student_id, email, file_name, submitted, name, extension, type ' +
@@ -814,8 +805,6 @@ export function historyList(req: Request, res: Response) {
 				return;
 			}
 
-			console.log(result);
+			res.json(result);
 		});
-
-	return res.sendStatus(200);
 }
