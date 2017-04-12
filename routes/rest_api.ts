@@ -369,7 +369,7 @@ export function runExercise(req: Request, res: Response) {
 	}
 	else {
 		// backup original file
-		fs.writeFile(path.join(submittedExerciseOriginalPath, hashedOriginal), file.data, {mode: 0o400},
+		fs.writeFile(path.join(submittedExerciseOriginalPath, hashedOriginal), file.data, {mode: 0o600},
 			(err: NodeJS.ErrnoException) => {
 				if (err) {
 					// FIXME: error handling
@@ -380,7 +380,7 @@ export function runExercise(req: Request, res: Response) {
 	}
 
 
-	fs.writeFile(path.join(submittedExercisePath, hashedName), fileContent, {mode: 0o400}, (err: NodeJS.ErrnoException) => {
+	fs.writeFile(path.join(submittedExercisePath, hashedName), fileContent, {mode: 0o600}, (err: NodeJS.ErrnoException) => {
 		if (err) {
 			// FIXME: error handling
 			logger.error('[rest_api::runExercise::writeFile] : ');

@@ -274,7 +274,7 @@ function runExercise(req, res) {
     }
     else {
         // backup original file
-        fs.writeFile(path.join(app_1.submittedExerciseOriginalPath, hashedOriginal), file.data, { mode: 256 }, function (err) {
+        fs.writeFile(path.join(app_1.submittedExerciseOriginalPath, hashedOriginal), file.data, { mode: 384 }, function (err) {
             if (err) {
                 // FIXME: error handling
                 app_1.logger.error('[rest_api::runExercise::writeOriginalFile] : ');
@@ -282,7 +282,7 @@ function runExercise(req, res) {
             }
         });
     }
-    fs.writeFile(path.join(app_1.submittedExercisePath, hashedName), fileContent, { mode: 256 }, function (err) {
+    fs.writeFile(path.join(app_1.submittedExercisePath, hashedName), fileContent, { mode: 384 }, function (err) {
         if (err) {
             // FIXME: error handling
             app_1.logger.error('[rest_api::runExercise::writeFile] : ');
