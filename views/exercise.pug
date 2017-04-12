@@ -13,6 +13,7 @@ block content
 
 	if admin
 		.col-xs-12
+			a.btn.btn-danger(role='button', href='/exercise/resolve') Resolve
 			a.pull-right(role='button', href='/exercise/add')
 				h4#btn-add
 					| #[span.glyphicon.glyphicon-plus]
@@ -124,7 +125,7 @@ block content
 							label(for='runtimeErrorInputBox') Input
 							pre#runtimeErrorInputBox
 					#timeoutBody
-						.col-xs-
+						.col-xs-12
 							label(for='timeoutInputBox') Input
 							pre#timeoutInputBox
 					#errorBody

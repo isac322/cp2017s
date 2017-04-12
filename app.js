@@ -89,13 +89,15 @@ var Server = (function () {
         this.app.post('/signout', rest_api_1.signOut);
         this.app.post('/homework', rest_api_1.createHW);
         this.app.get('/homework/name', rest_api_1.hwNameChecker);
-        this.app.get('/homework/:logId', rest_api_1.getHomework);
-        this.app.post('/homework/:attachId', rest_api_1.uploadAttach);
+        this.app.get('/homework/:logId([0-9]+)', rest_api_1.getHomework);
+        this.app.post('/homework/:attachId([0-9]+)', rest_api_1.uploadAttach);
         //		this.app.post('/exercise', runExercise);
-        this.app.get('/exercise/:logId', rest_api_1.getExercise);
-        this.app.post('/exercise/:attachId', rest_api_1.runExercise);
+        this.app.get('/exercise/:logId([0-9]+)', rest_api_1.getExercise);
+        this.app.post('/exercise', rest_api_1.runExercise);
+        this.app.get('/exercise/resolve', rest_api_1.resolve);
+        this.app.post('/exercise/:attachId([0-9]+)', rest_api_1.runExercise);
         this.app.get('/history/list', rest_api_1.historyList);
-        this.app.get('/history/:logId', rest_api_1.judgeResult);
+        this.app.get('/history/:logId([0-9]+)', rest_api_1.judgeResult);
     };
     /**
      * Configure application

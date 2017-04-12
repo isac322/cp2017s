@@ -11,7 +11,7 @@ import {ExerciseRoute} from "./routes/exercise";
 import {HWRoute} from "./routes/homework";
 import {IndexRoute} from "./routes/index";
 import {
-	createHW, getExercise, getHomework, historyList, hwNameChecker, judgeResult, register, runExercise, signIn, signOut,
+	createHW, getExercise, getHomework, historyList, hwNameChecker, judgeResult, register, resolve, runExercise, signIn, signOut,
 	uploadAttach
 } from "./routes/rest_api";
 import {ProfileRoute} from "./routes/profile";
@@ -110,13 +110,15 @@ export class Server {
 		this.app.post('/signout', signOut);
 		this.app.post('/homework', createHW);
 		this.app.get('/homework/name', hwNameChecker);
-		this.app.get('/homework/:logId', getHomework);
-		this.app.post('/homework/:attachId', uploadAttach);
+		this.app.get('/homework/:logId([0-9]+)', getHomework);
+		this.app.post('/homework/:attachId([0-9]+)', uploadAttach);
 //		this.app.post('/exercise', runExercise);
-		this.app.get('/exercise/:logId', getExercise);
-		this.app.post('/exercise/:attachId', runExercise);
+		this.app.get('/exercise/:logId([0-9]+)', getExercise);
+		this.app.post('/exercise', runExercise);
+		this.app.get('/exercise/resolve', resolve);
+		this.app.post('/exercise/:attachId([0-9]+)', runExercise);
 		this.app.get('/history/list', historyList);
-		this.app.get('/history/:logId', judgeResult);
+		this.app.get('/history/:logId([0-9]+)', judgeResult);
 	}
 
 	/**

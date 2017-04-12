@@ -369,7 +369,7 @@ export function runExercise(req: Request, res: Response) {
 	}
 	else {
 		// backup original file
-		fs.writeFile(path.join(submittedExerciseOriginalPath, hashedOriginal), file.data, {mode: 0o600},
+		fs.writeFile(path.join(submittedExerciseOriginalPath, hashedOriginal), file.data, {mode: 0o400},
 			(err: NodeJS.ErrnoException) => {
 				if (err) {
 					// FIXME: error handling
@@ -380,7 +380,7 @@ export function runExercise(req: Request, res: Response) {
 	}
 
 
-	fs.writeFile(path.join(submittedExercisePath, hashedName), fileContent, {mode: 0o600}, (err: NodeJS.ErrnoException) => {
+	fs.writeFile(path.join(submittedExercisePath, hashedName), fileContent, {mode: 0o400}, (err: NodeJS.ErrnoException) => {
 		if (err) {
 			// FIXME: error handling
 			logger.error('[rest_api::runExercise::writeFile] : ');
@@ -403,13 +403,9 @@ export function runExercise(req: Request, res: Response) {
 
 
 			// a temporarily created shared path that contains source code to judge
-			const sourcePath = fs.mkdtempSync(path.join(tempPath, req.session.studentId + '_'));
+			const sourcePath = fs.mkdtempSync(path.join(tempPath, studentId + '_'));
 			// a temporarily created shared path that will contain output
-			const outputPath = fs.mkdtempSync(path.join(tempPath, req.session.studentId + '_'));
-
-
-			const inputPath = path.join(exerciseSetPath, attachId, 'input');
-			const answerPath = path.join(exerciseSetPath, attachId, 'output');
+			const outputPath = fs.mkdtempSync(path.join(tempPath, studentId + '_'));
 
 
 			// write config file of this judge to shared folder
@@ -420,7 +416,7 @@ export function runExercise(req: Request, res: Response) {
 					extension: searchResult[0].extension,
 					testSetSize: searchResult[0].test_set_size
 				}),
-				{mode: 0o666}
+				{mode: 0o400}
 			);
 
 			// copy given source code to shared folder
@@ -429,7 +425,7 @@ export function runExercise(req: Request, res: Response) {
 
 			dbClient.query(
 				'INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);',
-				[req.session.studentId, attachId, req.session.email, hashedName, hashedOriginal],
+				[studentId, attachId, req.session.email, hashedName, hashedOriginal],
 				(err: IError, insertResult) => {
 					if (err) {
 						// FIXME: error handling
@@ -439,68 +435,145 @@ export function runExercise(req: Request, res: Response) {
 						return;
 					}
 
-
 					logger.debug('[runExercise:insert into exercise_log]');
 					logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
 
-
-					docker.run(
-						'judge_server',
-						['bash', './judge.sh'],
-						[{
-							write: (message: NodeBuffer) => {
-								logger.debug('[rest_api::runExercise::docker.stdout]');
-								logger.debug(message.toString());
-							}
-						}, {
-							write: (message: NodeBuffer) => {
-								logger.error('[rest_api::runExercise::docker.stderr]');
-								logger.error(message.toString());
-							}
-						}], // TODO: redirect these
-						{
-							Volumes: {
-								'/home/tester/source': {},
-								'/home/tester/input': {},
-								'/home/tester/output': {},
-								'/home/tester/answer': {}
-							},
-							HostConfig: {
-								Binds: [
-									sourcePath + ':/home/tester/source:ro',
-									inputPath + ':/home/tester/input:ro',
-									outputPath + ':/home/tester/output:rw',
-									answerPath + ':/home/tester/answer:ro'
-								]
-							},
-							Tty: false
-						},
-						(err, data, container) => {
-							if (err) {
-								// FIXME: error handling
-								logger.error('[rest_api::runExercise::docker_run] : ');
-								logger.error(util.inspect(err, {showHidden: false, depth: null}));
-								res.sendStatus(500);
-								return;
-							}
-
-							handleResult(res, insertResult.insertId, attachId, studentId, answerPath, inputPath, outputPath);
-
-							// remove input temporary folder
-							fs_ext.remove(sourcePath, (err: Error) => {
-								if (err) {
-									// FIXME: error handling
-									logger.error('[rest_api::runExercise::temp_remove] : ');
-									logger.error(util.inspect(err, {showHidden: false, depth: null}));
-								}
-							});
-
-							container.remove();
-						});
+					judgeExercise(res, insertResult.insertId, attachId, studentId, outputPath, sourcePath);
 				}
 			);
 		}
 	);
+}
+
+
+/**
+ * Rejudge unresolved exercise
+ *
+ * @method resolve
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+export function resolve(req: Request, res: Response) {
+	if (!req.session.admin) {
+		return res.sendStatus(401);
+	}
+
+	dbClient.query(
+		'SELECT exercise_log.id, exercise_log.attachment_id AS `attachId`, exercise_log.student_id AS `studentId`, file_name AS `fileName` ' +
+		'FROM exercise_log ' +
+		'    LEFT JOIN exercise_result ON exercise_result.log_id = exercise_log.id ' +
+		'WHERE exercise_result.id IS NULL;',
+		(err: IError, searchList) => {
+			if (err) {
+				// FIXME: error handling
+				logger.error('[rest_api::resolve::search] : ');
+				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				res.sendStatus(500);
+				return;
+			}
+
+			for (const log of searchList) {
+				// get information of this exercise by given id (attachId)
+				dbClient.query(
+					'SELECT name, extension, test_set_size FROM exercise_config WHERE id = ?;', log.attachId,
+					(err: IError, exerciseSetting) => {
+						if (err) {
+							// FIXME: error handling
+							logger.error('[rest_api::resolve::select] : ');
+							logger.error(util.inspect(err, {showHidden: false, depth: 1}));
+							res.sendStatus(500);
+							return;
+						}
+
+
+						// a temporarily created shared path that contains source code to judge
+						const sourcePath = fs.mkdtempSync(path.join(tempPath, log.studentId + '_'));
+						// a temporarily created shared path that will contain output
+						const outputPath = fs.mkdtempSync(path.join(tempPath, log.studentId + '_'));
+
+
+						// write config file of this judge to shared folder
+						fs.writeFile(
+							path.join(sourcePath, 'config.json'),
+							JSON.stringify({
+								sourceName: exerciseSetting[0].name,
+								extension: exerciseSetting[0].extension,
+								testSetSize: exerciseSetting[0].test_set_size
+							}),
+							{mode: 0o400}
+						);
+
+						// copy given source code to shared folder
+						fs_ext.copySync(
+							path.join(submittedExercisePath, log.fileName),
+							path.join(sourcePath, exerciseSetting[0].name));
+
+						judgeExercise(null, log.id, log.attachId, log.studentId, outputPath, sourcePath);
+					});
+			}
+		});
+
+	return res.sendStatus(200);
+}
+
+function judgeExercise(res: Response, logId: number, attachId: number, studentId: string,
+					   outputPath: string, sourcePath: string) {
+	const inputPath = path.join(exerciseSetPath, attachId.toString(), 'input');
+	const answerPath = path.join(exerciseSetPath, attachId.toString(), 'output');
+
+	docker.run(
+		'judge_server',
+		['bash', './judge.sh'],
+		[{
+			write: (message: NodeBuffer) => {
+				logger.debug('[rest_api::runExercise::docker.stdout]');
+				logger.debug(message.toString());
+			}
+		}, {
+			write: (message: NodeBuffer) => {
+				logger.error('[rest_api::runExercise::docker.stderr]');
+				logger.error(message.toString());
+			}
+		}], // TODO: redirect these
+		{
+			Volumes: {
+				'/home/tester/source': {},
+				'/home/tester/input': {},
+				'/home/tester/output': {},
+				'/home/tester/answer': {}
+			},
+			HostConfig: {
+				Binds: [
+					sourcePath + ':/home/tester/source:ro',
+					inputPath + ':/home/tester/input:ro',
+					outputPath + ':/home/tester/output:rw',
+					answerPath + ':/home/tester/answer:ro'
+				]
+			},
+			Tty: false
+		},
+		(err, data, container) => {
+			if (err) {
+				// FIXME: error handling
+				logger.error('[rest_api::runExercise::docker_run] : ');
+				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				res.sendStatus(500);
+				return;
+			}
+
+			handleResult(res, logId, attachId, studentId, answerPath, inputPath, outputPath);
+
+			// remove input temporary folder
+			fs_ext.remove(sourcePath, (err: Error) => {
+				if (err) {
+					// FIXME: error handling
+					logger.error('[rest_api::judgeExercise::temp_remove] : ');
+					logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				}
+			});
+
+			container.remove();
+		});
 }
 
 
@@ -521,7 +594,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 				fs_ext.remove(outputPath, (err: Error) => {
 					if (err) {
 						// FIXME: error handling
-						logger.error('[rest_api::runExercise::temp_remove] : ');
+						logger.error('[rest_api::handleResult::temp_remove] : ');
 						logger.error(util.inspect(err, {showHidden: false, depth: null}));
 						res.sendStatus(500);
 					}
@@ -530,7 +603,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 
 				// the judge was correct
 				if (result.isMatched) {
-					res.sendStatus(200);
+					if (res) res.sendStatus(200);
 
 					dbClient.query(
 						'INSERT INTO exercise_result (log_id, type, runtime_error) VALUE (?, ?, ?);',
@@ -538,13 +611,13 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 						(err) => {
 							if (err) {
 								// FIXME: error handling
-								logger.error('[rest_api::runExercise::insert_judge_correct] : ');
+								logger.error('[rest_api::handleResult::insert_judge_correct] : ');
 								logger.error(util.inspect(err, {showHidden: false, depth: null}));
 							}
 						});
 
 					if (result.errorLog) {
-						logger.error('[rest_api::runExercise::insert_judge_correct-found_error] ' + logId);
+						logger.error('[rest_api::handleResult::insert_judge_correct-found_error] ' + logId);
 					}
 
 					dbClient.query(
@@ -553,7 +626,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 						(err) => {
 							if (err) {
 								// FIXME: error handling
-								logger.error('[rest_api::runExercise::insert_judge_correct] : ');
+								logger.error('[rest_api::handleResult::insert_judge_correct] : ');
 								logger.error(util.inspect(err, {showHidden: false, depth: null}));
 							}
 						}
@@ -568,13 +641,13 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 							(err: NodeJS.ErrnoException, data: Buffer) => {
 								if (err) {
 									// FIXME: error handling
-									logger.error('[rest_api::runExercise::read_file::read_file:timeout] : ');
+									logger.error('[rest_api::handleResult::read_file::read_file:timeout] : ');
 									logger.error(util.inspect(err, {showHidden: false, depth: null}));
-									res.sendStatus(500);
+									if (res) res.sendStatus(500);
 									return;
 								}
 
-								res.status(408).json({input: data.toString()});
+								if (res) res.status(410).json({input: data.toString()});
 							});
 
 						dbClient.query(
@@ -583,7 +656,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 							(err) => {
 								if (err) {
 									// FIXME: error handling
-									logger.error('[rest_api::runExercise::insert_judge_timeout] : ');
+									logger.error('[rest_api::handleResult::insert_judge_timeout] : ');
 									logger.error(util.inspect(err, {showHidden: false, depth: null}));
 								}
 							});
@@ -594,13 +667,13 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 							(err: NodeJS.ErrnoException, data: Buffer) => {
 								if (err) {
 									// FIXME: error handling
-									logger.error('[rest_api::runExercise::read_file::read_file:runtimeError] : ');
+									logger.error('[rest_api::handleResult::read_file::read_file:runtimeError] : ');
 									logger.error(util.inspect(err, {showHidden: false, depth: null}));
-									res.sendStatus(500);
+									if (res) res.sendStatus(500);
 									return;
 								}
 
-								res.status(412).json({
+								if (res) res.status(412).json({
 									input: data.toString(),
 									errorLog: result.errorLog,
 									returnCode: result.returnCode
@@ -613,7 +686,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 							(err) => {
 								if (err) {
 									// FIXME: error handling
-									logger.error('[rest_api::runExercise::insert_judge_runtime_error] : ');
+									logger.error('[rest_api::handleResult::insert_judge_runtime_error] : ');
 									logger.error(util.inspect(err, {showHidden: false, depth: null}));
 								}
 							});
@@ -626,9 +699,9 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 						(err: NodeJS.ErrnoException, data: Buffer) => {
 							if (err) {
 								// FIXME: error handling
-								logger.error('[rest_api::runExercise::read_file] : ');
+								logger.error('[rest_api::handleResult::read_file] : ');
 								logger.error(util.inspect(err, {showHidden: false, depth: null}));
-								res.sendStatus(500);
+								if (res) res.sendStatus(500);
 								return;
 							}
 
@@ -638,13 +711,13 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 								(err: NodeJS.ErrnoException, data: Buffer) => {
 									if (err) {
 										// FIXME: error handling
-										logger.error('[rest_api::runExercise::read_file::read_file] : ');
+										logger.error('[rest_api::handleResult::read_file::read_file] : ');
 										logger.error(util.inspect(err, {showHidden: false, depth: null}));
 										res.sendStatus(500);
 										return;
 									}
 
-									res.status(406).json({
+									if (res) res.status(406).json({
 										userOutput: result.userOutput,
 										answerOutput: answerOutput,
 										input: data.toString()
@@ -658,7 +731,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 						(err) => {
 							if (err) {
 								// FIXME: error handling
-								logger.error('[rest_api::runExercise::insert_judge_incorrect] : ');
+								logger.error('[rest_api::handleResult::insert_judge_incorrect] : ');
 								logger.error(util.inspect(err, {showHidden: false, depth: null}));
 							}
 						});
@@ -676,9 +749,9 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 					fs.readFile(errorLogFile, (err: NodeJS.ErrnoException, data: Buffer) => {
 						if (err) {
 							// FIXME: error handling
-							logger.error('[rest_api::runExercise::read_file] : ');
+							logger.error('[rest_api::handleResult::read_file] : ');
 							logger.error(util.inspect(err, {showHidden: false, depth: null}));
-							res.sendStatus(500);
+							if (res) res.sendStatus(500);
 							return;
 						}
 
@@ -686,17 +759,14 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 						fs_ext.remove(outputPath, (err: Error) => {
 							if (err) {
 								// FIXME: error handling
-								logger.error('[rest_api::runExercise::remove_file] : ');
+								logger.error('[rest_api::handleResult::remove_file] : ');
 								logger.error(util.inspect(err, {showHidden: false, depth: null}));
 							}
 						});
 
 
 						const errorStr = data.toString('UTF-8');
-
-						console.log(errorStr);
-
-						res.status(417).json({errorMsg: errorStr});
+						if (res) res.status(417).json({errorMsg: errorStr});
 
 
 						dbClient.query(
@@ -705,7 +775,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 							(err) => {
 								if (err) {
 									// FIXME: error handling
-									logger.error('[rest_api::runExercise::insert_script_error] : ');
+									logger.error('[rest_api::handleResult::insert_script_error] : ');
 									logger.error(util.inspect(err, {showHidden: false, depth: null}));
 								}
 							});
@@ -720,9 +790,9 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 							fs.readFile(compileErrorFile, (err: NodeJS.ErrnoException, data: Buffer) => {
 								if (err) {
 									// FIXME: error handling
-									logger.error('[rest_api::runExercise::read_file] : ');
+									logger.error('[rest_api::handleResult::read_file] : ');
 									logger.error(util.inspect(err, {showHidden: false, depth: null}));
-									res.sendStatus(500);
+									if (res) res.sendStatus(500);
 									return;
 								}
 
@@ -730,14 +800,14 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 								fs_ext.remove(outputPath, (err: Error) => {
 									if (err) {
 										// FIXME: error handling
-										logger.error('[rest_api::runExercise::remove_file] : ');
+										logger.error('[rest_api::handleResult::remove_file] : ');
 										logger.error(util.inspect(err, {showHidden: false, depth: null}));
 									}
 								});
 
 								const errorStr = data.toString('UTF-8');
 
-								res.status(400).json({errorMsg: errorStr});
+								if (res) res.status(400).json({errorMsg: errorStr});
 
 
 								dbClient.query(
@@ -746,7 +816,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 									(err) => {
 										if (err) {
 											// FIXME: error handling
-											logger.error('[rest_api::runExercise::insert_compile_error] : ');
+											logger.error('[rest_api::handleResult::insert_compile_error] : ');
 											logger.error(util.inspect(err, {showHidden: false, depth: null}));
 										}
 									});
@@ -756,8 +826,8 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 						// something else
 						else {
 							// FIXME: error handling
-							logger.error('[rest_api::runExercise::something_else]');
-							res.sendStatus(500);
+							logger.error('[rest_api::handleResult::something_else]');
+							if (res) res.status(500).json({id: logId});
 						}
 					});
 				}
@@ -780,8 +850,6 @@ export function historyList(req: Request, res: Response) {
 	if (!('t' in req.query)) {
 		req.query.t = '3';
 	}
-
-	console.log(req.query);
 
 	const query: {
 		hw: Array<string> | string,
@@ -899,7 +967,7 @@ export function getExercise(req: Request, res: Response) {
 
 			const row = result[0];
 
-			if (row.studentId == req.session.studentId) {
+			if (req.session.admin || row.studentId == req.session.studentId) {
 				if (row.originalFile) {
 					res.download(path.join(submittedExerciseOriginalPath, row.originalFile), row.name);
 				}
@@ -908,8 +976,7 @@ export function getExercise(req: Request, res: Response) {
 				}
 			}
 			else {
-				logger.error('[rest_api::getExercise::student_id-mismatch] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				logger.error('[rest_api::getExercise::student_id-mismatch]');
 				res.sendStatus(401);
 			}
 		});
@@ -942,12 +1009,11 @@ export function getHomework(req: Request, res: Response) {
 
 			const row = result[0];
 
-			if (row.studentId == req.session.studentId) {
+			if (req.session.admin || row.studentId == req.session.studentId) {
 				res.download(path.join(submittedHomeworkPath, row.fileName), row.name);
 			}
 			else {
-				logger.error('[rest_api::getHomework::student_id-mismatch] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				logger.error('[rest_api::getHomework::student_id-mismatch]');
 				res.sendStatus(401);
 			}
 		});

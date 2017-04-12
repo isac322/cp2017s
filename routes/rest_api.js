@@ -274,7 +274,7 @@ function runExercise(req, res) {
     }
     else {
         // backup original file
-        fs.writeFile(path.join(app_1.submittedExerciseOriginalPath, hashedOriginal), file.data, { mode: 384 }, function (err) {
+        fs.writeFile(path.join(app_1.submittedExerciseOriginalPath, hashedOriginal), file.data, { mode: 256 }, function (err) {
             if (err) {
                 // FIXME: error handling
                 app_1.logger.error('[rest_api::runExercise::writeOriginalFile] : ');
@@ -282,7 +282,7 @@ function runExercise(req, res) {
             }
         });
     }
-    fs.writeFile(path.join(app_1.submittedExercisePath, hashedName), fileContent, { mode: 384 }, function (err) {
+    fs.writeFile(path.join(app_1.submittedExercisePath, hashedName), fileContent, { mode: 256 }, function (err) {
         if (err) {
             // FIXME: error handling
             app_1.logger.error('[rest_api::runExercise::writeFile] : ');
@@ -299,20 +299,18 @@ function runExercise(req, res) {
             return;
         }
         // a temporarily created shared path that contains source code to judge
-        var sourcePath = fs.mkdtempSync(path.join(app_1.tempPath, req.session.studentId + '_'));
+        var sourcePath = fs.mkdtempSync(path.join(app_1.tempPath, studentId + '_'));
         // a temporarily created shared path that will contain output
-        var outputPath = fs.mkdtempSync(path.join(app_1.tempPath, req.session.studentId + '_'));
-        var inputPath = path.join(app_1.exerciseSetPath, attachId, 'input');
-        var answerPath = path.join(app_1.exerciseSetPath, attachId, 'output');
+        var outputPath = fs.mkdtempSync(path.join(app_1.tempPath, studentId + '_'));
         // write config file of this judge to shared folder
         fs.writeFile(path.join(sourcePath, 'config.json'), JSON.stringify({
             sourceName: searchResult[0].name,
             extension: searchResult[0].extension,
             testSetSize: searchResult[0].test_set_size
-        }), { mode: 438 });
+        }), { mode: 256 });
         // copy given source code to shared folder
         fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, { mode: 384 });
-        exports.dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);', [req.session.studentId, attachId, req.session.email, hashedName, hashedOriginal], function (err, insertResult) {
+        exports.dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);', [studentId, attachId, req.session.email, hashedName, hashedOriginal], function (err, insertResult) {
             if (err) {
                 // FIXME: error handling
                 app_1.logger.error('[rest_api::runExercise::insert] : ');
@@ -322,56 +320,116 @@ function runExercise(req, res) {
             }
             app_1.logger.debug('[runExercise:insert into exercise_log]');
             app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
-            app_1.docker.run('judge_server', ['bash', './judge.sh'], [{
-                    write: function (message) {
-                        app_1.logger.debug('[rest_api::runExercise::docker.stdout]');
-                        app_1.logger.debug(message.toString());
-                    }
-                }, {
-                    write: function (message) {
-                        app_1.logger.error('[rest_api::runExercise::docker.stderr]');
-                        app_1.logger.error(message.toString());
-                    }
-                }], // TODO: redirect these
-            {
-                Volumes: {
-                    '/home/tester/source': {},
-                    '/home/tester/input': {},
-                    '/home/tester/output': {},
-                    '/home/tester/answer': {}
-                },
-                HostConfig: {
-                    Binds: [
-                        sourcePath + ':/home/tester/source:ro',
-                        inputPath + ':/home/tester/input:ro',
-                        outputPath + ':/home/tester/output:rw',
-                        answerPath + ':/home/tester/answer:ro'
-                    ]
-                },
-                Tty: false
-            }, function (err, data, container) {
-                if (err) {
-                    // FIXME: error handling
-                    app_1.logger.error('[rest_api::runExercise::docker_run] : ');
-                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                    res.sendStatus(500);
-                    return;
-                }
-                handleResult(res, insertResult.insertId, attachId, studentId, answerPath, inputPath, outputPath);
-                // remove input temporary folder
-                fs_ext.remove(sourcePath, function (err) {
-                    if (err) {
-                        // FIXME: error handling
-                        app_1.logger.error('[rest_api::runExercise::temp_remove] : ');
-                        app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                    }
-                });
-                container.remove();
-            });
+            judgeExercise(res, insertResult.insertId, attachId, studentId, outputPath, sourcePath);
         });
     });
 }
 exports.runExercise = runExercise;
+/**
+ * Rejudge unresolved exercise
+ *
+ * @method resolve
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+function resolve(req, res) {
+    if (!req.session.admin) {
+        return res.sendStatus(401);
+    }
+    exports.dbClient.query('SELECT exercise_log.id, exercise_log.attachment_id AS `attachId`, exercise_log.student_id AS `studentId`, file_name AS `fileName` ' +
+        'FROM exercise_log ' +
+        '    LEFT JOIN exercise_result ON exercise_result.log_id = exercise_log.id ' +
+        'WHERE exercise_result.id IS NULL;', function (err, searchList) {
+        if (err) {
+            // FIXME: error handling
+            app_1.logger.error('[rest_api::resolve::search] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            res.sendStatus(500);
+            return;
+        }
+        var _loop_1 = function (log) {
+            // get information of this exercise by given id (attachId)
+            exports.dbClient.query('SELECT name, extension, test_set_size FROM exercise_config WHERE id = ?;', log.attachId, function (err, exerciseSetting) {
+                if (err) {
+                    // FIXME: error handling
+                    app_1.logger.error('[rest_api::resolve::select] : ');
+                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
+                    res.sendStatus(500);
+                    return;
+                }
+                // a temporarily created shared path that contains source code to judge
+                var sourcePath = fs.mkdtempSync(path.join(app_1.tempPath, log.studentId + '_'));
+                // a temporarily created shared path that will contain output
+                var outputPath = fs.mkdtempSync(path.join(app_1.tempPath, log.studentId + '_'));
+                // write config file of this judge to shared folder
+                fs.writeFile(path.join(sourcePath, 'config.json'), JSON.stringify({
+                    sourceName: exerciseSetting[0].name,
+                    extension: exerciseSetting[0].extension,
+                    testSetSize: exerciseSetting[0].test_set_size
+                }), { mode: 256 });
+                // copy given source code to shared folder
+                fs_ext.copySync(path.join(app_1.submittedExercisePath, log.fileName), path.join(sourcePath, exerciseSetting[0].name));
+                judgeExercise(null, log.id, log.attachId, log.studentId, outputPath, sourcePath);
+            });
+        };
+        for (var _i = 0, searchList_1 = searchList; _i < searchList_1.length; _i++) {
+            var log = searchList_1[_i];
+            _loop_1(log);
+        }
+    });
+    return res.sendStatus(200);
+}
+exports.resolve = resolve;
+function judgeExercise(res, logId, attachId, studentId, outputPath, sourcePath) {
+    var inputPath = path.join(app_1.exerciseSetPath, attachId.toString(), 'input');
+    var answerPath = path.join(app_1.exerciseSetPath, attachId.toString(), 'output');
+    app_1.docker.run('judge_server', ['bash', './judge.sh'], [{
+            write: function (message) {
+                app_1.logger.debug('[rest_api::runExercise::docker.stdout]');
+                app_1.logger.debug(message.toString());
+            }
+        }, {
+            write: function (message) {
+                app_1.logger.error('[rest_api::runExercise::docker.stderr]');
+                app_1.logger.error(message.toString());
+            }
+        }], // TODO: redirect these
+    {
+        Volumes: {
+            '/home/tester/source': {},
+            '/home/tester/input': {},
+            '/home/tester/output': {},
+            '/home/tester/answer': {}
+        },
+        HostConfig: {
+            Binds: [
+                sourcePath + ':/home/tester/source:ro',
+                inputPath + ':/home/tester/input:ro',
+                outputPath + ':/home/tester/output:rw',
+                answerPath + ':/home/tester/answer:ro'
+            ]
+        },
+        Tty: false
+    }, function (err, data, container) {
+        if (err) {
+            // FIXME: error handling
+            app_1.logger.error('[rest_api::runExercise::docker_run] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            res.sendStatus(500);
+            return;
+        }
+        handleResult(res, logId, attachId, studentId, answerPath, inputPath, outputPath);
+        // remove input temporary folder
+        fs_ext.remove(sourcePath, function (err) {
+            if (err) {
+                // FIXME: error handling
+                app_1.logger.error('[rest_api::judgeExercise::temp_remove] : ');
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            }
+        });
+        container.remove();
+    });
+}
 function handleResult(res, logId, attachId, studentId, answerPath, inputPath, outputPath) {
     var resultFile = path.join(outputPath, 'result.json');
     fs.exists(resultFile, function (exists) {
@@ -383,28 +441,29 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                 fs_ext.remove(outputPath, function (err) {
                     if (err) {
                         // FIXME: error handling
-                        app_1.logger.error('[rest_api::runExercise::temp_remove] : ');
+                        app_1.logger.error('[rest_api::handleResult::temp_remove] : ');
                         app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                         res.sendStatus(500);
                     }
                 });
                 // the judge was correct
                 if (result.isMatched) {
-                    res.sendStatus(200);
+                    if (res)
+                        res.sendStatus(200);
                     exports.dbClient.query('INSERT INTO exercise_result (log_id, type, runtime_error) VALUE (?, ?, ?);', [logId, 0, result.errorLog], function (err) {
                         if (err) {
                             // FIXME: error handling
-                            app_1.logger.error('[rest_api::runExercise::insert_judge_correct] : ');
+                            app_1.logger.error('[rest_api::handleResult::insert_judge_correct] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                         }
                     });
                     if (result.errorLog) {
-                        app_1.logger.error('[rest_api::runExercise::insert_judge_correct-found_error] ' + logId);
+                        app_1.logger.error('[rest_api::handleResult::insert_judge_correct-found_error] ' + logId);
                     }
                     exports.dbClient.query('INSERT IGNORE INTO exercise_quick_result (attach_id, student_id, result) VALUE (?, ?, ?);', [attachId, studentId, true], function (err) {
                         if (err) {
                             // FIXME: error handling
-                            app_1.logger.error('[rest_api::runExercise::insert_judge_correct] : ');
+                            app_1.logger.error('[rest_api::handleResult::insert_judge_correct] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                         }
                     });
@@ -415,17 +474,19 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                         fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8', function (err, data) {
                             if (err) {
                                 // FIXME: error handling
-                                app_1.logger.error('[rest_api::runExercise::read_file::read_file:timeout] : ');
+                                app_1.logger.error('[rest_api::handleResult::read_file::read_file:timeout] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                                res.sendStatus(500);
+                                if (res)
+                                    res.sendStatus(500);
                                 return;
                             }
-                            res.status(408).json({ input: data.toString() });
+                            if (res)
+                                res.status(410).json({ input: data.toString() });
                         });
                         exports.dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, unmatched_index) VALUE (?, ?, ?, ?);', [logId, 3, result.returnCode, result.inputIndex], function (err) {
                             if (err) {
                                 // FIXME: error handling
-                                app_1.logger.error('[rest_api::runExercise::insert_judge_timeout] : ');
+                                app_1.logger.error('[rest_api::handleResult::insert_judge_timeout] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                             }
                         });
@@ -434,21 +495,23 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                         fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8', function (err, data) {
                             if (err) {
                                 // FIXME: error handling
-                                app_1.logger.error('[rest_api::runExercise::read_file::read_file:runtimeError] : ');
+                                app_1.logger.error('[rest_api::handleResult::read_file::read_file:runtimeError] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                                res.sendStatus(500);
+                                if (res)
+                                    res.sendStatus(500);
                                 return;
                             }
-                            res.status(412).json({
-                                input: data.toString(),
-                                errorLog: result.errorLog,
-                                returnCode: result.returnCode
-                            });
+                            if (res)
+                                res.status(412).json({
+                                    input: data.toString(),
+                                    errorLog: result.errorLog,
+                                    returnCode: result.returnCode
+                                });
                         });
                         exports.dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, runtime_error, unmatched_index) VALUE (?, ?, ?, ?, ?);', [logId, 4, result.returnCode, result.errorLog, result.inputIndex], function (err) {
                             if (err) {
                                 // FIXME: error handling
-                                app_1.logger.error('[rest_api::runExercise::insert_judge_runtime_error] : ');
+                                app_1.logger.error('[rest_api::handleResult::insert_judge_runtime_error] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                             }
                         });
@@ -458,31 +521,33 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                     fs.readFile(path.join(answerPath, result.inputIndex + '.out'), 'UTF-8', function (err, data) {
                         if (err) {
                             // FIXME: error handling
-                            app_1.logger.error('[rest_api::runExercise::read_file] : ');
+                            app_1.logger.error('[rest_api::handleResult::read_file] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                            res.sendStatus(500);
+                            if (res)
+                                res.sendStatus(500);
                             return;
                         }
                         var answerOutput = data.toString();
                         fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8', function (err, data) {
                             if (err) {
                                 // FIXME: error handling
-                                app_1.logger.error('[rest_api::runExercise::read_file::read_file] : ');
+                                app_1.logger.error('[rest_api::handleResult::read_file::read_file] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                 res.sendStatus(500);
                                 return;
                             }
-                            res.status(406).json({
-                                userOutput: result.userOutput,
-                                answerOutput: answerOutput,
-                                input: data.toString()
-                            });
+                            if (res)
+                                res.status(406).json({
+                                    userOutput: result.userOutput,
+                                    answerOutput: answerOutput,
+                                    input: data.toString()
+                                });
                         });
                     });
                     exports.dbClient.query('INSERT INTO exercise_result (log_id, type, unmatched_index, unmatched_output, runtime_error) VALUE (?, ?, ?, ?, ?);', [logId, 1, result.inputIndex, result.userOutput, result.errorLog], function (err) {
                         if (err) {
                             // FIXME: error handling
-                            app_1.logger.error('[rest_api::runExercise::insert_judge_incorrect] : ');
+                            app_1.logger.error('[rest_api::handleResult::insert_judge_incorrect] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                         }
                     });
@@ -497,26 +562,27 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                     fs.readFile(errorLogFile_1, function (err, data) {
                         if (err) {
                             // FIXME: error handling
-                            app_1.logger.error('[rest_api::runExercise::read_file] : ');
+                            app_1.logger.error('[rest_api::handleResult::read_file] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                            res.sendStatus(500);
+                            if (res)
+                                res.sendStatus(500);
                             return;
                         }
                         // remove output temporary folder
                         fs_ext.remove(outputPath, function (err) {
                             if (err) {
                                 // FIXME: error handling
-                                app_1.logger.error('[rest_api::runExercise::remove_file] : ');
+                                app_1.logger.error('[rest_api::handleResult::remove_file] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                             }
                         });
                         var errorStr = data.toString('UTF-8');
-                        console.log(errorStr);
-                        res.status(417).json({ errorMsg: errorStr });
+                        if (res)
+                            res.status(417).json({ errorMsg: errorStr });
                         exports.dbClient.query('INSERT INTO exercise_result(log_id, type, script_error) VALUE(?, ?, ?);', [logId, 5, errorStr], function (err) {
                             if (err) {
                                 // FIXME: error handling
-                                app_1.logger.error('[rest_api::runExercise::insert_script_error] : ');
+                                app_1.logger.error('[rest_api::handleResult::insert_script_error] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                             }
                         });
@@ -530,25 +596,27 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                             fs.readFile(compileErrorFile_1, function (err, data) {
                                 if (err) {
                                     // FIXME: error handling
-                                    app_1.logger.error('[rest_api::runExercise::read_file] : ');
+                                    app_1.logger.error('[rest_api::handleResult::read_file] : ');
                                     app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                                    res.sendStatus(500);
+                                    if (res)
+                                        res.sendStatus(500);
                                     return;
                                 }
                                 // remove output temporary folder
                                 fs_ext.remove(outputPath, function (err) {
                                     if (err) {
                                         // FIXME: error handling
-                                        app_1.logger.error('[rest_api::runExercise::remove_file] : ');
+                                        app_1.logger.error('[rest_api::handleResult::remove_file] : ');
                                         app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                     }
                                 });
                                 var errorStr = data.toString('UTF-8');
-                                res.status(400).json({ errorMsg: errorStr });
+                                if (res)
+                                    res.status(400).json({ errorMsg: errorStr });
                                 exports.dbClient.query('INSERT INTO exercise_result(log_id, type, compile_error) VALUE(?,?,?);', [logId, 2, errorStr], function (err) {
                                     if (err) {
                                         // FIXME: error handling
-                                        app_1.logger.error('[rest_api::runExercise::insert_compile_error] : ');
+                                        app_1.logger.error('[rest_api::handleResult::insert_compile_error] : ');
                                         app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                     }
                                 });
@@ -556,8 +624,9 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                         }
                         else {
                             // FIXME: error handling
-                            app_1.logger.error('[rest_api::runExercise::something_else]');
-                            res.sendStatus(500);
+                            app_1.logger.error('[rest_api::handleResult::something_else]');
+                            if (res)
+                                res.status(500).json({ id: logId });
                         }
                     });
                 }
@@ -578,7 +647,6 @@ function historyList(req, res) {
     if (!('t' in req.query)) {
         req.query.t = '3';
     }
-    console.log(req.query);
     var query = req.query;
     var commonQuery = '';
     if (req.session.admin && query.u)
@@ -671,7 +739,7 @@ function getExercise(req, res) {
             return;
         }
         var row = result[0];
-        if (row.studentId == req.session.studentId) {
+        if (req.session.admin || row.studentId == req.session.studentId) {
             if (row.originalFile) {
                 res.download(path.join(app_1.submittedExerciseOriginalPath, row.originalFile), row.name);
             }
@@ -680,8 +748,7 @@ function getExercise(req, res) {
             }
         }
         else {
-            app_1.logger.error('[rest_api::getExercise::student_id-mismatch] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            app_1.logger.error('[rest_api::getExercise::student_id-mismatch]');
             res.sendStatus(401);
         }
     });
@@ -708,12 +775,11 @@ function getHomework(req, res) {
             return;
         }
         var row = result[0];
-        if (row.studentId == req.session.studentId) {
+        if (req.session.admin || row.studentId == req.session.studentId) {
             res.download(path.join(app_1.submittedHomeworkPath, row.fileName), row.name);
         }
         else {
-            app_1.logger.error('[rest_api::getHomework::student_id-mismatch] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            app_1.logger.error('[rest_api::getHomework::student_id-mismatch]');
             res.sendStatus(401);
         }
     });

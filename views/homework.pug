@@ -53,8 +53,6 @@ block content
 								| Submit
 								| #[span.glyphicon.glyphicon-menu-down]
 
-				- const present = Date.now();
-
 				ul.list-group.collapse(id='collapseExample' + homework.id)
 					each attachment in homework.attachments
 						form.upload-form(action='/homework/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
@@ -66,7 +64,7 @@ block content
 											| &nbsp;
 											| #{attachment.name}
 
-									if signIn && homework.leftMillis >= 0
+									if signIn && homework.leftMillis >= -2 * 24 * 60 * 60 * 1000
 										.col-xs-12.col-sm-7.vcenter
 											.form-group
 												.pull-right.input-group

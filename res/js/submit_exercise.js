@@ -113,7 +113,7 @@ $('.upload-form').validator().on('submit', function (e) {
 						$form.validator('validate');
 					},
 					// timeout
-					408: function (jqXHR) {
+					410: function (jqXHR) {
 						const res = jqXHR.responseJSON;
 
 						$correctBody.hide();
@@ -222,7 +222,9 @@ $('.upload-form').validator().on('submit', function (e) {
 						$form.validator('validate');
 					},
 					// server error
-					500: function () {
+					500: function (jqXHR) {
+						const res = jqXHR.responseJSON;
+
 						$correctBody.hide();
 						$incorrectBody.hide();
 						$runtimeErrorBody.hide();
@@ -230,11 +232,7 @@ $('.upload-form').validator().on('submit', function (e) {
 						$timeoutBody.hide();
 						$errorBody.show();
 
-						$errorBox.html("It looks like there's an error in your code.<br>" +
-							"If you encounter the same problem, please contact the Web Manager.<br>" +
-							"It's mainly because of <strong>Korean characters</strong>. If you want to write in Korean, change the <strong>encoding of the file</strong> to <code>UTF-8</code>.<br>" +
-							"If you don't know about <strong>File Encoding</strong>, please delete all Korean characters in your code and resubmit.");
-
+						$errorBox.html('Some error occurs on the judging server. Please contact to web administrator with your error ID : <code>' + res.id + '</code>.');
 
 						$resultModalHeader.removeClass('text-success');
 						$resultModalHeader.addClass('text-danger');
