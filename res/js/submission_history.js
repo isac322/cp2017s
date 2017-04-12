@@ -57,6 +57,7 @@ var Row = (function () {
         this.resultTd.textContent = Row.RESULTS[this.result];
         this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
         this.emailTd.textContent = this.email;
+        this.categoryTd.setAttribute('class', 'categoryCol');
     };
     return Row;
 }());
@@ -65,6 +66,7 @@ $selects.on('hide.bs.select', function () {
     $selects.prop('disabled', true);
     $selects.selectpicker('refresh');
     var newQuery = genQuery();
+    console.log(newQuery, prevQuery);
     if (prevQuery !== newQuery) {
         $.ajax('history/list' + genQuery(), { success: queryHandler });
         prevQuery = newQuery;
@@ -76,18 +78,19 @@ var $homeworkGroup = $('#homeworkGroup');
 var $exerciseGroup = $('#exerciseGroup');
 $category.change(function () {
     switch ($category.val()) {
-        case 'All':
+        case 3:
             $homeworkGroup.children().show();
             $exerciseGroup.children().show();
             break;
-        case 'Homework':
+        case 1:
             $homeworkGroup.children().show();
             $exerciseGroup.children().prop("selected", false).hide();
             break;
-        case 'Exercise':
+        case 2:
             $homeworkGroup.children().prop("selected", false).hide();
             $exerciseGroup.children().show();
     }
+    $selects.selectpicker('hide');
     $selects.selectpicker('refresh');
 });
 function genQuery() {
@@ -111,6 +114,6 @@ function genQuery() {
     $email.children(':selected').each(function (index, elem) {
         emailQuery += 'e=' + elem.value + '&';
     });
-    return '?' + homeworkQuery + exerciseQuery + resultQuery + emailQuery;
+    return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + resultQuery + emailQuery;
 }
 $.ajax('history/list' + prevQuery, { success: queryHandler });

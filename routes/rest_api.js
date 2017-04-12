@@ -8,6 +8,7 @@ var mysql_1 = require("mysql");
 var path = require("path");
 var app_1 = require("../app");
 var util = require("util");
+var async = require("async");
 var charsetDetector = require("detect-character-encoding");
 var webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
 var CLIENT_ID = webConfig.google.clientId;
@@ -575,29 +576,53 @@ function historyList(req, res) {
     if (!req.session.signIn) {
         return res.sendStatus(401);
     }
+    if (!('t' in req.query)) {
+        req.query.t = '3';
+    }
     console.log(req.query);
     var query = req.query;
-    var queryStr = '';
+    var commonQuery = '';
     if (req.session.admin && query.u)
-        queryStr += 'student_id IN (' + mysql_1.escape(query.u) + ')';
+        commonQuery += 'student_id IN (' + mysql_1.escape(query.u) + ')';
     else
-        queryStr += 'student_id=' + mysql_1.escape(req.session.studentId);
-    if (query.ex)
-        queryStr += ' AND attachment_id IN (' + mysql_1.escape(query.ex) + ')';
-    if (query.r)
-        queryStr += ' AND type IN (' + mysql_1.escape(query.r) + ')';
+        commonQuery += 'student_id=' + mysql_1.escape(req.session.studentId);
     if (query.e)
-        queryStr += ' AND email IN (' + mysql_1.escape(query.e) + ')';
-    exports.dbClient.query('SELECT exercise_log.id, student_id AS `studentId`, email, file_name AS `hashedName`, submitted AS `timestamp`, name AS `fileName`, extension, type AS `result` ' +
-        'FROM exercise_log ' +
-        '    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
-        '    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
-        'WHERE ' + queryStr, function (err, result) {
+        commonQuery += ' AND email IN (' + mysql_1.escape(query.e) + ')';
+    var tasks = [];
+    if (query.t & 2) {
+        var exerciseQuery_1 = commonQuery;
+        if (query.ex)
+            exerciseQuery_1 += ' AND attachment_id IN (' + mysql_1.escape(query.ex) + ')';
+        if (query.r)
+            exerciseQuery_1 += ' AND type IN (' + mysql_1.escape(query.r) + ')';
+        tasks.push(function (callback) {
+            exports.dbClient.query('SELECT exercise_log.id, student_id AS `studentId`, email, file_name AS `hashedName`, submitted AS `timestamp`, name AS `fileName`, extension, type AS `result`, "Exercise" AS `category` ' +
+                'FROM exercise_log ' +
+                '    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
+                '    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
+                'WHERE ' + exerciseQuery_1, callback);
+        });
+    }
+    if (query.t & 1) {
+        var homeworkQuery_1 = commonQuery;
+        if (query.hw)
+            homeworkQuery_1 += ' AND attachment_id IN (' + mysql_1.escape(query.hw) + ')';
+        tasks.push(function (callback) {
+            exports.dbClient.query('SELECT submit_log.id, student_id AS `studentId`, email, file_name as `hashedName`, submitted AS `timestamp`, name AS `fileName`, extension, "Homework" AS `category` ' +
+                'FROM submit_log ' +
+                '    JOIN hw_config ON submit_log.attachment_id = hw_config.id ' +
+                'WHERE ' + homeworkQuery_1, callback);
+        });
+    }
+    async.parallel(tasks, function (err, results) {
         if (err) {
             console.error(err);
             return;
         }
-        res.json(result);
+        if (results.length == 2)
+            res.json(results[0][0].concat(results[1][0]));
+        else
+            res.json(results[0][0]);
     });
 }
 exports.historyList = historyList;

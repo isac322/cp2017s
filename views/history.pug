@@ -13,9 +13,9 @@ block content
 		.col-xs-12.col-sm-6.col-md-2.form-group
 			label(for='selectCategory') Category
 			select.form-control.selectpicker#selectCategory
-				option All
-				option Homework
-				option Exercise
+				option(value='3') All
+				option(value='1') Homework
+				option(value='2') Exercise
 
 		.col-xs-12.col-sm-6.col-md-5.form-group
 			label(for='selectId')
@@ -30,7 +30,7 @@ block content
 					each file in exerciseList
 						option(title=file.fileName, value=file.id, data-subtext=file.fileName)=decodeURIComponent(file.exerciseName)
 
-		.col-xs-12.col-sm-6.col-md-2.form-group
+		.col-xs-12.col-sm-6.col-md-2.form-group#resultGroup
 			label(for='selectResult')
 				| Result
 				| #[small.text-muted (Multiple selection)]
@@ -62,7 +62,7 @@ block content
 					thead
 						tr
 							th.col-xs-1 ID
-							th.col-xs-1 Category
+							th.col-xs-1.categoryCol Category
 							th File name #[small.text-muted (Click to see)]
 							th.col-xs-2 Result
 							th Timestamp

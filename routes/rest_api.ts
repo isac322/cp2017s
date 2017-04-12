@@ -15,6 +15,8 @@ import {
 	tempPath
 } from "../app";
 import * as util from "util";
+import * as async from "async";
+
 import charsetDetector = require('detect-character-encoding');
 
 
@@ -777,6 +779,10 @@ export function historyList(req: Request, res: Response) {
 		return res.sendStatus(401);
 	}
 
+	if (!('t' in req.query)) {
+		req.query.t = '3';
+	}
+
 	console.log(req.query);
 
 	const query: {
@@ -784,30 +790,56 @@ export function historyList(req: Request, res: Response) {
 		ex: Array<string> | string,
 		r: Array<string> | string,
 		e: Array<string> | string,
-		u: Array<string> | string
+		u: Array<string> | string,
+		t: number
 	} = req.query;
 
-	let queryStr = '';
+	let commonQuery = '';
 
-	if (req.session.admin && query.u) queryStr += 'student_id IN (' + escape(query.u) + ')';
-	else queryStr += 'student_id=' + escape(req.session.studentId);
+	if (req.session.admin && query.u) commonQuery += 'student_id IN (' + escape(query.u) + ')';
+	else commonQuery += 'student_id=' + escape(req.session.studentId);
+	if (query.e) commonQuery += ' AND email IN (' + escape(query.e) + ')';
 
-	if (query.ex) queryStr += ' AND attachment_id IN (' + escape(query.ex) + ')';
-	if (query.r) queryStr += ' AND type IN (' + escape(query.r) + ')';
-	if (query.e) queryStr += ' AND email IN (' + escape(query.e) + ')';
+	let tasks = [];
 
-	dbClient.query(
-		'SELECT exercise_log.id, student_id AS `studentId`, email, file_name AS `hashedName`, submitted AS `timestamp`, name AS `fileName`, extension, type AS `result` ' +
-		'FROM exercise_log ' +
-		'    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
-		'    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
-		'WHERE ' + queryStr,
-		(err: IError, result) => {
-			if (err) {
-				console.error(err);
-				return;
-			}
+	if (query.t & 2) {
+		let exerciseQuery = commonQuery;
+		if (query.ex) exerciseQuery += ' AND attachment_id IN (' + escape(query.ex) + ')';
+		if (query.r) exerciseQuery += ' AND type IN (' + escape(query.r) + ')';
 
-			res.json(result);
+		tasks.push((callback) => {
+			dbClient.query(
+				'SELECT exercise_log.id, student_id AS `studentId`, email, file_name AS `hashedName`, submitted AS `timestamp`, name AS `fileName`, extension, type AS `result`, "Exercise" AS `category` ' +
+				'FROM exercise_log ' +
+				'    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
+				'    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
+				'WHERE ' + exerciseQuery,
+				callback);
 		});
+	}
+
+
+	if (query.t & 1) {
+		let homeworkQuery = commonQuery;
+		if (query.hw) homeworkQuery += ' AND attachment_id IN (' + escape(query.hw) + ')';
+
+		tasks.push((callback) => {
+			dbClient.query(
+				'SELECT submit_log.id, student_id AS `studentId`, email, file_name as `hashedName`, submitted AS `timestamp`, name AS `fileName`, extension, "Homework" AS `category` ' +
+				'FROM submit_log ' +
+				'    JOIN hw_config ON submit_log.attachment_id = hw_config.id ' +
+				'WHERE ' + homeworkQuery,
+				callback);
+		});
+	}
+
+	async.parallel(tasks, (err, results) => {
+		if (err) {
+			console.error(err);
+			return;
+		}
+
+		if (results.length == 2) res.json(results[0][0].concat(results[1][0]));
+		else res.json(results[0][0]);
+	});
 }

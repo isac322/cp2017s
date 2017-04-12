@@ -16,10 +16,10 @@ var queryHandler = function (data) {
     $resultTable.children().detach();
     data.forEach(function (value, index) {
         if (index >= rows.length) {
-            rows.push(new Row(value, 'Exercise'));
+            rows.push(new Row(value));
         }
         else {
-            rows[index].setData(value, 'Exercise');
+            rows[index].setData(value);
         }
         $resultTable.append(rows[index].row);
     });
@@ -27,7 +27,7 @@ var queryHandler = function (data) {
     $selects.selectpicker('refresh');
 };
 var Row = (function () {
-    function Row(value, category) {
+    function Row(value) {
         this.idTd = document.createElement('th');
         this.idTd.setAttribute('scope', 'row');
         this.categoryTd = document.createElement('td');
@@ -36,7 +36,7 @@ var Row = (function () {
         this.timestampTd = document.createElement('td');
         this.emailTd = document.createElement('td');
         this.userTd = document.createElement('td');
-        this.setData(value, category);
+        this.setData(value);
         this.row = document.createElement('tr');
         this.row.appendChild(this.idTd);
         this.row.appendChild(this.categoryTd);
@@ -46,9 +46,9 @@ var Row = (function () {
         this.row.appendChild(this.emailTd);
         this.row.appendChild(this.userTd);
     }
-    Row.prototype.setData = function (value, category) {
+    Row.prototype.setData = function (value) {
         this.id = value.id;
-        this.category = category;
+        this.category = value.category;
         this.result = value.result;
         this.email = value.email;
         this.fileName = value.fileName;
@@ -62,6 +62,7 @@ var Row = (function () {
         this.resultTd.textContent = Row.RESULTS[this.result];
         this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
         this.emailTd.textContent = this.email;
+        this.categoryTd.setAttribute('class', 'categoryCol');
     };
     return Row;
 }());
@@ -70,6 +71,7 @@ $selects.on('hide.bs.select', function () {
     $selects.prop('disabled', true);
     $selects.selectpicker('refresh');
     var newQuery = genQuery();
+    console.log(newQuery, prevQuery);
     if (prevQuery !== newQuery) {
         $.ajax('history/list' + genQuery(), { success: queryHandler });
         prevQuery = newQuery;
@@ -81,19 +83,27 @@ $selects.on('hide.bs.select', function () {
 });
 var $homeworkGroup = $('#homeworkGroup');
 var $exerciseGroup = $('#exerciseGroup');
+var $resultGroup = $('#resultGroup');
 $category.change(function () {
+    var $categoryCol = $('.categoryCol');
     switch ($category.val()) {
-        case 'All':
+        case '3':
             $homeworkGroup.children().show();
             $exerciseGroup.children().show();
+            $categoryCol.show();
+            $resultGroup.show();
             break;
-        case 'Homework':
+        case '1':
             $homeworkGroup.children().show();
-            $exerciseGroup.children().prop("selected", false).hide();
+            $exerciseGroup.children().prop('selected', false).hide();
+            $categoryCol.hide();
+            $resultGroup.hide();
             break;
-        case 'Exercise':
-            $homeworkGroup.children().prop("selected", false).hide();
+        case '2':
+            $homeworkGroup.children().prop('selected', false).hide();
             $exerciseGroup.children().show();
+            $categoryCol.hide();
+            $resultGroup.show();
     }
     $selects.selectpicker('refresh');
 });
@@ -123,6 +133,6 @@ function genQuery() {
     $user.children(':selected').each(function (index, elem) {
         userQuery += 'u=' + elem.value + '&';
     });
-    return '?' + homeworkQuery + exerciseQuery + resultQuery + emailQuery + userQuery;
+    return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + resultQuery + emailQuery + userQuery;
 }
 $.ajax('history/list' + prevQuery, { success: queryHandler });
