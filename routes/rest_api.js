@@ -566,16 +566,15 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
     });
 }
 /**
- * Give history data.
+ * Send history data.
  *
  * @method historyList
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
 function historyList(req, res) {
-    if (!req.session.signIn) {
+    if (!req.session.signIn)
         return res.sendStatus(401);
-    }
     if (!('t' in req.query)) {
         req.query.t = '3';
     }
@@ -596,7 +595,7 @@ function historyList(req, res) {
         if (query.r)
             exerciseQuery_1 += ' AND type IN (' + mysql_1.escape(query.r) + ')';
         tasks.push(function (callback) {
-            exports.dbClient.query('SELECT exercise_log.id, student_id AS `studentId`, email, file_name AS `hashedName`, submitted AS `timestamp`, name AS `fileName`, extension, type AS `result`, "Exercise" AS `category` ' +
+            exports.dbClient.query('SELECT exercise_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, name AS `fileName`, extension, type AS `result`, "Exercise" AS `category` ' +
                 'FROM exercise_log ' +
                 '    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
                 '    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
@@ -608,7 +607,7 @@ function historyList(req, res) {
         if (query.hw)
             homeworkQuery_1 += ' AND attachment_id IN (' + mysql_1.escape(query.hw) + ')';
         tasks.push(function (callback) {
-            exports.dbClient.query('SELECT submit_log.id, student_id AS `studentId`, email, file_name as `hashedName`, submitted AS `timestamp`, name AS `fileName`, extension, "Homework" AS `category` ' +
+            exports.dbClient.query('SELECT submit_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, name AS `fileName`, extension, "Homework" AS `category` ' +
                 'FROM submit_log ' +
                 '    JOIN hw_config ON submit_log.attachment_id = hw_config.id ' +
                 'WHERE ' + homeworkQuery_1, callback);
@@ -616,7 +615,9 @@ function historyList(req, res) {
     }
     async.parallel(tasks, function (err, results) {
         if (err) {
-            console.error(err);
+            app_1.logger.error('[rest_api::historyList::search] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            res.sendStatus(500);
             return;
         }
         if (results.length == 2)
@@ -626,3 +627,95 @@ function historyList(req, res) {
     });
 }
 exports.historyList = historyList;
+/**
+ * Send judge result of exercise data.
+ *
+ * @method judgeResult
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+function judgeResult(req, res) {
+    if (!req.session.signIn)
+        return 401;
+    exports.dbClient.query('SELECT student_id, type, compile_error, unmatched_index, unmatched_output, return_code, runtime_error, script_error ' +
+        'FROM exercise_log JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
+        'WHERE log_id = ?', req.params.logId, function (err, searchResult) {
+        if (err) {
+            app_1.logger.error('[rest_api::judgeResult::search] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            res.sendStatus(500);
+            return;
+        }
+        console.log(searchResult);
+        // TODO: implement me
+    });
+}
+exports.judgeResult = judgeResult;
+/**
+ * Send exercise file.
+ *
+ * @method getExercise
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+function getExercise(req, res) {
+    if (!req.session.signIn)
+        return res.sendStatus(401);
+    exports.dbClient.query('SELECT student_id AS `studentId`, file_name AS `fileName`, original_file AS `originalFile`, name ' +
+        'FROM exercise_log JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
+        'WHERE exercise_log.id=?', req.params.logId, function (err, result) {
+        if (err) {
+            app_1.logger.error('[rest_api::getExercise::search] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            res.sendStatus(500);
+            return;
+        }
+        var row = result[0];
+        if (row.studentId == req.session.studentId) {
+            if (row.originalFile) {
+                res.download(path.join(app_1.submittedExerciseOriginalPath, row.originalFile), row.name);
+            }
+            else {
+                res.download(path.join(app_1.submittedExercisePath, row.fileName), row.name);
+            }
+        }
+        else {
+            app_1.logger.error('[rest_api::getExercise::student_id-mismatch] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            res.sendStatus(401);
+        }
+    });
+}
+exports.getExercise = getExercise;
+/**
+ * Send homework file.
+ *
+ * @method getHomework
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+function getHomework(req, res) {
+    if (!req.session.signIn)
+        return res.sendStatus(401);
+    exports.dbClient.query('SELECT student_id AS `studentId`, file_name AS `fileName`, name ' +
+        'FROM submit_log JOIN hw_config ON submit_log.attachment_id = hw_config.id ' +
+        'WHERE submit_log.id=?', req.params.logId, function (err, result) {
+        if (err) {
+            // FIXME: error handling
+            app_1.logger.error('[rest_api::getHomework::search] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            res.sendStatus(500);
+            return;
+        }
+        var row = result[0];
+        if (row.studentId == req.session.studentId) {
+            res.download(path.join(app_1.submittedHomeworkPath, row.fileName), row.name);
+        }
+        else {
+            app_1.logger.error('[rest_api::getHomework::student_id-mismatch] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            res.sendStatus(401);
+        }
+    });
+}
+exports.getHomework = getHomework;

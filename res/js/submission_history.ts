@@ -17,25 +17,41 @@ class Data {
 	result: number;
 	email: string;
 	fileName: string;
-	hashedName: string;
 	timestamp: string;
 	extension: string;
 	studentId: string;
+	category: string;
 }
 
 const queryHandler = (data: Array<Data>) => {
 	$resultTable.children().detach();
 
-	data.forEach((value: Data, index: number) => {
-		if (index >= rows.length) {
-			rows.push(new Row(value, 'Exercise'));
-		}
-		else {
-			rows[index].setData(value, 'Exercise');
-		}
+	for (let i = 0; i < data.length; i++) {
+		if (i >= rows.length)
+			rows.push(new Row(data[i]));
+		else
+			rows[i].setData(data[i]);
 
-		$resultTable.append(rows[index].row);
-	});
+		$resultTable.append(rows[i].row);
+	}
+
+	const $categoryCol = $('.categoryCol');
+
+	switch ($category.val()) {
+		case '3':
+			$categoryCol.show();
+			break;
+
+		case '1':
+			$categoryCol.hide();
+			break;
+
+		case '2':
+			$categoryCol.hide();
+	}
+
+	$selects.prop('disabled', false);
+	$selects.selectpicker('refresh');
 };
 
 class Row {
@@ -45,7 +61,6 @@ class Row {
 	result: number;
 	email: string;
 	fileName: string;
-	hashedName: string;
 	timestamp: string;
 	extension: string;
 	studentId: string;
@@ -58,7 +73,7 @@ class Row {
 	private timestampTd: HTMLTableDataCellElement;
 	private emailTd: HTMLTableDataCellElement;
 
-	public constructor(value: Data, category: string) {
+	public constructor(value: Data) {
 		this.idTd = document.createElement('th');
 		this.idTd.setAttribute('scope', 'row');
 		this.categoryTd = document.createElement('td');
@@ -67,7 +82,7 @@ class Row {
 		this.timestampTd = document.createElement('td');
 		this.emailTd = document.createElement('td');
 
-		this.setData(value, category);
+		this.setData(value);
 
 		this.row = document.createElement('tr');
 
@@ -79,21 +94,38 @@ class Row {
 		this.row.appendChild(this.emailTd);
 	}
 
-	public setData(value: Data, category: string) {
+	public setData(value: Data) {
 		this.id = value.id;
-		this.category = category;
+		this.category = value.category;
 		this.result = value.result;
 		this.email = value.email;
 		this.fileName = value.fileName;
-		this.hashedName = value.hashedName;
 		this.timestamp = value.timestamp;
 		this.extension = value.extension;
 		this.studentId = value.studentId;
 
 		this.idTd.textContent = String(this.id);
 		this.categoryTd.textContent = this.category;
-		this.fileTd.textContent = this.fileName;
-		this.resultTd.textContent = Row.RESULTS[this.result];
+
+		if (this.category == 'Homework') {
+			this.fileTd.innerHTML = '<a class="btn-link" href="/homework/' + this.id + '">' + this.fileName + '</a>'
+		}
+		else {
+			this.fileTd.innerHTML = '<a class="btn-link" href="/exercise/' + this.id + '">' + this.fileName + '</a>'
+		}
+
+		if (this.result != null) {
+			if (this.result == 0)
+				this.resultTd.innerHTML = '<a class="btn-link" href="#"><strong class="text-success">' + Row.RESULTS[this.result] + '</strong></a>';
+			else
+				this.resultTd.innerHTML = '<a class="btn-link" href="#"><strong class="text-danger">' + Row.RESULTS[this.result] + '</strong></a>';
+		}
+		else if (this.category == 'Homework') {
+			this.resultTd.textContent = '';
+		}
+		else {
+			this.resultTd.textContent = 'Pending...';
+		}
 		this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
 		this.emailTd.textContent = this.email;
 
@@ -107,12 +139,11 @@ $selects.on('hide.bs.select', () => {
 
 	const newQuery = genQuery();
 
-	console.log(newQuery, prevQuery);
-
 	if (prevQuery !== newQuery) {
 		$.ajax('history/list' + genQuery(), {success: queryHandler});
 		prevQuery = newQuery;
-
+	}
+	else {
 		$selects.prop('disabled', false);
 		$selects.selectpicker('refresh');
 	}
@@ -121,24 +152,28 @@ $selects.on('hide.bs.select', () => {
 const $homeworkGroup = $('#homeworkGroup');
 const $exerciseGroup = $('#exerciseGroup');
 
+const $resultGroup = $('#resultGroup');
+
 $category.change(() => {
 	switch ($category.val()) {
-		case 3:
+		case '3':
 			$homeworkGroup.children().show();
 			$exerciseGroup.children().show();
+			$resultGroup.show();
 			break;
 
-		case 1:
+		case '1':
 			$homeworkGroup.children().show();
-			$exerciseGroup.children().prop("selected", false).hide();
+			$exerciseGroup.children().prop('selected', false).hide();
+			$resultGroup.hide();
 			break;
 
-		case 2:
-			$homeworkGroup.children().prop("selected", false).hide();
+		case '2':
+			$homeworkGroup.children().prop('selected', false).hide();
 			$exerciseGroup.children().show();
+			$resultGroup.show();
 	}
 
-	$selects.selectpicker('hide');
 	$selects.selectpicker('refresh');
 });
 
