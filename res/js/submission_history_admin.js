@@ -64,6 +64,7 @@ var Row = (function () {
         this.timestamp = value.timestamp;
         this.extension = value.extension;
         this.studentId = value.studentId;
+        this.userName = value.name;
         this.idTd.textContent = String(this.id);
         this.categoryTd.textContent = this.category;
         if (this.category == 'Homework') {
@@ -86,6 +87,7 @@ var Row = (function () {
         }
         this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
         this.emailTd.textContent = this.email;
+        this.userTd.textContent = decodeURIComponent(this.userName);
         this.categoryTd.setAttribute('class', 'categoryCol');
     };
     return Row;

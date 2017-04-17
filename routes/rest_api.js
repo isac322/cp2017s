@@ -649,10 +649,14 @@ function historyList(req, res) {
     }
     var query = req.query;
     var commonQuery = '';
-    if (req.session.admin && query.u)
-        commonQuery += 'student_id IN (' + mysql_1.escape(query.u) + ')';
+    if (req.session.admin) {
+        if (query.u)
+            commonQuery += 'user.student_id IN (' + mysql_1.escape(query.u) + ')';
+        else
+            commonQuery += 'user.student_id = ' + mysql_1.escape(req.session.studentId);
+    }
     else
-        commonQuery += 'student_id=' + mysql_1.escape(req.session.studentId);
+        commonQuery += 'student_id = ' + mysql_1.escape(req.session.studentId);
     if (query.e)
         commonQuery += ' AND email IN (' + mysql_1.escape(query.e) + ')';
     var tasks = [];
@@ -662,24 +666,51 @@ function historyList(req, res) {
             exerciseQuery_1 += ' AND attachment_id IN (' + mysql_1.escape(query.ex) + ')';
         if (query.r)
             exerciseQuery_1 += ' AND type IN (' + mysql_1.escape(query.r) + ')';
-        tasks.push(function (callback) {
-            exports.dbClient.query('SELECT exercise_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, name AS `fileName`, extension, type AS `result`, "Exercise" AS `category` ' +
-                'FROM exercise_log ' +
-                '    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
-                '    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
-                'WHERE ' + exerciseQuery_1, callback);
-        });
+        if (req.session.admin) {
+            tasks.push(function (callback) {
+                exports.dbClient.query('SELECT exercise_log.id, user.student_id AS `studentId`, email, submitted AS `timestamp`, exercise_config.name AS `fileName`, extension, type AS `result`, "Exercise" AS `category`, user.name ' +
+                    'FROM exercise_log ' +
+                    '    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
+                    '    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
+                    '    JOIN user ON user.student_id = exercise_log.student_id ' +
+                    'WHERE ' + exerciseQuery_1 + ' ' +
+                    'ORDER BY submitted', callback);
+            });
+        }
+        else {
+            tasks.push(function (callback) {
+                exports.dbClient.query('SELECT exercise_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, name AS `fileName`, extension, type AS `result`, "Exercise" AS `category` ' +
+                    'FROM exercise_log ' +
+                    '    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
+                    '    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
+                    'WHERE ' + exerciseQuery_1 + ' ' +
+                    'ORDER BY submitted', callback);
+            });
+        }
     }
     if (query.t & 1) {
         var homeworkQuery_1 = commonQuery;
         if (query.hw)
             homeworkQuery_1 += ' AND attachment_id IN (' + mysql_1.escape(query.hw) + ')';
-        tasks.push(function (callback) {
-            exports.dbClient.query('SELECT submit_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, name AS `fileName`, extension, "Homework" AS `category` ' +
-                'FROM submit_log ' +
-                '    JOIN hw_config ON submit_log.attachment_id = hw_config.id ' +
-                'WHERE ' + homeworkQuery_1, callback);
-        });
+        if (req.session.admin) {
+            tasks.push(function (callback) {
+                exports.dbClient.query('SELECT submit_log.id, user.student_id AS `studentId`, email, submitted AS `timestamp`, hw_config.name AS `fileName`, extension, "Homework" AS `category`, user.name ' +
+                    'FROM submit_log ' +
+                    '    JOIN hw_config ON submit_log.attachment_id = hw_config.id ' +
+                    '    JOIN user ON submit_log.student_id = user.student_id ' +
+                    'WHERE ' + homeworkQuery_1 + ' ' +
+                    'ORDER BY submitted', callback);
+            });
+        }
+        else {
+            tasks.push(function (callback) {
+                exports.dbClient.query('SELECT submit_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, name AS `fileName`, extension, "Homework" AS `category` ' +
+                    'FROM submit_log ' +
+                    '    JOIN hw_config ON submit_log.attachment_id = hw_config.id ' +
+                    'WHERE ' + homeworkQuery_1 + ' ' +
+                    'ORDER BY submitted', callback);
+            });
+        }
     }
     async.parallel(tasks, function (err, results) {
         if (err) {

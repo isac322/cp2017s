@@ -22,6 +22,7 @@ class Data {
 	extension: string;
 	studentId: string;
 	category: string;
+	name: string;
 }
 
 const queryHandler = (data: Array<Data>) => {
@@ -65,6 +66,7 @@ class Row {
 	timestamp: string;
 	extension: string;
 	studentId: string;
+	userName: string;
 
 	row: HTMLTableRowElement;
 	private idTd: HTMLTableHeaderCellElement;
@@ -107,6 +109,7 @@ class Row {
 		this.timestamp = value.timestamp;
 		this.extension = value.extension;
 		this.studentId = value.studentId;
+		this.userName = value.name;
 
 		this.idTd.textContent = String(this.id);
 		this.categoryTd.textContent = this.category;
@@ -132,6 +135,7 @@ class Row {
 		}
 		this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
 		this.emailTd.textContent = this.email;
+		this.userTd.textContent = decodeURIComponent(this.userName);
 
 		this.categoryTd.setAttribute('class', 'categoryCol');
 	}
