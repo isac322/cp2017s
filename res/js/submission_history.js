@@ -74,7 +74,7 @@ var Row = (function () {
         this.fileTd.innerHTML = content + '<a class="btn-link pull-right" href=' + href + '><i class="fa fa-download"></i></a>';
         if (this.result != null) {
             if (this.result == 0)
-                this.resultTd.innerHTML = '<a class="btn-link" href="#"><strong class="text-success">' + Row.RESULTS[this.result] + '</strong></a>';
+                this.resultTd.innerHTML = '<strong class="text-success">' + Row.RESULTS[this.result] + '</strong>';
             else
                 this.resultTd.innerHTML = '<a class="btn-link" href="#"><strong class="text-danger">' + Row.RESULTS[this.result] + '</strong></a>';
         }

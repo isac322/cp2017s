@@ -15,3 +15,8 @@ block modal-confirm
 					button#confirmOK.btn.btn-primary(type='button')
 						| #[i.fa.fa-check(aria-hidden='true')]
 						| Submit
+
+	script(type='text/javascript').
+		$('#confirmModal').on('shown.bs.modal', function () {
+			$('#confirmOK').focus();
+		});
