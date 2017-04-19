@@ -312,7 +312,7 @@ export function hwNameChecker(req: Request, res: Response) {
 	}
 
 	dbClient.query(
-		'SELECT * FROM homework WHERE name = ?;', req.query.name,
+		'SELECT * FROM homework WHERE name = ?;', encodeURIComponent(req.query.name),
 		(err: IError, searchResult) => {
 			if (err) {
 				// FIXME: error handling

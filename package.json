@@ -1,6 +1,6 @@
 {
 	"name": "cp2017s",
-	"version": "0.5.3",
+	"version": "0.6.0",
 	"engines": {
 		"node": ">=6.10.0"
 	},
@@ -48,7 +48,7 @@
 		"@types/dockerode": ">=2.4.0",
 		"@types/errorhandler": ">=0.0.30",
 		"@types/express-session": ">=0.0.32",
-		"@types/fs-extra": ">=2.0.0",
+		"@types/fs-extra": ">=2.1.0",
 		"@types/highlight.js": ">=9.1.9",
 		"@types/iconv-lite": ">=0.0.1",
 		"@types/jquery": ">=2.0.41",

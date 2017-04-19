@@ -152,7 +152,7 @@ export class Server {
 		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist')));
 		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'jquery-form', 'dist')));
 		this.app.use('/js', express.static(path.join(__dirname, 'node_modules', 'bootstrap-select', 'dist', 'js')));
-		this.app.use('/js', express.static(path.join(__dirname, 'res', 'js', '')));
+		this.app.use('/js', express.static(path.join(__dirname, 'res', 'js')));
 		this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'css')));
 		this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'font-awesome', 'css')));
 		this.app.use('/css', express.static(path.join(__dirname, 'node_modules', 'bootstrap-select', 'dist', 'css')));

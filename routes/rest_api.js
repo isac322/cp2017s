@@ -231,7 +231,7 @@ function hwNameChecker(req, res) {
     if (!req.session.admin) {
         return res.sendStatus(401);
     }
-    exports.dbClient.query('SELECT * FROM homework WHERE name = ?;', req.query.name, function (err, searchResult) {
+    exports.dbClient.query('SELECT * FROM homework WHERE name = ?;', encodeURIComponent(req.query.name), function (err, searchResult) {
         if (err) {
             // FIXME: error handling
             app_1.logger.error('[rest_api::hwNameChecker::select] : ');

@@ -114,16 +114,23 @@ class Row {
 		this.idTd.textContent = String(this.id);
 		this.categoryTd.textContent = this.category;
 
-		if (this.category == 'Homework') {
-			this.fileTd.innerHTML = '<a class="btn-link" href="/homework/' + this.id + '">' + this.fileName + '</a>'
+
+		const href = (this.category == 'Homework' ? '"/homework/' : '"/exercise/') + this.id + '"';
+
+		let content: string;
+
+		if (this.extension.valueOf() !== 'report' && this.extension.valueOf() !== 'zip') {
+			content = '<button class="btn-link tdLinkBtn" onclick=\'codeModal(' + href + ', "' + this.extension + '", "' + this.fileName + '");\'>' + this.fileName + '</button>'
+		} else {
+			content = this.fileName
 		}
-		else {
-			this.fileTd.innerHTML = '<a class="btn-link" href="/exercise/' + this.id + '">' + this.fileName + '</a>'
-		}
+
+		this.fileTd.innerHTML = content + '<a class="btn-link pull-right" href=' + href + '><i class="fa fa-download"></i></a>';
+
 
 		if (this.result != null) {
 			if (this.result == 0)
-				this.resultTd.innerHTML = '<a class="btn-link" href="#"><strong class="text-success">' + Row.RESULTS[this.result] + '</strong></a>';
+				this.resultTd.innerHTML = '<strong class="text-success">' + Row.RESULTS[this.result] + '</strong>';
 			else
 				this.resultTd.innerHTML = '<a class="btn-link" href="#"><strong class="text-danger">' + Row.RESULTS[this.result] + '</strong></a>';
 		}

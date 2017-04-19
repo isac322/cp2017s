@@ -3,6 +3,11 @@ extends layout
 block header
 	script(src='/js/bootstrap-select.min.js')
 	link(rel='stylesheet', href='/css/bootstrap-select.min.css')
+	style.
+		.tdLinkBtn {
+			padding: 0;
+			border: 0;
+		}
 
 block content
 	.col-xs-12.page-header
@@ -71,8 +76,11 @@ block content
 								th User
 					tbody#resultTable
 
-
 	if admin
 		script(src='/js/submission_history_admin.js')
 	else
 		script(src='/js/submission_history.js')
+
+	include modal-source_code
+
+	include modal-result

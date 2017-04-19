@@ -1,0 +1,17 @@
+block modal-confirm
+	#confirmModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='confirmModalLabel')
+		.modal-dialog.modal-lg(role='document')
+			.modal-content
+				.modal-header
+					button.close(type='button', data-dismiss='modal', aria-label='Close')
+						span(aria-hidden='true') ×
+					h2#confirmModalLabel.modal-title.text-warning
+				.modal-body
+					h4#confirmBody
+				.modal-footer
+					button.btn.btn-default(type='button', data-dismiss='modal')
+						| #[i.fa.fa-times(aria-hidden='true')]
+						| Close
+					button#confirmOK.btn.btn-primary(type='button')
+						| #[i.fa.fa-check(aria-hidden='true')]
+						| Submit
