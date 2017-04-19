@@ -1,6 +1,6 @@
 {
 	"name": "cp2017s",
-	"version": "0.6.1",
+	"version": "0.6.2",
 	"engines": {
 		"node": ">=6.10.0"
 	},
@@ -31,7 +31,6 @@
 		"iconv-lite": ">=0.4.15",
 		"jquery": ">=3.2.1",
 		"jquery-form": ">=4.2.1",
-		"less-middleware": ">=2.2.0",
 		"morgan": ">=1.8.1",
 		"mysql": ">=2.13.0",
 		"pug": ">=2.0.0-beta11",
@@ -52,7 +51,7 @@
 		"@types/highlight.js": ">=9.1.9",
 		"@types/iconv-lite": ">=0.0.1",
 		"@types/jquery": ">=2.0.41",
-		"@types/less-middleware": ">=2.0.29",
+		"@types/jquery.form": ">=3.26.29",
 		"@types/morgan": ">=1.7.32",
 		"@types/mysql": ">=0.0.31",
 		"@types/pug": ">=2.0.4",
