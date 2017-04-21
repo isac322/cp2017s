@@ -71,7 +71,6 @@ var HWRoute = (function (_super) {
         this.title = 'Homework List';
         rest_api_1.dbClient.query(req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery, function (err, searchResult) {
             if (err) {
-                // FIXME: error handling
                 app_1.logger.error('[HWRoute::homework]');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);

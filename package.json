@@ -1,6 +1,6 @@
 {
 	"name": "cp2017s",
-	"version": "0.6.2",
+	"version": "0.6.3",
 	"engines": {
 		"node": ">=6.10.0"
 	},
@@ -18,7 +18,7 @@
 		"bootstrap-social": ">=5.1.1",
 		"bootstrap-validator": ">=0.11.9",
 		"cookie-parser": ">=1.4.3",
-		"debug": ">=2.6.3",
+		"debug": ">=2.6.4",
 		"detect-character-encoding": ">=0.3.1",
 		"dockerode": ">=2.4.3",
 		"errorhandler": ">=1.5.0",
@@ -27,7 +27,6 @@
 		"express-session": ">=1.15.2",
 		"fs-extra": ">=2.1.2",
 		"google-auth-library": ">=0.10.0",
-		"highlight.js": ">=9.10.0",
 		"iconv-lite": ">=0.4.15",
 		"jquery": ">=3.2.1",
 		"jquery-form": ">=4.2.1",
@@ -48,15 +47,14 @@
 		"@types/errorhandler": ">=0.0.30",
 		"@types/express-session": ">=0.0.32",
 		"@types/fs-extra": ">=2.1.0",
-		"@types/highlight.js": ">=9.1.9",
 		"@types/iconv-lite": ">=0.0.1",
 		"@types/jquery": ">=2.0.41",
 		"@types/jquery.form": ">=3.26.29",
 		"@types/morgan": ">=1.7.32",
-		"@types/mysql": ">=0.0.31",
+		"@types/mysql": ">=0.0.32",
 		"@types/pug": ">=2.0.4",
 		"@types/serve-favicon": ">=2.2.28",
-		"@types/winston": ">=2.3.0",
+		"@types/winston": ">=2.3.1",
 		"typescript": ">=2.3.0"
 	}
 }

@@ -93,7 +93,6 @@ export class HWRoute extends BaseRoute {
 			req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery,
 			(err, searchResult) => {
 				if (err) {
-					// FIXME: error handling
 					logger.error('[HWRoute::homework]');
 					logger.error(util.inspect(err, {showHidden: false, depth: null}));
 					res.sendStatus(500);

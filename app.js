@@ -72,7 +72,7 @@ var Server = (function () {
      * @class Server
      * @method bootstrap
      * @static
-     * @return {ng.auto.IInjectorService} Returns the newly created injector for this app.
+     * @return {Server} Returns the newly created injector for this app.
      */
     Server.bootstrap = function () {
         return new Server();
@@ -91,13 +91,12 @@ var Server = (function () {
         this.app.get('/homework/name', rest_api_1.hwNameChecker);
         this.app.get('/homework/:logId([0-9]+)', rest_api_1.getHomework);
         this.app.post('/homework/:attachId([0-9]+)', rest_api_1.uploadAttach);
-        //		this.app.post('/exercise', runExercise);
         this.app.get('/exercise/:logId([0-9]+)', rest_api_1.getExercise);
-        this.app.post('/exercise', rest_api_1.runExercise);
+        //		this.app.post('/exercise', runExercise);
         this.app.get('/exercise/resolve', rest_api_1.resolve);
+        this.app.get('/exercise/result/:logId([0-9]+)', rest_api_1.judgeResult);
         this.app.post('/exercise/:attachId([0-9]+)', rest_api_1.runExercise);
         this.app.get('/history/list', rest_api_1.historyList);
-        this.app.get('/history/:logId([0-9]+)', rest_api_1.judgeResult);
     };
     /**
      * Configure application

@@ -43,9 +43,10 @@ function signIn(req, res) {
         var email = payload['email'];
         exports.dbClient.query('SELECT * from email, user where email = "' + email + '" and user.student_id = email.student_id;', function (err, result) {
             if (err) {
-                // FIXME: error handling
                 app_1.logger.error('[rest_api::signIn::select] : ');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                res.sendStatus(500);
+                return;
             }
             app_1.logger.debug('[signIn]');
             app_1.logger.debug(util.inspect(result, { showHidden: false, depth: 1 }));
@@ -69,6 +70,8 @@ function signIn(req, res) {
 }
 exports.signIn = signIn;
 function signOut(req, res) {
+    if (!req.session.signIn)
+        return res.sendStatus(401);
     req.session.admin = false;
     req.session.email = null;
     req.session.name = null;
@@ -85,9 +88,8 @@ exports.signOut = signOut;
  * @param res {Response} The express Response object.
  */
 function register(req, res) {
-    if (req.session.signIn) {
+    if (req.session.signIn)
         return res.sendStatus(401);
-    }
     var body = req.body;
     var studentId = body.student_id1 + '-' + body.student_id2;
     var name = encodeURIComponent(body.name);
@@ -102,7 +104,6 @@ function register(req, res) {
         var nameInGoogle = encodeURIComponent(payload['name']);
         exports.dbClient.query('SELECT * FROM user WHERE student_id = \'' + studentId + '\';', function (err, selectResult) {
             if (err || selectResult.length > 1) {
-                // FIXME: error handling
                 app_1.logger.error('[rest_api::register::select] : ');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
@@ -116,10 +117,10 @@ function register(req, res) {
             app_1.logger.debug(util.inspect(selectResult, { showHidden: false, depth: 1 }));
             exports.dbClient.query('INSERT INTO email VALUES (?,?,?);', [studentId, email, nameInGoogle], function (err, insertResult) {
                 if (err) {
-                    // FIXME: error handling
                     app_1.logger.error('[rest_api::register::insert] : ');
                     app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                     res.sendStatus(500);
+                    return;
                 }
                 app_1.logger.debug('[register:inner]');
                 app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
@@ -142,16 +143,14 @@ exports.register = register;
  * @param res {Response} The express Response object.
  */
 function createHW(req, res) {
-    if (!req.session.admin) {
+    if (!req.session.admin)
         return res.sendStatus(401);
-    }
     var name = encodeURIComponent(req.body.name);
     var start_date = req.body.start;
     var end_date = req.body.due;
     var description = req.body.description;
     exports.dbClient.query('INSERT INTO homework(name, start_date, end_date, author_id, author_email, description) VALUES(?,?,?,?,?,?);', [name, start_date, end_date, req.session.studentId, req.session.email, description], function (err, insertResult) {
         if (err) {
-            // FIXME: error handling
             app_1.logger.error('[rest_api::createHW::outer_insert] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
@@ -169,7 +168,6 @@ function createHW(req, res) {
         }
         exports.dbClient.query('INSERT INTO hw_config(homework_id, name, extension) VALUES ' + mysql_1.escape(values) + ';', function (err, result) {
             if (err) {
-                // FIXME: error handling
                 app_1.logger.error('[rest_api::createHW::inner_insert] : ');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
@@ -190,16 +188,14 @@ exports.createHW = createHW;
  * @param res {Response} The express Response object.
  */
 function uploadAttach(req, res) {
-    if (!req.session.signIn) {
+    if (!req.session.signIn)
         return res.sendStatus(401);
-    }
     var hash = crypto.createHash('sha512');
     var file = req.files.attachment;
     var hashedName = hash.update(file.data).digest('hex');
     var attachmentId = req.params.attachId;
     exports.dbClient.query('INSERT INTO submit_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);', [req.session.studentId, attachmentId, req.session.email, hashedName], function (err, insertResult) {
         if (err) {
-            // FIXME: error handling
             app_1.logger.error('[rest_api::uploadAttach::insert] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
@@ -209,7 +205,6 @@ function uploadAttach(req, res) {
         app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
         file.mv(path.join(app_1.submittedHomeworkPath, hashedName), function (err) {
             if (err) {
-                // FIXME: error handling
                 app_1.logger.error('[rest_api::uploadAttach::file_move] : ');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
@@ -228,12 +223,10 @@ exports.uploadAttach = uploadAttach;
  * @param res {Response} The express Response object.
  */
 function hwNameChecker(req, res) {
-    if (!req.session.admin) {
+    if (!req.session.admin)
         return res.sendStatus(401);
-    }
     exports.dbClient.query('SELECT * FROM homework WHERE name = ?;', encodeURIComponent(req.query.name), function (err, searchResult) {
         if (err) {
-            // FIXME: error handling
             app_1.logger.error('[rest_api::hwNameChecker::select] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
@@ -251,9 +244,8 @@ exports.hwNameChecker = hwNameChecker;
  * @param res {Response} The express Response object.
  */
 function runExercise(req, res) {
-    if (!req.session.signIn) {
+    if (!req.session.signIn)
         return res.sendStatus(401);
-    }
     var hash = crypto.createHash('sha512');
     var file = req.files.attachment;
     var attachId = req.params.attachId;
@@ -276,7 +268,6 @@ function runExercise(req, res) {
         // backup original file
         fs.writeFile(path.join(app_1.submittedExerciseOriginalPath, hashedOriginal), file.data, { mode: 384 }, function (err) {
             if (err) {
-                // FIXME: error handling
                 app_1.logger.error('[rest_api::runExercise::writeOriginalFile] : ');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             }
@@ -284,7 +275,6 @@ function runExercise(req, res) {
     }
     fs.writeFile(path.join(app_1.submittedExercisePath, hashedName), fileContent, { mode: 384 }, function (err) {
         if (err) {
-            // FIXME: error handling
             app_1.logger.error('[rest_api::runExercise::writeFile] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
         }
@@ -292,7 +282,6 @@ function runExercise(req, res) {
     // get information of this exercise by given id (attachId)
     exports.dbClient.query('SELECT name, extension, test_set_size FROM exercise_config WHERE id = ?;', attachId, function (err, searchResult) {
         if (err) {
-            // FIXME: error handling
             app_1.logger.error('[rest_api::runExercise::select] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
@@ -312,7 +301,6 @@ function runExercise(req, res) {
         fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, { mode: 384 });
         exports.dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);', [studentId, attachId, req.session.email, hashedName, hashedOriginal], function (err, insertResult) {
             if (err) {
-                // FIXME: error handling
                 app_1.logger.error('[rest_api::runExercise::insert] : ');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
@@ -333,15 +321,13 @@ exports.runExercise = runExercise;
  * @param res {Response} The express Response object.
  */
 function resolve(req, res) {
-    if (!req.session.admin) {
+    if (!req.session.admin)
         return res.sendStatus(401);
-    }
     exports.dbClient.query('SELECT exercise_log.id, exercise_log.attachment_id AS `attachId`, exercise_log.student_id AS `studentId`, file_name AS `fileName` ' +
         'FROM exercise_log ' +
         '    LEFT JOIN exercise_result ON exercise_result.log_id = exercise_log.id ' +
         'WHERE exercise_result.id IS NULL;', function (err, searchList) {
         if (err) {
-            // FIXME: error handling
             app_1.logger.error('[rest_api::resolve::search] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
@@ -351,7 +337,6 @@ function resolve(req, res) {
             // get information of this exercise by given id (attachId)
             exports.dbClient.query('SELECT name, extension, test_set_size FROM exercise_config WHERE id = ?;', log.attachId, function (err, exerciseSetting) {
                 if (err) {
-                    // FIXME: error handling
                     app_1.logger.error('[rest_api::resolve::select] : ');
                     app_1.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
                     res.sendStatus(500);
@@ -393,8 +378,7 @@ function judgeExercise(res, logId, attachId, studentId, outputPath, sourcePath) 
                 app_1.logger.error('[rest_api::runExercise::docker.stderr]');
                 app_1.logger.error(message.toString());
             }
-        }], // TODO: redirect these
-    {
+        }], {
         Volumes: {
             '/home/tester/source': {},
             '/home/tester/input': {},
@@ -412,7 +396,6 @@ function judgeExercise(res, logId, attachId, studentId, outputPath, sourcePath) 
         Tty: false
     }, function (err, data, container) {
         if (err) {
-            // FIXME: error handling
             app_1.logger.error('[rest_api::runExercise::docker_run] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
@@ -422,7 +405,6 @@ function judgeExercise(res, logId, attachId, studentId, outputPath, sourcePath) 
         // remove input temporary folder
         fs_ext.remove(sourcePath, function (err) {
             if (err) {
-                // FIXME: error handling
                 app_1.logger.error('[rest_api::judgeExercise::temp_remove] : ');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             }
@@ -436,23 +418,20 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
         // if result.js is exist, it means that this judge was successful
         if (exists) {
             fs.readFile(resultFile, 'UTF-8', function (err, data) {
-                var result = JSON.parse(data.toString());
+                var result = JSON.parse(data);
                 // remove output temporary folder
                 fs_ext.remove(outputPath, function (err) {
                     if (err) {
-                        // FIXME: error handling
                         app_1.logger.error('[rest_api::handleResult::temp_remove] : ');
                         app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                        res.sendStatus(500);
                     }
                 });
                 // the judge was correct
                 if (result.isMatched) {
                     if (res)
                         res.sendStatus(200);
-                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type, runtime_error) VALUE (?, ?, ?);', [logId, 0, result.errorLog], function (err) {
+                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type, runtime_error) VALUE (?, ?, ?);', [logId, 0 /* correct */, result.errorLog], function (err) {
                         if (err) {
-                            // FIXME: error handling
                             app_1.logger.error('[rest_api::handleResult::insert_judge_correct] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                         }
@@ -462,7 +441,6 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                     }
                     exports.dbClient.query('INSERT IGNORE INTO exercise_quick_result (attach_id, student_id, result) VALUE (?, ?, ?);', [attachId, studentId, true], function (err) {
                         if (err) {
-                            // FIXME: error handling
                             app_1.logger.error('[rest_api::handleResult::insert_judge_correct] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                         }
@@ -473,7 +451,6 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                     if (result.returnCode == 124) {
                         fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8', function (err, data) {
                             if (err) {
-                                // FIXME: error handling
                                 app_1.logger.error('[rest_api::handleResult::read_file::read_file:timeout] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                 if (res)
@@ -481,11 +458,10 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                                 return;
                             }
                             if (res)
-                                res.status(410).json({ input: data.toString() });
+                                res.status(410).json({ input: data });
                         });
-                        exports.dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, unmatched_index) VALUE (?, ?, ?, ?);', [logId, 3, result.returnCode, result.inputIndex], function (err) {
+                        exports.dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, failed_index) VALUE (?, ?, ?, ?);', [logId, 3 /* timeout */, result.returnCode, result.inputIndex], function (err) {
                             if (err) {
-                                // FIXME: error handling
                                 app_1.logger.error('[rest_api::handleResult::insert_judge_timeout] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                             }
@@ -494,7 +470,6 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                     else {
                         fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8', function (err, data) {
                             if (err) {
-                                // FIXME: error handling
                                 app_1.logger.error('[rest_api::handleResult::read_file::read_file:runtimeError] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                 if (res)
@@ -503,14 +478,13 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                             }
                             if (res)
                                 res.status(412).json({
-                                    input: data.toString(),
+                                    input: data,
                                     errorLog: result.errorLog,
                                     returnCode: result.returnCode
                                 });
                         });
-                        exports.dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, runtime_error, unmatched_index) VALUE (?, ?, ?, ?, ?);', [logId, 4, result.returnCode, result.errorLog, result.inputIndex], function (err) {
+                        exports.dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, runtime_error, failed_index) VALUE (?, ?, ?, ?, ?);', [logId, 4 /* runtimeError */, result.returnCode, result.errorLog, result.inputIndex], function (err) {
                             if (err) {
-                                // FIXME: error handling
                                 app_1.logger.error('[rest_api::handleResult::insert_judge_runtime_error] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                             }
@@ -520,17 +494,15 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                 else {
                     fs.readFile(path.join(answerPath, result.inputIndex + '.out'), 'UTF-8', function (err, data) {
                         if (err) {
-                            // FIXME: error handling
                             app_1.logger.error('[rest_api::handleResult::read_file] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                             if (res)
                                 res.sendStatus(500);
                             return;
                         }
-                        var answerOutput = data.toString();
+                        var answerOutput = data;
                         fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8', function (err, data) {
                             if (err) {
-                                // FIXME: error handling
                                 app_1.logger.error('[rest_api::handleResult::read_file::read_file] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                 res.sendStatus(500);
@@ -540,13 +512,12 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                                 res.status(406).json({
                                     userOutput: result.userOutput,
                                     answerOutput: answerOutput,
-                                    input: data.toString()
+                                    input: data
                                 });
                         });
                     });
-                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type, unmatched_index, unmatched_output, runtime_error) VALUE (?, ?, ?, ?, ?);', [logId, 1, result.inputIndex, result.userOutput, result.errorLog], function (err) {
+                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type, failed_index, user_output, runtime_error) VALUE (?, ?, ?, ?, ?);', [logId, 1 /* incorrect */, result.inputIndex, result.userOutput, result.errorLog], function (err) {
                         if (err) {
-                            // FIXME: error handling
                             app_1.logger.error('[rest_api::handleResult::insert_judge_incorrect] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                         }
@@ -559,29 +530,25 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
             fs.exists(errorLogFile_1, function (exists) {
                 // script error
                 if (exists) {
-                    fs.readFile(errorLogFile_1, function (err, data) {
+                    fs.readFile(errorLogFile_1, 'UTF-8', function (err, errorStr) {
                         if (err) {
-                            // FIXME: error handling
                             app_1.logger.error('[rest_api::handleResult::read_file] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                             if (res)
                                 res.sendStatus(500);
                             return;
                         }
+                        if (res)
+                            res.status(417).json({ errorMsg: errorStr });
                         // remove output temporary folder
                         fs_ext.remove(outputPath, function (err) {
                             if (err) {
-                                // FIXME: error handling
                                 app_1.logger.error('[rest_api::handleResult::remove_file] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                             }
                         });
-                        var errorStr = data.toString('UTF-8');
-                        if (res)
-                            res.status(417).json({ errorMsg: errorStr });
-                        exports.dbClient.query('INSERT INTO exercise_result(log_id, type, script_error) VALUE(?, ?, ?);', [logId, 5, errorStr], function (err) {
+                        exports.dbClient.query('INSERT INTO exercise_result(log_id, type, script_error) VALUE(?, ?, ?);', [logId, 5 /* scriptError */, errorStr], function (err) {
                             if (err) {
-                                // FIXME: error handling
                                 app_1.logger.error('[rest_api::handleResult::insert_script_error] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                             }
@@ -593,9 +560,8 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                     fs.exists(compileErrorFile_1, function (exists) {
                         // compile error
                         if (exists) {
-                            fs.readFile(compileErrorFile_1, function (err, data) {
+                            fs.readFile(compileErrorFile_1, 'UTF-8', function (err, errorStr) {
                                 if (err) {
-                                    // FIXME: error handling
                                     app_1.logger.error('[rest_api::handleResult::read_file] : ');
                                     app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                     if (res)
@@ -605,17 +571,14 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                                 // remove output temporary folder
                                 fs_ext.remove(outputPath, function (err) {
                                     if (err) {
-                                        // FIXME: error handling
                                         app_1.logger.error('[rest_api::handleResult::remove_file] : ');
                                         app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                     }
                                 });
-                                var errorStr = data.toString('UTF-8');
                                 if (res)
                                     res.status(400).json({ errorMsg: errorStr });
-                                exports.dbClient.query('INSERT INTO exercise_result(log_id, type, compile_error) VALUE(?,?,?);', [logId, 2, errorStr], function (err) {
+                                exports.dbClient.query('INSERT INTO exercise_result(log_id, type, compile_error) VALUE(?,?,?);', [logId, 2 /* compileError */, errorStr], function (err) {
                                     if (err) {
-                                        // FIXME: error handling
                                         app_1.logger.error('[rest_api::handleResult::insert_compile_error] : ');
                                         app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                                     }
@@ -623,7 +586,6 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                             });
                         }
                         else {
-                            // FIXME: error handling
                             app_1.logger.error('[rest_api::handleResult::something_else]');
                             if (res)
                                 res.status(500).json({ id: logId });
@@ -674,7 +636,7 @@ function historyList(req, res) {
                     '    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
                     '    JOIN user ON user.student_id = exercise_log.student_id ' +
                     'WHERE ' + exerciseQuery_1 + ' ' +
-                    'ORDER BY submitted', callback);
+                    'ORDER BY submitted DESC', callback);
             });
         }
         else {
@@ -684,7 +646,7 @@ function historyList(req, res) {
                     '    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
                     '    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
                     'WHERE ' + exerciseQuery_1 + ' ' +
-                    'ORDER BY submitted', callback);
+                    'ORDER BY submitted DESC', callback);
             });
         }
     }
@@ -736,7 +698,7 @@ exports.historyList = historyList;
 function judgeResult(req, res) {
     if (!req.session.signIn)
         return 401;
-    exports.dbClient.query('SELECT student_id, type, compile_error, unmatched_index, unmatched_output, return_code, runtime_error, script_error ' +
+    exports.dbClient.query('SELECT student_id, attachment_id, type, compile_error, failed_index, user_output, return_code, runtime_error, script_error ' +
         'FROM exercise_log JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
         'WHERE log_id = ?', req.params.logId, function (err, searchResult) {
         if (err) {
@@ -745,8 +707,73 @@ function judgeResult(req, res) {
             res.sendStatus(500);
             return;
         }
-        console.log(searchResult);
-        // TODO: implement me
+        var result = searchResult[0];
+        // if non-admin user requested another one's result
+        if (!req.session.admin && req.session.studentId != result.student_id) {
+            res.sendStatus(401);
+            return;
+        }
+        var testSetPath = path.join(app_1.exerciseSetPath, result.attachment_id.toString());
+        switch (result.type) {
+            case 0 /* correct */:
+                res.sendStatus(200);
+                break;
+            case 1 /* incorrect */:
+                var tasks = [
+                    function (callback) {
+                        fs.readFile(path.join(testSetPath, 'input', result.failed_index + '.in'), 'UTF-8', callback);
+                    },
+                    function (callback) {
+                        fs.readFile(path.join(testSetPath, 'output', result.failed_index + '.out'), 'UTF-8', callback);
+                    }
+                ];
+                async.parallel(tasks, function (err, data) {
+                    if (err) {
+                        app_1.logger.error('[rest_api::handleResult::judgeResult::incorrect::read_file] : ');
+                        app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                        res.sendStatus(500);
+                        return;
+                    }
+                    res.status(406).json({
+                        userOutput: result.user_output,
+                        answerOutput: data[1],
+                        input: data[0]
+                    });
+                });
+                break;
+            case 2 /* compileError */:
+                res.status(400).json({ errorMsg: result.compile_error });
+                break;
+            case 3 /* timeout */:
+                fs.readFile(path.join(testSetPath, 'input', result.failed_index + '.in'), 'UTF-8', function (err, data) {
+                    if (err) {
+                        app_1.logger.error('[rest_api::handleResult::judgeResult::timeout::read_file] : ');
+                        app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                        res.sendStatus(500);
+                        return;
+                    }
+                    res.status(410).json({ input: data });
+                });
+                break;
+            case 4 /* runtimeError */:
+                fs.readFile(path.join(testSetPath, 'input', result.failed_index + '.in'), 'UTF-8', function (err, data) {
+                    if (err) {
+                        app_1.logger.error('[rest_api::handleResult::judgeResult::runtimeError::read_file] : ');
+                        app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                        res.sendStatus(500);
+                        return;
+                    }
+                    res.status(412).json({
+                        input: data,
+                        errorLog: result.runtime_error,
+                        returnCode: result.return_code
+                    });
+                });
+                break;
+            case 5 /* scriptError */:
+                res.status(417).json({ errorMsg: result.script_error });
+                break;
+        }
     });
 }
 exports.judgeResult = judgeResult;
@@ -799,7 +826,6 @@ function getHomework(req, res) {
         'FROM submit_log JOIN hw_config ON submit_log.attachment_id = hw_config.id ' +
         'WHERE submit_log.id=?', req.params.logId, function (err, result) {
         if (err) {
-            // FIXME: error handling
             app_1.logger.error('[rest_api::getHomework::search] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);

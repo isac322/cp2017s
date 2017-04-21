@@ -18,7 +18,7 @@ if [ ${extension} = 'cpp' ]; then
 
 	if [ -f a.out ]; then
 		for i in $(seq 1 ${inputNum}); do
-			timeout 1 ./a.out < ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
+			timeout 1 ./a.out input/${i}.in < ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
 
 			./compare.py ./tmp/output.log ./answer/${i}.out ${i} $? ./tmp/error.log
 

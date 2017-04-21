@@ -74,7 +74,6 @@ var ExerciseRoute = (function (_super) {
             '              ) AS reduced_quick_result ' +
             '        ON exercise_config.id = reduced_quick_result.attach_id;', req.session.studentId, function (err, searchResult) {
             if (err) {
-                // FIXME: error handling
                 app_1.logger.error('[exercise::first_select]');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);

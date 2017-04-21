@@ -72,7 +72,6 @@ export class ExerciseRoute extends BaseRoute {
 			req.session.studentId,
 			(err: IError, searchResult) => {
 				if (err) {
-					// FIXME: error handling
 					logger.error('[exercise::first_select]');
 					logger.error(util.inspect(err, {showHidden: false, depth: null}));
 					res.sendStatus(500);

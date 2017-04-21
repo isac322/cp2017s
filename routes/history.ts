@@ -4,6 +4,7 @@ import {dbClient} from "./rest_api";
 import {logger} from "../app";
 import {IError} from "mysql";
 import * as util from "util";
+import * as async from "async";
 
 
 /**
@@ -51,80 +52,53 @@ export class HistoryRoute extends BaseRoute {
 	 * @param next {NextFunction} Execute the next method.
 	 */
 	public history(req: Request, res: Response, next: NextFunction) {
-		if (!req.session.signIn) {
-			return res.redirect('/');
-		}
+		if (!req.session.signIn) return res.redirect('/');
 
 		this.title = 'History';
 
+		const tasks = [];
+
+		tasks.push((callback) => {
+			dbClient.query(
+				'SELECT email FROM email WHERE student_id = ?;',
+				req.session.studentId,
+				callback)
+		});
+
+		tasks.push((callback) => {
+			dbClient.query(
+				'SELECT homework.name AS `homeworkName`, hw_config.name AS `fileName`, hw_config.id ' +
+				'FROM homework JOIN hw_config ON homework.homework_id = hw_config.homework_id;',
+				callback)
+		});
+
+		tasks.push((callback) => {
+			dbClient.query(
+				'SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
+				'FROM exercise JOIN exercise_config ON exercise.id = exercise_config.exercise_id',
+				callback)
+		});
 
 		if (req.session.admin) {
-			dbClient.query(
-				'SELECT name, student_id FROM user ORDER BY name;',
-				(err: IError, userList) => {
-					if (err) {
-						// FIXME: error handling
-						logger.error('[history::search_user]');
-						logger.error(util.inspect(err, {showHidden: false, depth: null}));
-						res.sendStatus(500);
-						return;
-					}
-
-					res.locals.userList = userList;
-				});
+			tasks.push((callback) => {
+				dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback)
+			})
 		}
 
+		async.parallel(tasks, (err: IError, data: Array<Array<any>>) => {
+			if (err) {
+				logger.error('[history::searching_in_parallel]');
+				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				res.sendStatus(500);
+				return;
+			}
 
-		dbClient.query(
-			'SELECT email ' +
-			'FROM email ' +
-			'WHERE student_id = ?;',
-			req.session.studentId,
-			(err: IError, emailList) => {
-				if (err) {
-					// FIXME: error handling
-					logger.error('[exercise::search_email]');
-					logger.error(util.inspect(err, {showHidden: false, depth: null}));
-					res.sendStatus(500);
-					return;
-				}
+			res.locals.emailList = data[0][0];
+			res.locals.homeworkList = data[1][0];
+			res.locals.exerciseList = data[2][0];
+			if (req.session.admin) res.locals.userList = data[3][0];
 
-				res.locals.emailList = emailList;
-			});
-
-
-		dbClient.query(
-			'SELECT homework.name AS `homeworkName`, hw_config.name AS `fileName`, hw_config.id ' +
-			'FROM homework JOIN hw_config ON homework.homework_id = hw_config.homework_id;',
-			(err: IError, homeworkList) => {
-				if (err) {
-					// FIXME: error handling
-					logger.error('[history::search_names]');
-					logger.error(util.inspect(err, {showHidden: false, depth: null}));
-					res.sendStatus(500);
-					return;
-				}
-
-				res.locals.homeworkList = homeworkList;
-
-
-				dbClient.query(
-					'SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
-					'FROM exercise JOIN exercise_config ON exercise.id = exercise_config.exercise_id',
-					(err: IError, exerciseList) => {
-						if (err) {
-							// FIXME: error handling
-							logger.error('[history::search_names]');
-							logger.error(util.inspect(err, {showHidden: false, depth: null}));
-							res.sendStatus(500);
-							return;
-						}
-
-						res.locals.exerciseList = exerciseList;
-
-						//render template
-						this.render(req, res, 'history');
-					});
-			});
+			this.render(req, res, 'history');
+		})
 	}
 }

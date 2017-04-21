@@ -70,7 +70,7 @@ export class Server {
 	 * @class Server
 	 * @method bootstrap
 	 * @static
-	 * @return {ng.auto.IInjectorService} Returns the newly created injector for this app.
+	 * @return {Server} Returns the newly created injector for this app.
 	 */
 	public static bootstrap(): Server {
 		return new Server();
@@ -112,13 +112,12 @@ export class Server {
 		this.app.get('/homework/name', hwNameChecker);
 		this.app.get('/homework/:logId([0-9]+)', getHomework);
 		this.app.post('/homework/:attachId([0-9]+)', uploadAttach);
-//		this.app.post('/exercise', runExercise);
 		this.app.get('/exercise/:logId([0-9]+)', getExercise);
-		this.app.post('/exercise', runExercise);
+//		this.app.post('/exercise', runExercise);
 		this.app.get('/exercise/resolve', resolve);
+		this.app.get('/exercise/result/:logId([0-9]+)', judgeResult);
 		this.app.post('/exercise/:attachId([0-9]+)', runExercise);
 		this.app.get('/history/list', historyList);
-		this.app.get('/history/:logId([0-9]+)', judgeResult);
 	}
 
 	/**

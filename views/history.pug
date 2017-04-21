@@ -69,18 +69,18 @@ block content
 							th.col-xs-1 ID
 							th.col-xs-1.categoryCol Category
 							th File name #[small.text-muted (Click to see)]
-							th.col-xs-2 Result
+							th.col-xs-2 Result #[small.text-muted (Click to see)]
 							th Timestamp
 							th Email
 							if admin
 								th User
 					tbody#resultTable
 
+	include modal-source_code
+
+	include modal-result
+
 	if admin
 		script(src='/js/submission_history_admin.js')
 	else
 		script(src='/js/submission_history.js')
-
-	include modal-source_code
-
-	include modal-result
