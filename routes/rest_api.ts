@@ -375,7 +375,7 @@ export function runExercise(req: Request, res: Response) {
 
 	// get information of this exercise by given id (attachId)
 	dbClient.query(
-		'SELECT name, extension, test_set_size FROM exercise_config WHERE id = ?;', attachId,
+		'SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', attachId,
 		(err: IError, searchResult) => {
 			if (err) {
 				logger.error('[rest_api::runExercise::select] : ');
@@ -397,7 +397,8 @@ export function runExercise(req: Request, res: Response) {
 				JSON.stringify({
 					sourceName: searchResult[0].name,
 					extension: searchResult[0].extension,
-					testSetSize: searchResult[0].test_set_size
+					testSetSize: searchResult[0].test_set_size,
+					inputThroughArg: searchResult[0].input_through_arg
 				}),
 				{mode: 0o400}
 			);
@@ -454,7 +455,7 @@ export function resolve(req: Request, res: Response) {
 			for (const log of searchList) {
 				// get information of this exercise by given id (attachId)
 				dbClient.query(
-					'SELECT name, extension, test_set_size FROM exercise_config WHERE id = ?;', log.attachId,
+					'SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', log.attachId,
 					(err: IError, exerciseSetting) => {
 						if (err) {
 							logger.error('[rest_api::resolve::select] : ');
@@ -476,7 +477,8 @@ export function resolve(req: Request, res: Response) {
 							JSON.stringify({
 								sourceName: exerciseSetting[0].name,
 								extension: exerciseSetting[0].extension,
-								testSetSize: exerciseSetting[0].test_set_size
+								testSetSize: exerciseSetting[0].test_set_size,
+								inputThroughArg: exerciseSetting[0].input_through_arg
 							}),
 							{mode: 0o400}
 						);
@@ -559,7 +561,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 	const resultFile = path.join(outputPath, 'result.json');
 
 	fs.exists(resultFile, (exists: boolean) => {
-		// if result.js is exist, it means that this judge was successful
+		// if result.js is exist, it means that this judge was successful or runtime exceptions or timeout occur
 		if (exists) {
 			fs.readFile(resultFile, 'UTF-8', (err: NodeJS.ErrnoException, data: string) => {
 				const result: {
@@ -606,7 +608,7 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 					)
 				}
 
-				// or if runtime exceptions occur
+				// or if runtime exceptions or timeout occur
 				else if ('returnCode' in result) {
 					// timeout
 					if (result.returnCode == 124) {

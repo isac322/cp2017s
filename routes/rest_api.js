@@ -280,7 +280,7 @@ function runExercise(req, res) {
         }
     });
     // get information of this exercise by given id (attachId)
-    exports.dbClient.query('SELECT name, extension, test_set_size FROM exercise_config WHERE id = ?;', attachId, function (err, searchResult) {
+    exports.dbClient.query('SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', attachId, function (err, searchResult) {
         if (err) {
             app_1.logger.error('[rest_api::runExercise::select] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
@@ -295,7 +295,8 @@ function runExercise(req, res) {
         fs.writeFile(path.join(sourcePath, 'config.json'), JSON.stringify({
             sourceName: searchResult[0].name,
             extension: searchResult[0].extension,
-            testSetSize: searchResult[0].test_set_size
+            testSetSize: searchResult[0].test_set_size,
+            inputThroughArg: searchResult[0].input_through_arg
         }), { mode: 256 });
         // copy given source code to shared folder
         fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, { mode: 384 });
@@ -335,7 +336,7 @@ function resolve(req, res) {
         }
         var _loop_1 = function (log) {
             // get information of this exercise by given id (attachId)
-            exports.dbClient.query('SELECT name, extension, test_set_size FROM exercise_config WHERE id = ?;', log.attachId, function (err, exerciseSetting) {
+            exports.dbClient.query('SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', log.attachId, function (err, exerciseSetting) {
                 if (err) {
                     app_1.logger.error('[rest_api::resolve::select] : ');
                     app_1.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
@@ -350,7 +351,8 @@ function resolve(req, res) {
                 fs.writeFile(path.join(sourcePath, 'config.json'), JSON.stringify({
                     sourceName: exerciseSetting[0].name,
                     extension: exerciseSetting[0].extension,
-                    testSetSize: exerciseSetting[0].test_set_size
+                    testSetSize: exerciseSetting[0].test_set_size,
+                    inputThroughArg: exerciseSetting[0].input_through_arg
                 }), { mode: 256 });
                 // copy given source code to shared folder
                 fs_ext.copySync(path.join(app_1.submittedExercisePath, log.fileName), path.join(sourcePath, exerciseSetting[0].name));
@@ -415,7 +417,7 @@ function judgeExercise(res, logId, attachId, studentId, outputPath, sourcePath) 
 function handleResult(res, logId, attachId, studentId, answerPath, inputPath, outputPath) {
     var resultFile = path.join(outputPath, 'result.json');
     fs.exists(resultFile, function (exists) {
-        // if result.js is exist, it means that this judge was successful
+        // if result.js is exist, it means that this judge was successful or runtime exceptions or timeout occur
         if (exists) {
             fs.readFile(resultFile, 'UTF-8', function (err, data) {
                 var result = JSON.parse(data);

@@ -79,7 +79,7 @@ var SubmissionHistory;
                 if (this.result == 0)
                     this.resultTd.innerHTML = '<strong class="text-success">' + Row.RESULTS[this.result] + '</strong>';
                 else
-                    this.resultTd.innerHTML = '<button class="btn-link tdLinkBtn" onclick="onResult(' + this.id + ');">' +
+                    this.resultTd.innerHTML = '<button class="btn-link tdLinkBtn" onclick="SubmissionHistory.onResult(' + this.id + ');">' +
                         '<strong class="text-danger">' + Row.RESULTS[this.result] + '</strong></button>';
             }
             else if (this.category == 'Homework') {
@@ -196,4 +196,5 @@ var SubmissionHistory;
             }
         });
     }
+    SubmissionHistory.onResult = onResult;
 })(SubmissionHistory || (SubmissionHistory = {}));

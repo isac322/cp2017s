@@ -21,7 +21,14 @@ SIGNALS = {
 
 def compare(output_path: str, answer_path: str, index: int) -> dict:
     with open(output_path, encoding='utf-8') as fp, open(answer_path, encoding='utf-8') as answer:
-        whole_user_output = fp.read()
+        try:
+            whole_user_output = fp.read()
+        except UnicodeDecodeError:
+            with open(sys.argv[5], 'a', encoding='UTF-8') as errorFp:
+                errorFp.write('Unrecognizable output.\nYour code prints unreadable output.\n')
+
+            exit(1)
+            return {'isMatched': False, 'errorLog': 'unrecognizable output'}
 
         user_output = tuple(map(str.rstrip, whole_user_output.rstrip().split('\n')))
         answer_output = tuple(map(str.rstrip, answer.read().rstrip().split('\n')))
@@ -42,6 +49,7 @@ def main():
     data_index = int(sys.argv[3])
     return_code = int(sys.argv[4])
     error_log = sys.argv[5]
+    result_file = sys.argv[6]
 
     if return_code is 0:
         result = compare(output, answer, data_index)
@@ -70,7 +78,7 @@ def main():
 
             result = {'isMatched': False, 'returnCode': return_code, 'errorLog': log, 'inputIndex': data_index}
 
-    with open('output/result.json', 'w', encoding='UTF-8') as fp:
+    with open(result_file, 'w', encoding='UTF-8') as fp:
         fp.write(json.dumps(result, ensure_ascii=False))
 
     if result['isMatched']:

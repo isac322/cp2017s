@@ -3,6 +3,7 @@
 name=`jq -r .sourceName ./source/config.json`
 extension=`jq -r .extension ./source/config.json`
 inputNum=`jq -r .testSetSize ./source/config.json`
+throughArg=`jq -r .inputThroughArg ./source/config.json`
 
 mkdir tmp
 
@@ -18,14 +19,22 @@ if [ ${extension} = 'cpp' ]; then
 
 	if [ -f a.out ]; then
 		for i in $(seq 1 ${inputNum}); do
-			timeout 1 ./a.out input/${i}.in < ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
+			if [ ${throughArg} -eq 0 ]; then
+				timeout 1 ./a.out < ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
+			else
+				timeout 1 ./a.out input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
+			fi
 
-			./compare.py ./tmp/output.log ./answer/${i}.out ${i} $? ./tmp/error.log
+			./compare.py ./tmp/output.log ./answer/${i}.out ${i} $? ./tmp/error.log ./output/result.json
 
 			if [ $? -ne 0 ]; then
 				break
 			fi
 		done
+
+		if ! [ -f ./output/result.json ]; then
+			cp ./tmp/error.log ./output/error.log
+		fi
 	else
 		cp ./tmp/compile_error.log ./output/compile_error.log
 	fi
@@ -36,20 +45,28 @@ elif [ ${extension} = 'java' ]; then
 	if test "${ret#*text}" != "$ret"; then
 		javac -encoding UTF-8 ${name} -d ../ 2> ../tmp/compile_error.log
 	else
-		echo "It's not a source code" > ../tmp/error.log
+		echo "It's not a source code" > ../tmp/compile_error.log
 	fi
 	cd ..
 
 	if [ -f "${name%.java}.class" ]; then
 		for i in $(seq 1 ${inputNum}); do
-			timeout 3 java ${name%.java} < ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
+			if [ ${throughArg} -eq 0 ]; then
+				timeout 3 java ${name%.java} < ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
+			else
+				timeout 3 java ${name%.java} ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
+			fi
 
-			./compare.py ./tmp/output.log ./answer/${i}.out ${i} $? ./tmp/error.log
+			./compare.py ./tmp/output.log ./answer/${i}.out ${i} $? ./tmp/error.log ./output/result.json
 
 			if [ $? -ne 0 ]; then
 				break
 			fi
 		done
+
+		if ! [ -f ./output/result.json ]; then
+			cp ./tmp/error.log ./output/error.log
+		fi
 	else
 		# fail to compile
 		if [ -s ./tmp/compile_error.log ]; then

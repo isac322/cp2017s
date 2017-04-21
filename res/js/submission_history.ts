@@ -128,7 +128,7 @@ namespace SubmissionHistory {
 				if (this.result == 0)
 					this.resultTd.innerHTML = '<strong class="text-success">' + Row.RESULTS[this.result] + '</strong>';
 				else
-					this.resultTd.innerHTML = '<button class="btn-link tdLinkBtn" onclick="onResult(' + this.id + ');">' +
+					this.resultTd.innerHTML = '<button class="btn-link tdLinkBtn" onclick="SubmissionHistory.onResult(' + this.id + ');">' +
 						'<strong class="text-danger">' + Row.RESULTS[this.result] + '</strong></button>';
 			}
 			else if (this.category == 'Homework') {
@@ -222,7 +222,7 @@ namespace SubmissionHistory {
 
 	const resultModal = new ResultModal($('#resultModal'));
 
-	function onResult(id: number) {
+	export function onResult(id: number) {
 		$.ajax('/exercise/result/' + id, {
 			complete: (jqXHR: JQueryXHR) => {
 				const res = jqXHR.responseJSON;
