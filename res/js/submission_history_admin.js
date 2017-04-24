@@ -105,7 +105,7 @@ var SubmissionHistoryAdmin;
         $selects.selectpicker('refresh');
         var newQuery = genQuery();
         if (prevQuery !== newQuery) {
-            $.ajax('history/list' + genQuery(), { success: queryHandler });
+            $.ajax('/history/list' + genQuery(), { success: queryHandler });
             prevQuery = newQuery;
         }
         else {
@@ -161,8 +161,7 @@ var SubmissionHistoryAdmin;
         $user.children(':selected').each(function (index, elem) {
             userQuery += 'u=' + elem.value + '&';
         });
-        // FIXME: category: All, id: only one exercise => one exercise & all homework ---> remove category! and enforce server to recognize query only by ids
-        return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + resultQuery + emailQuery + userQuery;
+        return '?' + homeworkQuery + exerciseQuery + resultQuery + emailQuery + userQuery;
     }
     $.ajax('/history/list' + prevQuery, { success: queryHandler });
     var resultModal = new ResultModal($('#resultModal'));

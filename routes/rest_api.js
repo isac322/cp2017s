@@ -612,6 +612,12 @@ function historyList(req, res) {
         req.query.t = '3';
     }
     var query = req.query;
+    if (query.ex === null && query.hw === null)
+        query.t = 3;
+    else if (query.ex !== null)
+        query.t = 2;
+    else if (query.hw !== null)
+        query.t = 1;
     var commonQuery = '';
     if (req.session.admin) {
         if (query.u)
@@ -624,7 +630,6 @@ function historyList(req, res) {
     if (query.e)
         commonQuery += ' AND email IN (' + mysql_1.escape(query.e) + ')';
     var tasks = [];
-    // FIXME: category: All, id: only one exercise => one exercise & all homework ---> remove category! and enforce server to recognize query only by ids
     if (query.t & 2) {
         var exerciseQuery_1 = commonQuery;
         if (query.ex)
