@@ -828,6 +828,7 @@ export function historyList(req: Request, res: Response) {
 
 	let tasks = [];
 
+	// FIXME: category: All, id: only one exercise => one exercise & all homework ---> remove category! and enforce server to recognize query only by ids
 	if (query.t & 2) {
 		let exerciseQuery = commonQuery;
 		if (query.ex) exerciseQuery += ' AND attachment_id IN (' + escape(query.ex) + ')';

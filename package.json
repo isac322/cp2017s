@@ -1,6 +1,6 @@
 {
 	"name": "cp2017s",
-	"version": "0.6.4",
+	"version": "0.6.5",
 	"engines": {
 		"node": ">=6.10.0"
 	},
@@ -27,7 +27,7 @@
 		"express-session": ">=1.15.2",
 		"fs-extra": ">=2.1.2",
 		"google-auth-library": ">=0.10.0",
-		"iconv-lite": ">=0.4.15",
+		"iconv-lite": ">=0.4.16",
 		"jquery": ">=3.2.1",
 		"jquery-form": ">=4.2.1",
 		"morgan": ">=1.8.1",

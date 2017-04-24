@@ -624,6 +624,7 @@ function historyList(req, res) {
     if (query.e)
         commonQuery += ' AND email IN (' + mysql_1.escape(query.e) + ')';
     var tasks = [];
+    // FIXME: category: All, id: only one exercise => one exercise & all homework ---> remove category! and enforce server to recognize query only by ids
     if (query.t & 2) {
         var exerciseQuery_1 = commonQuery;
         if (query.ex)

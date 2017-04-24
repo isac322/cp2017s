@@ -2,6 +2,7 @@
 # coding: UTF-8
 
 import json
+import os
 import sys
 
 SIGNALS = {
@@ -52,6 +53,14 @@ def main():
     result_file = sys.argv[6]
 
     if return_code is 0:
+        if os.stat(output).st_size >= 1024 * 1024 * 16:
+            with open(sys.argv[5], 'a', encoding='UTF-8') as errorFp:
+                errorFp.write('Too large output.\n'
+                              'Before submitting your code, create and test a small test set yourself.\n')
+
+            exit(1)
+            return {'isMatched': False, 'errorLog': 'Too large output'}
+
         result = compare(output, answer, data_index)
 
         with open(error_log, encoding='UTF-8') as fp:

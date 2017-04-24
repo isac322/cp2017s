@@ -228,6 +228,7 @@ namespace SubmissionHistoryAdmin {
 			userQuery += 'u=' + elem.value + '&';
 		});
 
+		// FIXME: category: All, id: only one exercise => one exercise & all homework ---> remove category! and enforce server to recognize query only by ids
 		return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + resultQuery + emailQuery + userQuery;
 	}
 
