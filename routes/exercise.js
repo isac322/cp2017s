@@ -64,15 +64,13 @@ var ExerciseRoute = (function (_super) {
             return res.redirect('/');
         }
         rest_api_1.dbClient.query('SELECT exercise.id, exercise.name, exercise.start_date, exercise.end_date, exercise.description, ' +
-            '       exercise_config.id AS `attach_id`, exercise_config.name AS `file_name`, result ' +
-            'FROM exercise JOIN exercise_config ' +
+            '       exercise_config.id AS `attach_id`, exercise_config.name AS `file_name`, ' +
+            '       (result_table.student_id IS NOT NULL) as result ' +
+            'FROM exercise ' +
+            '    JOIN exercise_config ' +
             '        ON exercise.id = exercise_config.exercise_id ' +
-            '    LEFT JOIN ( ' +
-            '                  SELECT * ' +
-            '                  FROM exercise_quick_result ' +
-            '                  WHERE student_id = ? ' +
-            '              ) AS reduced_quick_result ' +
-            '        ON exercise_config.id = reduced_quick_result.attach_id;', req.session.studentId, function (err, searchResult) {
+            '    LEFT JOIN view_exercise_quick_result AS result_table ' +
+            '        ON exercise_config.id = result_table.attachment_id AND result_table.student_id = ?;', req.session.studentId, function (err, searchResult) {
             if (err) {
                 app_1.logger.error('[exercise::first_select]');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
@@ -104,7 +102,7 @@ var ExerciseRoute = (function (_super) {
                 });
             }
             app_1.logger.debug(util.inspect(exerciseList, { showHidden: false, depth: 1 }));
-            res.locals.exerciseList = exerciseList;
+            res.locals.exerciseList = exerciseList.reverse();
             //render template
             return _this.render(req, res, 'exercise');
         });

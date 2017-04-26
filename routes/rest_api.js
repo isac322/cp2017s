@@ -441,12 +441,6 @@ function handleResult(res, logId, attachId, studentId, answerPath, inputPath, ou
                     if (result.errorLog) {
                         app_1.logger.error('[rest_api::handleResult::insert_judge_correct-found_error] ' + logId);
                     }
-                    exports.dbClient.query('INSERT IGNORE INTO exercise_quick_result (attach_id, student_id, result) VALUE (?, ?, ?);', [attachId, studentId, true], function (err) {
-                        if (err) {
-                            app_1.logger.error('[rest_api::handleResult::insert_judge_correct] : ');
-                            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                        }
-                    });
                 }
                 else if ('returnCode' in result) {
                     // timeout

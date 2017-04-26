@@ -60,15 +60,13 @@ export class ExerciseRoute extends BaseRoute {
 
 		dbClient.query(
 			'SELECT exercise.id, exercise.name, exercise.start_date, exercise.end_date, exercise.description, ' +
-			'       exercise_config.id AS `attach_id`, exercise_config.name AS `file_name`, result ' +
-			'FROM exercise JOIN exercise_config ' +
+			'       exercise_config.id AS `attach_id`, exercise_config.name AS `file_name`, ' +
+			'       (result_table.student_id IS NOT NULL) as result ' +
+			'FROM exercise ' +
+			'    JOIN exercise_config ' +
 			'        ON exercise.id = exercise_config.exercise_id ' +
-			'    LEFT JOIN ( ' +
-			'                  SELECT * ' +
-			'                  FROM exercise_quick_result ' +
-			'                  WHERE student_id = ? ' +
-			'              ) AS reduced_quick_result ' +
-			'        ON exercise_config.id = reduced_quick_result.attach_id;',
+			'    LEFT JOIN view_exercise_quick_result AS result_table ' +
+			'        ON exercise_config.id = result_table.attachment_id AND result_table.student_id = ?;',
 			req.session.studentId,
 			(err: IError, searchResult) => {
 				if (err) {
@@ -115,7 +113,7 @@ export class ExerciseRoute extends BaseRoute {
 
 				logger.debug(util.inspect(exerciseList, {showHidden: false, depth: 1}));
 
-				res.locals.exerciseList = exerciseList;
+				res.locals.exerciseList = exerciseList.reverse();
 
 				//render template
 				return this.render(req, res, 'exercise');

@@ -595,17 +595,6 @@ function handleResult(res: Response, logId: number, attachId: number, studentId:
 					if (result.errorLog) {
 						logger.error('[rest_api::handleResult::insert_judge_correct-found_error] ' + logId);
 					}
-
-					dbClient.query(
-						'INSERT IGNORE INTO exercise_quick_result (attach_id, student_id, result) VALUE (?, ?, ?);',
-						[attachId, studentId, true],
-						(err) => {
-							if (err) {
-								logger.error('[rest_api::handleResult::insert_judge_correct] : ');
-								logger.error(util.inspect(err, {showHidden: false, depth: null}));
-							}
-						}
-					)
 				}
 
 				// or if runtime exceptions or timeout occur

@@ -138,7 +138,7 @@ export class HWRoute extends BaseRoute {
 
 				logger.debug(util.inspect(homework, {showHidden: false, depth: 1}));
 
-				res.locals.homeworkList = homework;
+				res.locals.homeworkList = homework.reverse();
 
 				//render template
 				this.render(req, res, 'homework');

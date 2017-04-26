@@ -103,7 +103,7 @@ var HWRoute = (function (_super) {
                 });
             }
             app_1.logger.debug(util.inspect(homework, { showHidden: false, depth: 1 }));
-            res.locals.homeworkList = homework;
+            res.locals.homeworkList = homework.reverse();
             //render template
             _this.render(req, res, 'homework');
         });
