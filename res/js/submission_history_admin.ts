@@ -234,6 +234,10 @@ namespace SubmissionHistoryAdmin {
 
 	$.ajax('/history/list' + prevQuery, {success: queryHandler});
 
+	if( /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent) ) {
+		$('.selectpicker:not(#selectUser)').selectpicker('mobile');
+	}
+
 	const resultModal = new ResultModal($('#resultModal'));
 
 	export function onResult(id: number) {

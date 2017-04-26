@@ -154,6 +154,9 @@ var SubmissionHistory;
         return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + resultQuery + emailQuery;
     }
     $.ajax('/history/list' + prevQuery, { success: queryHandler });
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
+        $('.selectpicker').selectpicker('mobile');
+    }
     var resultModal = new ResultModal($('#resultModal'));
     function onResult(id) {
         $.ajax('/exercise/result/' + id, {
