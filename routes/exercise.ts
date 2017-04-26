@@ -84,7 +84,7 @@ export class ExerciseRoute extends BaseRoute {
 					dueDate: string,
 					description: Array<string>,
 					leftMillis: number,
-					attachments: Array<{ id: number, name: string, result?: boolean }>
+					attachments: Array<{ id: number, name: string, result: boolean }>
 				};
 				let exerciseList = [];
 

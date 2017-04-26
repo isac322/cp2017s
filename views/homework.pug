@@ -19,6 +19,7 @@ block content
 					| #[span.glyphicon.glyphicon-plus]
 					| Add
 
+	- var millis = 24 * 60 * 60 * 1000
 	each homework in homeworkList
 		.col-xs-12.col-md-6.homework-card
 			.panel.panel-default
@@ -56,15 +57,15 @@ block content
 				ul.list-group.collapse(id='collapseExample' + homework.id)
 					each attachment in homework.attachments
 						form.upload-form(action='/homework/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
-							li.list-group-item(class=attachment.latestFile == null ? '' : 'list-group-item-success')
+							li.list-group-item(class=attachment.latestFile == null ? undefined : 'list-group-item-success')
 								.row
-									.col-xs-12.col-sm-5.vcenter
-										h4.wrapped-text
-											| #[span.glyphicon.glyphicon-file]
-											| &nbsp;
-											| #{attachment.name}
-
 									if signIn && homework.leftMillis >= -2 * 24 * 60 * 60 * 1000
+										.col-xs-12.col-sm-5.vcenter
+											h4.wrapped-text
+												| #[span.glyphicon.glyphicon-file]
+												| &nbsp;
+												| #{attachment.name}
+
 										.col-xs-12.col-sm-7.vcenter
 											.form-group
 												.pull-right.input-group
@@ -73,10 +74,15 @@ block content
 														span.btn.btn-default.btn-file Select
 															input(type='file' name='attachment', hidden, required)
 														button.btn.btn-primary(type='submit', role='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Sending...') Submit
+									else
+										.col-xs-12.vcenter
+											h4.wrapped-text
+												| #[span.glyphicon.glyphicon-file]
+												| &nbsp;
+												| #{attachment.name}
 
 
 				.panel-footer.text-center
-					- var millis = 24 * 60 * 60 * 1000
 					if homework.leftMillis < 0
 						| Overpast
 					else if homework.leftMillis < millis

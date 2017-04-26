@@ -18,7 +18,7 @@ block content
 				h4#btn-add
 					| #[span.glyphicon.glyphicon-plus]
 					| Add
-
+	- var millis = 24 * 60 * 60 * 1000
 	each exercise in exerciseList
 		.col-xs-12.col-md-6.homework-card
 			.panel.panel-default
@@ -56,15 +56,14 @@ block content
 				ul.list-group.collapse(id='collapseExample' + exercise.id)
 					each attachment in exercise.attachments
 						form.upload-form(action='/exercise/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
-							li.list-group-item(class=attachment.result == null ? '' : 'list-group-item-success')
+							li.list-group-item(class=attachment.result ? 'list-group-item-success' : undefined)
 								.row
-									.col-xs-12.col-sm-5.vcenter
-										h4.wrapped-text
-											| #[span.glyphicon.glyphicon-file]
-											| &nbsp;
-											| #{attachment.name}
-
 									if signIn && exercise.leftMillis >= 0
+										.col-xs-12.col-sm-5.vcenter
+											h4.wrapped-text
+												| #[span.glyphicon.glyphicon-file]
+												| &nbsp;
+												| #{attachment.name}
 										.col-xs-12.col-sm-7.vcenter
 											.form-group
 												.pull-right.input-group
@@ -73,10 +72,15 @@ block content
 														span.btn.btn-default.btn-file Select
 															input(type='file' name='attachment', hidden, required)
 														button.btn.btn-primary(type='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Judging...') Submit
+									else
+										.col-xs-12.vcenter
+											h4.wrapped-text
+												| #[span.glyphicon.glyphicon-file]
+												| &nbsp;
+												| #{attachment.name}
 
 
 				.panel-footer.text-center
-					- var millis = 24 * 60 * 60 * 1000
 					if exercise.leftMillis < 0
 						| Overpast
 					else if exercise.leftMillis < millis
