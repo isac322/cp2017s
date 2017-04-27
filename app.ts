@@ -11,13 +11,28 @@ import {ExerciseRoute} from "./routes/exercise";
 import {HWRoute} from "./routes/homework";
 import {IndexRoute} from "./routes/index";
 import {
-	createHW, getExercise, getHomework, historyList, hwNameChecker, judgeResult, register, resolve, runExercise, signIn, signOut,
-	uploadAttach
+	createHW,
+	createProject,
+	getExercise,
+	getHomework,
+	historyList,
+	hwNameChecker,
+	judgeResult,
+	pjNameChecker,
+	register,
+	resolve,
+	runExercise,
+	signIn,
+	signOut,
+	uploadHomework,
+	uploadProject
 } from "./routes/rest_api";
 import {ProfileRoute} from "./routes/profile";
 import * as fs from "fs";
-import fileUpload = require('express-fileupload')
 import {HistoryRoute} from "./routes/history";
+import {BoardRoute} from "./routes/board";
+import {ProjectRoute} from "./routes/project";
+import fileUpload = require('express-fileupload')
 
 require('winston-daily-rotate-file');
 
@@ -33,11 +48,12 @@ export const exerciseSetPath = path.join(__dirname, 'media', 'test_set', 'exerci
 export const submittedExercisePath = path.join(__dirname, 'media', 'exercise');
 export const submittedExerciseOriginalPath = path.join(__dirname, 'media', 'exercise_origin');
 export const submittedHomeworkPath = path.join(__dirname, 'media', 'homework');
+export const submittedProjectPath = path.join(__dirname, 'media', 'project');
 
 const logPath = path.join(__dirname, 'logs');
 
 const requiredPath = [tempPath, exerciseSetPath, submittedHomeworkPath, submittedExercisePath,
-	submittedExerciseOriginalPath, logPath];
+	submittedExerciseOriginalPath, submittedProjectPath, logPath];
 
 
 export const logger = new winston.Logger({
@@ -111,13 +127,16 @@ export class Server {
 		this.app.post('/homework', createHW);
 		this.app.get('/homework/name', hwNameChecker);
 		this.app.get('/homework/:logId([0-9]+)', getHomework);
-		this.app.post('/homework/:attachId([0-9]+)', uploadAttach);
+		this.app.post('/homework/:attachId([0-9]+)', uploadHomework);
 		this.app.get('/exercise/:logId([0-9]+)', getExercise);
 //		this.app.post('/exercise', runExercise);
 		this.app.get('/exercise/resolve', resolve);
 		this.app.get('/exercise/result/:logId([0-9]+)', judgeResult);
 		this.app.post('/exercise/:attachId([0-9]+)', runExercise);
 		this.app.get('/history/list', historyList);
+		this.app.get('/project/name', pjNameChecker);
+		this.app.post('/project', createProject);
+		this.app.post('/project/:attachId([0-9]+)', uploadProject);
 	}
 
 	/**
@@ -195,8 +214,10 @@ export class Server {
 		IndexRoute.create(router);
 		HWRoute.create(router);
 		ExerciseRoute.create(router);
-		ProfileRoute.create(router);
+		ProjectRoute.create(router);
 		HistoryRoute.create(router);
+		BoardRoute.create(router);
+		ProfileRoute.create(router);
 
 		this.app.use(router);
 	}

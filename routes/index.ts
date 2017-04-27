@@ -1,5 +1,5 @@
-import { NextFunction, Request, Response, Router } from "express";
-import { BaseRoute } from "./route";
+import {NextFunction, Request, Response, Router} from "express";
+import {BaseRoute} from "./route";
 import {logger} from "../app";
 
 

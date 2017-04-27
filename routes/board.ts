@@ -4,11 +4,11 @@ import {logger} from "../app";
 
 
 /**
- * /profile route
+ * /board route
  *
- * @class ProfileRoute
+ * @class BoardRoute
  */
-export class ProfileRoute extends BaseRoute {
+export class BoardRoute extends BaseRoute {
 
 	/**
 	 * Create the routes.
@@ -19,36 +19,36 @@ export class ProfileRoute extends BaseRoute {
 	 */
 	public static create(router: Router) {
 		//log
-		logger.debug('[ProfileRoute::create] Creating profile route.');
+		logger.debug('[BoardRoute::create] Creating board route.');
 
 		//add home page route
-		router.get('/profile', (req: Request, res: Response, next: NextFunction) => {
-			new ProfileRoute().profile(req, res, next);
+		router.get('/board', (req: Request, res: Response, next: NextFunction) => {
+			new BoardRoute().board(req, res, next);
 		});
 	}
 
 	/**
 	 * Constructor
 	 *
-	 * @class ProfileRoute
+	 * @class BoardRoute
 	 * @constructor
 	 */
 	constructor() {
 		super();
-		this.navPos = 99;
+		this.navPos = 6;
 	}
 
 	/**
-	 * The profile page route.
+	 * The board page route.
 	 *
-	 * @class ProfileRoute
-	 * @method profile
+	 * @class BoardRoute
+	 * @method board
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
 	 * @param next {NextFunction} Execute the next method.
 	 */
-	public profile(req: Request, res: Response, next: NextFunction) {
-		this.title = 'Profile';
+	public board(req: Request, res: Response, next: NextFunction) {
+		this.title = 'Web board';
 
 		if (!req.session.signIn) {
 			return res.redirect('/');
@@ -56,6 +56,6 @@ export class ProfileRoute extends BaseRoute {
 
 
 		//render template
-		this.render(req, res, 'profile');
+		this.render(req, res, 'board');
 	}
 }

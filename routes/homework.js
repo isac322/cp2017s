@@ -41,7 +41,7 @@ var HWRoute = (function (_super) {
     /**
      * Create /homework routes.
      *
-     * @class IndexRoute
+     * @class HWRoute
      * @method create
      * @static
      */
@@ -96,10 +96,8 @@ var HWRoute = (function (_super) {
                 }
                 currentObject.attachments.push({
                     id: record.file_id,
-                    name: record.file_name,
-                    extension: record.file_extension,
-                    latestFile: record.submitted_name,
-                    latestTime: record.submitted_time
+                    name: decodeURIComponent(record.file_name),
+                    submitted: record.submitted
                 });
             }
             app_1.logger.debug(util.inspect(homework, { showHidden: false, depth: 1 }));
@@ -111,7 +109,7 @@ var HWRoute = (function (_super) {
     /**
      * The homework issuing page route.
      *
-     * @class add
+     * @class HWRoute
      * @method add
      * @param req {Request} The express Request object.
      * @param res {Response} The express Response object.
@@ -129,25 +127,25 @@ var HWRoute = (function (_super) {
     };
     return HWRoute;
 }(route_1.BaseRoute));
-HWRoute.hwQuery = function (student_id) {
-    var ret = 'SELECT homework.homework_id, homework.name, homework.start_date, homework.end_date, homework.description,' +
-        '       hw_config.id AS `file_id`, hw_config.name AS `file_name`, hw_config.extension AS `file_extension`,' +
-        '       reduced_submit.submitted_name, reduced_submit.submitted_time ' +
+HWRoute.hwQuery = function (studentId) {
+    return '' +
+        'SELECT homework.homework_id, homework.name, start_date, end_date, description, ' +
+        '		homework_config.id AS `file_id`, homework_config.name AS `file_name`, extension AS `file_extension`, ' +
+        '		(reduced_submit.attachment_id IS NOT NULL) AS submitted ' +
         'FROM homework ' +
-        '     LEFT JOIN hw_config ' +
-        '         ON homework.homework_id = hw_config.homework_id ' +
-        '     LEFT JOIN ( ' +
-        '         SELECT attachment_id, file_name AS `submitted_name`, MAX(submitted) AS `submitted_time` ' +
-        '         FROM submit_log ' +
-        '         WHERE student_id = \'' + student_id + '\' ' +
-        '         GROUP BY attachment_id ' +
-        '     ) AS reduced_submit ' +
-        '         ON hw_config.id = reduced_submit.attachment_id;';
-    return ret;
+        '	LEFT JOIN homework_config ' +
+        '		ON homework.homework_id = homework_config.homework_id ' +
+        '	LEFT JOIN ( ' +
+        '				SELECT attachment_id ' +
+        '				FROM homework_log ' +
+        '				WHERE student_id = "' + studentId + '" ' +
+        '				GROUP BY attachment_id ' +
+        '			) AS reduced_submit ' +
+        '		ON homework_config.id = reduced_submit.attachment_id;';
 };
 HWRoute.guestHwQuery = 'SELECT homework.homework_id, homework.name, homework.start_date, homework.end_date, homework.description,' +
-    '       hw_config.name AS `file_name`, hw_config.extension AS `file_extension` ' +
+    '		homework_config.name AS `file_name`, homework_config.extension AS `file_extension` ' +
     'FROM homework ' +
-    '        LEFT JOIN hw_config ' +
-    '            ON homework.homework_id = hw_config.homework_id;';
+    '	LEFT JOIN homework_config ' +
+    '		ON homework.homework_id = homework_config.homework_id;';
 exports.HWRoute = HWRoute;

@@ -162,18 +162,18 @@ function createHW(req, res) {
         var values = [];
         for (var _i = 0, _a = req.body.attachment; _i < _a.length; _i++) {
             var attachment = _a[_i];
-            var hwName = encodeURIComponent(attachment.name);
+            var fileName = encodeURIComponent(attachment.name);
             var extension = attachment.extension;
-            values.push([homeworkId, hwName, extension]);
+            values.push([homeworkId, fileName, extension]);
         }
-        exports.dbClient.query('INSERT INTO hw_config(homework_id, name, extension) VALUES ' + mysql_1.escape(values) + ';', function (err, result) {
+        exports.dbClient.query('INSERT INTO homework_config(homework_id, name, extension) VALUES ' + mysql_1.escape(values) + ';', function (err, result) {
             if (err) {
                 app_1.logger.error('[rest_api::createHW::inner_insert] : ');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
                 return;
             }
-            app_1.logger.debug('[createHW:insert into hw_config]');
+            app_1.logger.debug('[createHW:insert into homework_config]');
             app_1.logger.debug(util.inspect(result, { showHidden: false, depth: 1 }));
         });
         res.redirect('/homework');
@@ -181,31 +181,76 @@ function createHW(req, res) {
 }
 exports.createHW = createHW;
 /**
- * The attachment upload request api.
+ * creating a new project request api.
  *
- * @method uploadAttach
+ * @method createProject
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-function uploadAttach(req, res) {
+function createProject(req, res) {
+    if (!req.session.admin)
+        return res.sendStatus(401);
+    var name = encodeURIComponent(req.body.name);
+    var start_date = req.body.start;
+    var end_date = req.body.due;
+    var description = req.body.description;
+    exports.dbClient.query('INSERT INTO project(name, start_date, end_date, author_id, author_email, description) VALUES(?,?,?,?,?,?);', [name, start_date, end_date, req.session.studentId, req.session.email, description], function (err, insertResult) {
+        if (err) {
+            app_1.logger.error('[rest_api::createProject::outer_insert] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            res.sendStatus(500);
+            return;
+        }
+        app_1.logger.debug('[createProject:insert into project]');
+        app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
+        var projectId = insertResult.insertId;
+        var values = [];
+        for (var _i = 0, _a = req.body.attachment; _i < _a.length; _i++) {
+            var attachment = _a[_i];
+            var fileName = encodeURIComponent(attachment.name);
+            var extension = attachment.extension;
+            values.push([projectId, fileName, extension]);
+        }
+        exports.dbClient.query('INSERT INTO project_config(project_id, name, extension) VALUES ' + mysql_1.escape(values) + ';', function (err, result) {
+            if (err) {
+                app_1.logger.error('[rest_api::createProject::inner_insert] : ');
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                res.sendStatus(500);
+                return;
+            }
+            app_1.logger.debug('[createProject:insert into project_config]');
+            app_1.logger.debug(util.inspect(result, { showHidden: false, depth: 1 }));
+        });
+        res.redirect('/project');
+    });
+}
+exports.createProject = createProject;
+/**
+ * The attachment upload request api.
+ *
+ * @method uploadHomework
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+function uploadHomework(req, res) {
     if (!req.session.signIn)
         return res.sendStatus(401);
     var hash = crypto.createHash('sha512');
     var file = req.files.attachment;
     var hashedName = hash.update(file.data).digest('hex');
     var attachmentId = req.params.attachId;
-    exports.dbClient.query('INSERT INTO submit_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);', [req.session.studentId, attachmentId, req.session.email, hashedName], function (err, insertResult) {
+    exports.dbClient.query('INSERT INTO homework_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);', [req.session.studentId, attachmentId, req.session.email, hashedName], function (err, insertResult) {
         if (err) {
-            app_1.logger.error('[rest_api::uploadAttach::insert] : ');
+            app_1.logger.error('[rest_api::uploadHomework::insert] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
             return;
         }
-        app_1.logger.debug('[uploadAttach:insert into submit_log]');
+        app_1.logger.debug('[uploadHomework:insert into homework_log]');
         app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
         file.mv(path.join(app_1.submittedHomeworkPath, hashedName), function (err) {
             if (err) {
-                app_1.logger.error('[rest_api::uploadAttach::file_move] : ');
+                app_1.logger.error('[rest_api::uploadHomework::file_move] : ');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
                 return;
@@ -214,7 +259,42 @@ function uploadAttach(req, res) {
         res.sendStatus(202);
     });
 }
-exports.uploadAttach = uploadAttach;
+exports.uploadHomework = uploadHomework;
+/**
+ * The attachment upload request api.
+ *
+ * @method uploadProject
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+function uploadProject(req, res) {
+    if (!req.session.signIn)
+        return res.sendStatus(401);
+    var hash = crypto.createHash('sha512');
+    var file = req.files.attachment;
+    var hashedName = hash.update(file.data).digest('hex');
+    var attachmentId = req.params.attachId;
+    exports.dbClient.query('INSERT INTO project_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);', [req.session.studentId, attachmentId, req.session.email, hashedName], function (err, insertResult) {
+        if (err) {
+            app_1.logger.error('[rest_api::uploadProject::insert] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            res.sendStatus(500);
+            return;
+        }
+        app_1.logger.debug('[uploadProject:insert into project_log]');
+        app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
+        file.mv(path.join(app_1.submittedProjectPath, hashedName), function (err) {
+            if (err) {
+                app_1.logger.error('[rest_api::uploadProject::file_move] : ');
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                res.sendStatus(500);
+                return;
+            }
+        });
+        res.sendStatus(202);
+    });
+}
+exports.uploadProject = uploadProject;
 /**
  * Check uploaded name is already exist.
  *
@@ -236,6 +316,27 @@ function hwNameChecker(req, res) {
     });
 }
 exports.hwNameChecker = hwNameChecker;
+/**
+ * Check uploaded name is already exist.
+ *
+ * @method pjNameChecker
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+function pjNameChecker(req, res) {
+    if (!req.session.admin)
+        return res.sendStatus(401);
+    exports.dbClient.query('SELECT * FROM project WHERE name = ?;', encodeURIComponent(req.query.name), function (err, searchResult) {
+        if (err) {
+            app_1.logger.error('[rest_api::pjNameChecker::select] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            res.sendStatus(500);
+            return;
+        }
+        res.sendStatus(searchResult.length == 0 ? 200 : 409);
+    });
+}
+exports.pjNameChecker = pjNameChecker;
 /**
  * Run and return result uploaded exercise
  *
@@ -309,7 +410,7 @@ function runExercise(req, res) {
             }
             app_1.logger.debug('[runExercise:insert into exercise_log]');
             app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
-            judgeExercise(res, insertResult.insertId, attachId, studentId, outputPath, sourcePath);
+            judgeExercise(res, insertResult.insertId, attachId, outputPath, sourcePath);
         });
     });
 }
@@ -356,7 +457,7 @@ function resolve(req, res) {
                 }), { mode: 256 });
                 // copy given source code to shared folder
                 fs_ext.copySync(path.join(app_1.submittedExercisePath, log.fileName), path.join(sourcePath, exerciseSetting[0].name));
-                judgeExercise(null, log.id, log.attachId, log.studentId, outputPath, sourcePath);
+                judgeExercise(null, log.id, log.attachId, outputPath, sourcePath);
             });
         };
         for (var _i = 0, searchList_1 = searchList; _i < searchList_1.length; _i++) {
@@ -367,7 +468,7 @@ function resolve(req, res) {
     return res.sendStatus(200);
 }
 exports.resolve = resolve;
-function judgeExercise(res, logId, attachId, studentId, outputPath, sourcePath) {
+function judgeExercise(res, logId, attachId, outputPath, sourcePath) {
     var inputPath = path.join(app_1.exerciseSetPath, attachId.toString(), 'input');
     var answerPath = path.join(app_1.exerciseSetPath, attachId.toString(), 'output');
     app_1.docker.run('judge_server', ['bash', './judge.sh'], [{
@@ -403,7 +504,7 @@ function judgeExercise(res, logId, attachId, studentId, outputPath, sourcePath) 
             res.sendStatus(500);
             return;
         }
-        handleResult(res, logId, attachId, studentId, answerPath, inputPath, outputPath);
+        handleResult(res, logId, answerPath, inputPath, outputPath);
         // remove input temporary folder
         fs_ext.remove(sourcePath, function (err) {
             if (err) {
@@ -414,7 +515,7 @@ function judgeExercise(res, logId, attachId, studentId, outputPath, sourcePath) 
         container.remove();
     });
 }
-function handleResult(res, logId, attachId, studentId, answerPath, inputPath, outputPath) {
+function handleResult(res, logId, answerPath, inputPath, outputPath) {
     var resultFile = path.join(outputPath, 'result.json');
     fs.exists(resultFile, function (exists) {
         // if result.js is exist, it means that this judge was successful or runtime exceptions or timeout occur
@@ -658,19 +759,19 @@ function historyList(req, res) {
             homeworkQuery_1 += ' AND attachment_id IN (' + mysql_1.escape(query.hw) + ')';
         if (req.session.admin) {
             tasks.push(function (callback) {
-                exports.dbClient.query('SELECT submit_log.id, user.student_id AS `studentId`, email, submitted AS `timestamp`, hw_config.name AS `fileName`, extension, "Homework" AS `category`, user.name ' +
-                    'FROM submit_log ' +
-                    '    JOIN hw_config ON submit_log.attachment_id = hw_config.id ' +
-                    '    JOIN user ON submit_log.student_id = user.student_id ' +
+                exports.dbClient.query('SELECT homework_log.id, user.student_id AS `studentId`, email, submitted AS `timestamp`, homework_config.name AS `fileName`, extension, "Homework" AS `category`, user.name ' +
+                    'FROM homework_log ' +
+                    '    JOIN homework_config ON homework_log.attachment_id = homework_config.id ' +
+                    '    JOIN user ON homework_log.student_id = user.student_id ' +
                     'WHERE ' + homeworkQuery_1 + ' ' +
                     'ORDER BY submitted', callback);
             });
         }
         else {
             tasks.push(function (callback) {
-                exports.dbClient.query('SELECT submit_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, name AS `fileName`, extension, "Homework" AS `category` ' +
-                    'FROM submit_log ' +
-                    '    JOIN hw_config ON submit_log.attachment_id = hw_config.id ' +
+                exports.dbClient.query('SELECT homework_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, name AS `fileName`, extension, "Homework" AS `category` ' +
+                    'FROM homework_log ' +
+                    '    JOIN homework_config ON homework_log.attachment_id = homework_config.id ' +
                     'WHERE ' + homeworkQuery_1 + ' ' +
                     'ORDER BY submitted', callback);
             });
@@ -825,8 +926,8 @@ function getHomework(req, res) {
     if (!req.session.signIn)
         return res.sendStatus(401);
     exports.dbClient.query('SELECT student_id AS `studentId`, file_name AS `fileName`, name ' +
-        'FROM submit_log JOIN hw_config ON submit_log.attachment_id = hw_config.id ' +
-        'WHERE submit_log.id=?', req.params.logId, function (err, result) {
+        'FROM homework_log JOIN homework_config ON homework_log.attachment_id = homework_config.id ' +
+        'WHERE homework_log.id=?', req.params.logId, function (err, result) {
         if (err) {
             app_1.logger.error('[rest_api::getHomework::search] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));

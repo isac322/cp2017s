@@ -1,4 +1,4 @@
-CREATE TABLE submit_log (
+CREATE TABLE homework_log (
 	id            MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	student_id    VARCHAR(32)        NOT NULL,
 	attachment_id MEDIUMINT UNSIGNED NOT NULL,
@@ -7,6 +7,6 @@ CREATE TABLE submit_log (
 	submitted     TIMESTAMP          NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	FOREIGN KEY (student_id) REFERENCES user (student_id)
 		ON UPDATE CASCADE,
-	FOREIGN KEY (attachment_id) REFERENCES hw_config (id)
+	FOREIGN KEY (attachment_id) REFERENCES homework_config (id)
 		ON UPDATE CASCADE
 );

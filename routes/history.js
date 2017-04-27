@@ -30,7 +30,7 @@ var HistoryRoute = (function (_super) {
      */
     function HistoryRoute() {
         var _this = _super.call(this) || this;
-        _this.navPos = 4;
+        _this.navPos = 5;
         return _this;
     }
     /**
@@ -67,8 +67,8 @@ var HistoryRoute = (function (_super) {
             rest_api_1.dbClient.query('SELECT email FROM email WHERE student_id = ?;', req.session.studentId, callback);
         });
         tasks.push(function (callback) {
-            rest_api_1.dbClient.query('SELECT homework.name AS `homeworkName`, hw_config.name AS `fileName`, hw_config.id ' +
-                'FROM homework JOIN hw_config ON homework.homework_id = hw_config.homework_id;', callback);
+            rest_api_1.dbClient.query('SELECT homework.name AS `homeworkName`, homework_config.name AS `fileName`, homework_config.id ' +
+                'FROM homework JOIN homework_config ON homework.homework_id = homework_config.homework_id;', callback);
         });
         tasks.push(function (callback) {
             rest_api_1.dbClient.query('SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +

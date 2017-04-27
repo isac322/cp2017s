@@ -39,7 +39,7 @@ export class HistoryRoute extends BaseRoute {
 	 */
 	constructor() {
 		super();
-		this.navPos = 4;
+		this.navPos = 5;
 	}
 
 	/**
@@ -67,8 +67,8 @@ export class HistoryRoute extends BaseRoute {
 
 		tasks.push((callback) => {
 			dbClient.query(
-				'SELECT homework.name AS `homeworkName`, hw_config.name AS `fileName`, hw_config.id ' +
-				'FROM homework JOIN hw_config ON homework.homework_id = hw_config.homework_id;',
+				'SELECT homework.name AS `homeworkName`, homework_config.name AS `fileName`, homework_config.id ' +
+				'FROM homework JOIN homework_config ON homework.homework_id = homework_config.homework_id;',
 				callback)
 		});
 

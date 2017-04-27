@@ -15,8 +15,10 @@ var index_1 = require("./routes/index");
 var rest_api_1 = require("./routes/rest_api");
 var profile_1 = require("./routes/profile");
 var fs = require("fs");
-var fileUpload = require("express-fileupload");
 var history_1 = require("./routes/history");
+var board_1 = require("./routes/board");
+var project_1 = require("./routes/project");
+var fileUpload = require("express-fileupload");
 require('winston-daily-rotate-file');
 var Docker = require("dockerode");
 var dockerConfig = JSON.parse(fs.readFileSync('config/docker.json', 'utf-8'));
@@ -26,9 +28,10 @@ exports.exerciseSetPath = path.join(__dirname, 'media', 'test_set', 'exercise');
 exports.submittedExercisePath = path.join(__dirname, 'media', 'exercise');
 exports.submittedExerciseOriginalPath = path.join(__dirname, 'media', 'exercise_origin');
 exports.submittedHomeworkPath = path.join(__dirname, 'media', 'homework');
+exports.submittedProjectPath = path.join(__dirname, 'media', 'project');
 var logPath = path.join(__dirname, 'logs');
 var requiredPath = [exports.tempPath, exports.exerciseSetPath, exports.submittedHomeworkPath, exports.submittedExercisePath,
-    exports.submittedExerciseOriginalPath, logPath];
+    exports.submittedExerciseOriginalPath, exports.submittedProjectPath, logPath];
 exports.logger = new winston.Logger({
     transports: [
         new winston.transports.DailyRotateFile({
@@ -90,13 +93,16 @@ var Server = (function () {
         this.app.post('/homework', rest_api_1.createHW);
         this.app.get('/homework/name', rest_api_1.hwNameChecker);
         this.app.get('/homework/:logId([0-9]+)', rest_api_1.getHomework);
-        this.app.post('/homework/:attachId([0-9]+)', rest_api_1.uploadAttach);
+        this.app.post('/homework/:attachId([0-9]+)', rest_api_1.uploadHomework);
         this.app.get('/exercise/:logId([0-9]+)', rest_api_1.getExercise);
         //		this.app.post('/exercise', runExercise);
         this.app.get('/exercise/resolve', rest_api_1.resolve);
         this.app.get('/exercise/result/:logId([0-9]+)', rest_api_1.judgeResult);
         this.app.post('/exercise/:attachId([0-9]+)', rest_api_1.runExercise);
         this.app.get('/history/list', rest_api_1.historyList);
+        this.app.get('/project/name', rest_api_1.pjNameChecker);
+        this.app.post('/project', rest_api_1.createProject);
+        this.app.post('/project/:attachId([0-9]+)', rest_api_1.uploadProject);
     };
     /**
      * Configure application
@@ -162,8 +168,10 @@ var Server = (function () {
         index_1.IndexRoute.create(router);
         homework_1.HWRoute.create(router);
         exercise_1.ExerciseRoute.create(router);
-        profile_1.ProfileRoute.create(router);
+        project_1.ProjectRoute.create(router);
         history_1.HistoryRoute.create(router);
+        board_1.BoardRoute.create(router);
+        profile_1.ProfileRoute.create(router);
         this.app.use(router);
     };
     /**

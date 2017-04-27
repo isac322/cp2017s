@@ -54,9 +54,7 @@ export class ExerciseRoute extends BaseRoute {
 	public exercise(req: Request, res: Response, next: NextFunction) {
 		this.title = 'Exercise';
 
-		if (!req.session.signIn) {
-			return res.redirect('/');
-		}
+		if (!req.session.signIn) return res.redirect('/');
 
 		dbClient.query(
 			'SELECT exercise.id, exercise.name, exercise.start_date, exercise.end_date, exercise.description, ' +
@@ -106,7 +104,7 @@ export class ExerciseRoute extends BaseRoute {
 
 					currentObject.attachments.push({
 						id: record.attach_id,
-						name: record.file_name,
+						name: decodeURIComponent(record.file_name),
 						result: record.result
 					});
 				}

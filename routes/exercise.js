@@ -60,9 +60,8 @@ var ExerciseRoute = (function (_super) {
     ExerciseRoute.prototype.exercise = function (req, res, next) {
         var _this = this;
         this.title = 'Exercise';
-        if (!req.session.signIn) {
+        if (!req.session.signIn)
             return res.redirect('/');
-        }
         rest_api_1.dbClient.query('SELECT exercise.id, exercise.name, exercise.start_date, exercise.end_date, exercise.description, ' +
             '       exercise_config.id AS `attach_id`, exercise_config.name AS `file_name`, ' +
             '       (result_table.student_id IS NOT NULL) as result ' +
@@ -97,7 +96,7 @@ var ExerciseRoute = (function (_super) {
                 }
                 currentObject.attachments.push({
                     id: record.attach_id,
-                    name: record.file_name,
+                    name: decodeURIComponent(record.file_name),
                     result: record.result
                 });
             }

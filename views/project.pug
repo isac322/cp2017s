@@ -10,56 +10,56 @@ block header
 block content
 	.col-md-12.page-header
 		h2.text-info
-			b Exercise List
+			b Project List
 
 	if admin
 		.col-xs-12
-			a.btn.btn-danger(role='button', href='/exercise/resolve') Resolve
-			a.pull-right(role='button', href='/exercise/add')
+			a.pull-right(role='button', href='/project/add')
 				h4#btn-add
 					| #[span.glyphicon.glyphicon-plus]
 					| Add
+
 	- var millis = 24 * 60 * 60 * 1000
-	each exercise in exerciseList
+	each project in projectList
 		.col-xs-12.col-md-6.homework-card
 			.panel.panel-default
 				.panel-body
 					.col-xs-12
 						h2.wrapped-text.card-header
-							b=exercise.name
+							b=project.name
 
 						.row
 							.col-xs-12.col-sm-4.col-md-12
 								h4
 									b Description
 								p
-									each desc in exercise.description
+									each desc in project.description
 										a.wrapped-text(target='_blank', href=desc)=desc
 										br
 
 							.col-xs-6.col-sm-4
 								h4
 									b Start Date
-								p=exercise.startDate
+								p=project.startDate
 
 							.col-xs-6.col-sm-4
 								h4
 									b Deadline
-								p=exercise.dueDate
+								p=project.dueDate
 
 					.col-xs-12
 						h4
-							a.pull-right.appender(role='button', data-toggle='collapse', href='#collapseExample' + exercise.id, aria-expanded='false', aria-controls='collapseExample' + exercise.id)
+							a.pull-right.appender(role='button', data-toggle='collapse', href='#collapseExample' + project.id, aria-expanded='false', aria-controls='collapseExample' + project.id)
 								| #[i.fa.fa-upload(aria-hidden="true")]
 								| Submit
 								| #[span.glyphicon.glyphicon-menu-down]
 
-				ul.list-group.collapse(id='collapseExample' + exercise.id)
-					each attachment in exercise.attachments
-						form.upload-form(action='/exercise/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
-							li.list-group-item(class=attachment.result ? 'list-group-item-success' : undefined)
+				ul.list-group.collapse(id='collapseExample' + project.id)
+					each attachment in project.attachments
+						form.upload-form(action='/project/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
+							li.list-group-item(class=attachment.submitted ? 'list-group-item-success' : undefined)
 								.row
-									if signIn && exercise.leftMillis >= 0
+									if signIn && project.leftMillis >= -2 * 24 * 60 * 60 * 1000
 										.col-xs-12.col-sm-5.vcenter
 											h4.wrapped-text
 												| #[span.glyphicon.glyphicon-file]
@@ -73,7 +73,7 @@ block content
 													.input-group-btn
 														span.btn.btn-default.btn-file Select
 															input(type='file' name='attachment', hidden, required)
-														button.btn.btn-primary(type='submit', role='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Judging...') Submit
+														button.btn.btn-primary(type='submit', role='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Sending...') Submit
 									else
 										.col-xs-12.vcenter
 											h4.wrapped-text
@@ -83,20 +83,17 @@ block content
 
 
 				.panel-footer.text-center
-					if exercise.leftMillis < 0
+					if project.leftMillis < 0
 						| Overpast
-					else if exercise.leftMillis < millis
+					else if project.leftMillis < millis
 						| Less than 24 hours
-					else if exercise.leftMillis < 2 * millis
+					else if project.leftMillis < 2 * millis
 						| 1 day left
 					else
-						| #{Math.floor(exercise.leftMillis / millis)} days left
-
-	// Result Modal
-	include modal-result
+						| #{Math.floor(project.leftMillis / millis)} days left
 
 	// confirm modal
 	include modal-confirm
 
 	script(src='/js/card-run.js')
-	script(src='/js/submit_exercise.js')
+	script(src='/js/submit_non_judging_file.js')

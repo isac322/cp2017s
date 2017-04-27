@@ -33,15 +33,15 @@ block header
 block content
 	.col-md-12.page-header
 		h2.text-info
-			b Create Homework
+			b Create Project
 
-	form#create-form(action='/homework', method='POST', data-toggle="validator", role='form')
+	form#create-form(action='/project', method='POST', data-toggle="validator", role='form')
 		.form-horizontal
-			// homework name
+			// project name
 			.form-group.has-feedback
-				label.control-label.col-xs-12.col-sm-2(for='hw_name') Homework Name
+				label.control-label.col-xs-12.col-sm-2(for='project_name') Project Name
 				.col-xs-12.col-sm-10
-					input.form-control.input-lg#hw_name(type='text', placeholder='Name', name='name', data-remote='name', required)
+					input.form-control.input-lg#project_name(type='text', placeholder='Name', name='name', data-remote='name', required)
 					span.glyphicon.form-control-feedback(aria-hidden='true')
 
 			// description pdf URL

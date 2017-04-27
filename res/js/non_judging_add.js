@@ -1,6 +1,6 @@
 var accumulatedRowCount = 0;
 var currentRowCount = 0;
-var currentForm = $('#create-hw');
+var currentForm = $('#create-form');
 var attachTemplate = $('#list-item_template').removeAttr('id').hide();
 var attachList = $('#attach-list');
 var btnAppend = $('#btn-append-item');

@@ -1,7 +1,7 @@
 let accumulatedRowCount = 0;
 let currentRowCount = 0;
 
-const currentForm: JQuery = $('#create-hw');
+const currentForm: JQuery = $('#create-form');
 const attachTemplate: JQuery = $('#list-item_template').removeAttr('id').hide();
 const attachList: JQuery = $('#attach-list');
 
