@@ -6,337 +6,17 @@ var fs_ext = require("fs-extra");
 var iconv = require("iconv-lite");
 var mysql_1 = require("mysql");
 var path = require("path");
-var app_1 = require("../app");
+var app_1 = require("../../app");
 var util = require("util");
 var async = require("async");
 var charsetDetector = require("detect-character-encoding");
-var webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
-var CLIENT_ID = webConfig.google.clientId;
-var GoogleAuth = require('google-auth-library');
-var auth = new GoogleAuth;
-var OAuth2Client = new auth.OAuth2(CLIENT_ID, '', '');
 var dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
-exports.dbClient = mysql_1.createConnection({
+var dbClient = mysql_1.createConnection({
     host: dbConfig.host,
     user: dbConfig.user,
     password: dbConfig.password,
     database: dbConfig.database
 });
-/**
- * The sign in request api.
- *
- * @method signIn
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
-function signIn(req, res) {
-    if (req.session.signIn) {
-        return res.sendStatus(401);
-    }
-    var token = req.body.idtoken;
-    OAuth2Client.verifyIdToken(token, CLIENT_ID, function (e, login) {
-        if (e) {
-            // FIXME: error handling
-            throw e;
-        }
-        var payload = login.getPayload();
-        var email = payload['email'];
-        exports.dbClient.query('SELECT * from email, user where email = "' + email + '" and user.student_id = email.student_id;', function (err, result) {
-            if (err) {
-                app_1.logger.error('[rest_api::signIn::select] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                res.sendStatus(500);
-                return;
-            }
-            app_1.logger.debug('[signIn]');
-            app_1.logger.debug(util.inspect(result, { showHidden: false, depth: 1 }));
-            switch (result.length) {
-                case 0:
-                    res.sendStatus(204);
-                    break;
-                case 1:
-                    req.session.admin = result[0].is_admin == '1';
-                    req.session.email = email;
-                    req.session.name = decodeURIComponent(result[0].name);
-                    req.session.signIn = true;
-                    req.session.studentId = result[0].student_id;
-                    res.sendStatus(202);
-                    break;
-                default:
-                    res.sendStatus(500);
-            }
-        });
-    });
-}
-exports.signIn = signIn;
-function signOut(req, res) {
-    if (!req.session.signIn)
-        return res.sendStatus(401);
-    req.session.admin = false;
-    req.session.email = null;
-    req.session.name = null;
-    req.session.signIn = false;
-    req.session.studentId = null;
-    return res.sendStatus(202);
-}
-exports.signOut = signOut;
-/**
- * The register request api.
- *
- * @method register
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
-function register(req, res) {
-    if (req.session.signIn)
-        return res.sendStatus(401);
-    var body = req.body;
-    var studentId = body.student_id1 + '-' + body.student_id2;
-    var name = encodeURIComponent(body.name);
-    var idToken = body.id_token;
-    OAuth2Client.verifyIdToken(idToken, CLIENT_ID, function (e, login) {
-        if (e) {
-            // FIXME: error handling
-            throw e;
-        }
-        var payload = login.getPayload();
-        var email = payload['email'];
-        var nameInGoogle = encodeURIComponent(payload['name']);
-        exports.dbClient.query('SELECT * FROM user WHERE student_id = \'' + studentId + '\';', function (err, selectResult) {
-            if (err || selectResult.length > 1) {
-                app_1.logger.error('[rest_api::register::select] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                res.sendStatus(500);
-                return;
-            }
-            else if (selectResult.length == 0) {
-                res.sendStatus(204);
-                return;
-            }
-            app_1.logger.debug('[register:outer]');
-            app_1.logger.debug(util.inspect(selectResult, { showHidden: false, depth: 1 }));
-            exports.dbClient.query('INSERT INTO email VALUES (?,?,?);', [studentId, email, nameInGoogle], function (err, insertResult) {
-                if (err) {
-                    app_1.logger.error('[rest_api::register::insert] : ');
-                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                    res.sendStatus(500);
-                    return;
-                }
-                app_1.logger.debug('[register:inner]');
-                app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
-                req.session.admin = selectResult[0].is_admin == '1';
-                req.session.email = email;
-                req.session.name = decodeURIComponent(selectResult[0].name);
-                req.session.signIn = true;
-                req.session.studentId = selectResult[0].student_id;
-                res.sendStatus(201);
-            });
-        });
-    });
-}
-exports.register = register;
-/**
- * creating a new homework request api.
- *
- * @method createHW
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
-function createHW(req, res) {
-    if (!req.session.admin)
-        return res.sendStatus(401);
-    var name = encodeURIComponent(req.body.name);
-    var start_date = req.body.start;
-    var end_date = req.body.due;
-    var description = req.body.description;
-    exports.dbClient.query('INSERT INTO homework(name, start_date, end_date, author_id, author_email, description) VALUES(?,?,?,?,?,?);', [name, start_date, end_date, req.session.studentId, req.session.email, description], function (err, insertResult) {
-        if (err) {
-            app_1.logger.error('[rest_api::createHW::outer_insert] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-            res.sendStatus(500);
-            return;
-        }
-        app_1.logger.debug('[createHW:insert into homework]');
-        app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
-        var homeworkId = insertResult.insertId;
-        var values = [];
-        for (var _i = 0, _a = req.body.attachment; _i < _a.length; _i++) {
-            var attachment = _a[_i];
-            var fileName = encodeURIComponent(attachment.name);
-            var extension = attachment.extension;
-            values.push([homeworkId, fileName, extension]);
-        }
-        exports.dbClient.query('INSERT INTO homework_config(homework_id, name, extension) VALUES ' + mysql_1.escape(values) + ';', function (err, result) {
-            if (err) {
-                app_1.logger.error('[rest_api::createHW::inner_insert] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                res.sendStatus(500);
-                return;
-            }
-            app_1.logger.debug('[createHW:insert into homework_config]');
-            app_1.logger.debug(util.inspect(result, { showHidden: false, depth: 1 }));
-        });
-        res.redirect('/homework');
-    });
-}
-exports.createHW = createHW;
-/**
- * creating a new project request api.
- *
- * @method createProject
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
-function createProject(req, res) {
-    if (!req.session.admin)
-        return res.sendStatus(401);
-    var name = encodeURIComponent(req.body.name);
-    var start_date = req.body.start;
-    var end_date = req.body.due;
-    var description = req.body.description;
-    exports.dbClient.query('INSERT INTO project(name, start_date, end_date, author_id, author_email, description) VALUES(?,?,?,?,?,?);', [name, start_date, end_date, req.session.studentId, req.session.email, description], function (err, insertResult) {
-        if (err) {
-            app_1.logger.error('[rest_api::createProject::outer_insert] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-            res.sendStatus(500);
-            return;
-        }
-        app_1.logger.debug('[createProject:insert into project]');
-        app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
-        var projectId = insertResult.insertId;
-        var values = [];
-        for (var _i = 0, _a = req.body.attachment; _i < _a.length; _i++) {
-            var attachment = _a[_i];
-            var fileName = encodeURIComponent(attachment.name);
-            var extension = attachment.extension;
-            values.push([projectId, fileName, extension]);
-        }
-        exports.dbClient.query('INSERT INTO project_config(project_id, name, extension) VALUES ' + mysql_1.escape(values) + ';', function (err, result) {
-            if (err) {
-                app_1.logger.error('[rest_api::createProject::inner_insert] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                res.sendStatus(500);
-                return;
-            }
-            app_1.logger.debug('[createProject:insert into project_config]');
-            app_1.logger.debug(util.inspect(result, { showHidden: false, depth: 1 }));
-        });
-        res.redirect('/project');
-    });
-}
-exports.createProject = createProject;
-/**
- * The attachment upload request api.
- *
- * @method uploadHomework
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
-function uploadHomework(req, res) {
-    if (!req.session.signIn)
-        return res.sendStatus(401);
-    var hash = crypto.createHash('sha512');
-    var file = req.files.attachment;
-    var hashedName = hash.update(file.data).digest('hex');
-    var attachmentId = req.params.attachId;
-    exports.dbClient.query('INSERT INTO homework_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);', [req.session.studentId, attachmentId, req.session.email, hashedName], function (err, insertResult) {
-        if (err) {
-            app_1.logger.error('[rest_api::uploadHomework::insert] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-            res.sendStatus(500);
-            return;
-        }
-        app_1.logger.debug('[uploadHomework:insert into homework_log]');
-        app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
-        file.mv(path.join(app_1.submittedHomeworkPath, hashedName), function (err) {
-            if (err) {
-                app_1.logger.error('[rest_api::uploadHomework::file_move] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                res.sendStatus(500);
-                return;
-            }
-        });
-        res.sendStatus(202);
-    });
-}
-exports.uploadHomework = uploadHomework;
-/**
- * The attachment upload request api.
- *
- * @method uploadProject
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
-function uploadProject(req, res) {
-    if (!req.session.signIn)
-        return res.sendStatus(401);
-    var hash = crypto.createHash('sha512');
-    var file = req.files.attachment;
-    var hashedName = hash.update(file.data).digest('hex');
-    var attachmentId = req.params.attachId;
-    exports.dbClient.query('INSERT INTO project_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);', [req.session.studentId, attachmentId, req.session.email, hashedName], function (err, insertResult) {
-        if (err) {
-            app_1.logger.error('[rest_api::uploadProject::insert] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-            res.sendStatus(500);
-            return;
-        }
-        app_1.logger.debug('[uploadProject:insert into project_log]');
-        app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
-        file.mv(path.join(app_1.submittedProjectPath, hashedName), function (err) {
-            if (err) {
-                app_1.logger.error('[rest_api::uploadProject::file_move] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-                res.sendStatus(500);
-                return;
-            }
-        });
-        res.sendStatus(202);
-    });
-}
-exports.uploadProject = uploadProject;
-/**
- * Check uploaded name is already exist.
- *
- * @method hwNameChecker
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
-function hwNameChecker(req, res) {
-    if (!req.session.admin)
-        return res.sendStatus(401);
-    exports.dbClient.query('SELECT * FROM homework WHERE name = ?;', encodeURIComponent(req.query.name), function (err, searchResult) {
-        if (err) {
-            app_1.logger.error('[rest_api::hwNameChecker::select] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-            res.sendStatus(500);
-            return;
-        }
-        res.sendStatus(searchResult.length == 0 ? 200 : 409);
-    });
-}
-exports.hwNameChecker = hwNameChecker;
-/**
- * Check uploaded name is already exist.
- *
- * @method pjNameChecker
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
-function pjNameChecker(req, res) {
-    if (!req.session.admin)
-        return res.sendStatus(401);
-    exports.dbClient.query('SELECT * FROM project WHERE name = ?;', encodeURIComponent(req.query.name), function (err, searchResult) {
-        if (err) {
-            app_1.logger.error('[rest_api::pjNameChecker::select] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-            res.sendStatus(500);
-            return;
-        }
-        res.sendStatus(searchResult.length == 0 ? 200 : 409);
-    });
-}
-exports.pjNameChecker = pjNameChecker;
 /**
  * Run and return result uploaded exercise
  *
@@ -381,7 +61,7 @@ function runExercise(req, res) {
         }
     });
     // get information of this exercise by given id (attachId)
-    exports.dbClient.query('SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', attachId, function (err, searchResult) {
+    dbClient.query('SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', attachId, function (err, searchResult) {
         if (err) {
             app_1.logger.error('[rest_api::runExercise::select] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
@@ -401,7 +81,7 @@ function runExercise(req, res) {
         }), { mode: 256 });
         // copy given source code to shared folder
         fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, { mode: 384 });
-        exports.dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);', [studentId, attachId, req.session.email, hashedName, hashedOriginal], function (err, insertResult) {
+        dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);', [studentId, attachId, req.session.email, hashedName, hashedOriginal], function (err, insertResult) {
             if (err) {
                 app_1.logger.error('[rest_api::runExercise::insert] : ');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
@@ -425,7 +105,7 @@ exports.runExercise = runExercise;
 function resolve(req, res) {
     if (!req.session.admin)
         return res.sendStatus(401);
-    exports.dbClient.query('SELECT exercise_log.id, exercise_log.attachment_id AS `attachId`, exercise_log.student_id AS `studentId`, file_name AS `fileName` ' +
+    dbClient.query('SELECT exercise_log.id, exercise_log.attachment_id AS `attachId`, exercise_log.student_id AS `studentId`, file_name AS `fileName` ' +
         'FROM exercise_log ' +
         '    LEFT JOIN exercise_result ON exercise_result.log_id = exercise_log.id ' +
         'WHERE exercise_result.id IS NULL;', function (err, searchList) {
@@ -437,7 +117,7 @@ function resolve(req, res) {
         }
         var _loop_1 = function (log) {
             // get information of this exercise by given id (attachId)
-            exports.dbClient.query('SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', log.attachId, function (err, exerciseSetting) {
+            dbClient.query('SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', log.attachId, function (err, exerciseSetting) {
                 if (err) {
                     app_1.logger.error('[rest_api::resolve::select] : ');
                     app_1.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
@@ -533,7 +213,7 @@ function handleResult(res, logId, answerPath, inputPath, outputPath) {
                 if (result.isMatched) {
                     if (res)
                         res.sendStatus(200);
-                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type, runtime_error) VALUE (?, ?, ?);', [logId, 0 /* correct */, result.errorLog], function (err) {
+                    dbClient.query('INSERT INTO exercise_result (log_id, type, runtime_error) VALUE (?, ?, ?);', [logId, 0 /* correct */, result.errorLog], function (err) {
                         if (err) {
                             app_1.logger.error('[rest_api::handleResult::insert_judge_correct] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
@@ -557,7 +237,7 @@ function handleResult(res, logId, answerPath, inputPath, outputPath) {
                             if (res)
                                 res.status(410).json({ input: data });
                         });
-                        exports.dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, failed_index) VALUE (?, ?, ?, ?);', [logId, 3 /* timeout */, result.returnCode, result.inputIndex], function (err) {
+                        dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, failed_index) VALUE (?, ?, ?, ?);', [logId, 3 /* timeout */, result.returnCode, result.inputIndex], function (err) {
                             if (err) {
                                 app_1.logger.error('[rest_api::handleResult::insert_judge_timeout] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
@@ -580,7 +260,7 @@ function handleResult(res, logId, answerPath, inputPath, outputPath) {
                                     returnCode: result.returnCode
                                 });
                         });
-                        exports.dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, runtime_error, failed_index) VALUE (?, ?, ?, ?, ?);', [logId, 4 /* runtimeError */, result.returnCode, result.errorLog, result.inputIndex], function (err) {
+                        dbClient.query('INSERT INTO exercise_result (log_id, type, return_code, runtime_error, failed_index) VALUE (?, ?, ?, ?, ?);', [logId, 4 /* runtimeError */, result.returnCode, result.errorLog, result.inputIndex], function (err) {
                             if (err) {
                                 app_1.logger.error('[rest_api::handleResult::insert_judge_runtime_error] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
@@ -613,7 +293,7 @@ function handleResult(res, logId, answerPath, inputPath, outputPath) {
                                 });
                         });
                     });
-                    exports.dbClient.query('INSERT INTO exercise_result (log_id, type, failed_index, user_output, runtime_error) VALUE (?, ?, ?, ?, ?);', [logId, 1 /* incorrect */, result.inputIndex, result.userOutput, result.errorLog], function (err) {
+                    dbClient.query('INSERT INTO exercise_result (log_id, type, failed_index, user_output, runtime_error) VALUE (?, ?, ?, ?, ?);', [logId, 1 /* incorrect */, result.inputIndex, result.userOutput, result.errorLog], function (err) {
                         if (err) {
                             app_1.logger.error('[rest_api::handleResult::insert_judge_incorrect] : ');
                             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
@@ -644,7 +324,7 @@ function handleResult(res, logId, answerPath, inputPath, outputPath) {
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                             }
                         });
-                        exports.dbClient.query('INSERT INTO exercise_result(log_id, type, script_error) VALUE(?, ?, ?);', [logId, 5 /* scriptError */, errorStr], function (err) {
+                        dbClient.query('INSERT INTO exercise_result(log_id, type, script_error) VALUE(?, ?, ?);', [logId, 5 /* scriptError */, errorStr], function (err) {
                             if (err) {
                                 app_1.logger.error('[rest_api::handleResult::insert_script_error] : ');
                                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
@@ -674,7 +354,7 @@ function handleResult(res, logId, answerPath, inputPath, outputPath) {
                                 });
                                 if (res)
                                     res.status(400).json({ errorMsg: errorStr });
-                                exports.dbClient.query('INSERT INTO exercise_result(log_id, type, compile_error) VALUE(?,?,?);', [logId, 2 /* compileError */, errorStr], function (err) {
+                                dbClient.query('INSERT INTO exercise_result(log_id, type, compile_error) VALUE(?,?,?);', [logId, 2 /* compileError */, errorStr], function (err) {
                                     if (err) {
                                         app_1.logger.error('[rest_api::handleResult::insert_compile_error] : ');
                                         app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
@@ -694,104 +374,6 @@ function handleResult(res, logId, answerPath, inputPath, outputPath) {
     });
 }
 /**
- * Send history data.
- *
- * @method historyList
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
-function historyList(req, res) {
-    if (!req.session.signIn)
-        return res.sendStatus(401);
-    if (!('t' in req.query)) {
-        req.query.t = '3';
-    }
-    var query = req.query;
-    if (query.ex === null && query.hw === null)
-        query.t = 3;
-    else if (query.ex !== null)
-        query.t = 2;
-    else if (query.hw !== null)
-        query.t = 1;
-    var commonQuery = '';
-    if (req.session.admin) {
-        if (query.u)
-            commonQuery += 'user.student_id IN (' + mysql_1.escape(query.u) + ')';
-        else
-            commonQuery += 'user.student_id = ' + mysql_1.escape(req.session.studentId);
-    }
-    else
-        commonQuery += 'student_id = ' + mysql_1.escape(req.session.studentId);
-    if (query.e)
-        commonQuery += ' AND email IN (' + mysql_1.escape(query.e) + ')';
-    var tasks = [];
-    if (query.t & 2) {
-        var exerciseQuery_1 = commonQuery;
-        if (query.ex)
-            exerciseQuery_1 += ' AND attachment_id IN (' + mysql_1.escape(query.ex) + ')';
-        if (query.r)
-            exerciseQuery_1 += ' AND type IN (' + mysql_1.escape(query.r) + ')';
-        if (req.session.admin) {
-            tasks.push(function (callback) {
-                exports.dbClient.query('SELECT exercise_log.id, user.student_id AS `studentId`, email, submitted AS `timestamp`, exercise_config.name AS `fileName`, extension, type AS `result`, "Exercise" AS `category`, user.name ' +
-                    'FROM exercise_log ' +
-                    '    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
-                    '    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
-                    '    JOIN user ON user.student_id = exercise_log.student_id ' +
-                    'WHERE ' + exerciseQuery_1 + ' ' +
-                    'ORDER BY submitted DESC', callback);
-            });
-        }
-        else {
-            tasks.push(function (callback) {
-                exports.dbClient.query('SELECT exercise_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, name AS `fileName`, extension, type AS `result`, "Exercise" AS `category` ' +
-                    'FROM exercise_log ' +
-                    '    JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
-                    '    LEFT JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
-                    'WHERE ' + exerciseQuery_1 + ' ' +
-                    'ORDER BY submitted DESC', callback);
-            });
-        }
-    }
-    if (query.t & 1) {
-        var homeworkQuery_1 = commonQuery;
-        if (query.hw)
-            homeworkQuery_1 += ' AND attachment_id IN (' + mysql_1.escape(query.hw) + ')';
-        if (req.session.admin) {
-            tasks.push(function (callback) {
-                exports.dbClient.query('SELECT homework_log.id, user.student_id AS `studentId`, email, submitted AS `timestamp`, homework_config.name AS `fileName`, extension, "Homework" AS `category`, user.name ' +
-                    'FROM homework_log ' +
-                    '    JOIN homework_config ON homework_log.attachment_id = homework_config.id ' +
-                    '    JOIN user ON homework_log.student_id = user.student_id ' +
-                    'WHERE ' + homeworkQuery_1 + ' ' +
-                    'ORDER BY submitted', callback);
-            });
-        }
-        else {
-            tasks.push(function (callback) {
-                exports.dbClient.query('SELECT homework_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, name AS `fileName`, extension, "Homework" AS `category` ' +
-                    'FROM homework_log ' +
-                    '    JOIN homework_config ON homework_log.attachment_id = homework_config.id ' +
-                    'WHERE ' + homeworkQuery_1 + ' ' +
-                    'ORDER BY submitted', callback);
-            });
-        }
-    }
-    async.parallel(tasks, function (err, results) {
-        if (err) {
-            app_1.logger.error('[rest_api::historyList::search] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-            res.sendStatus(500);
-            return;
-        }
-        if (results.length == 2)
-            res.json(results[0][0].concat(results[1][0]));
-        else
-            res.json(results[0][0]);
-    });
-}
-exports.historyList = historyList;
-/**
  * Send judge result of exercise data.
  *
  * @method judgeResult
@@ -801,7 +383,7 @@ exports.historyList = historyList;
 function judgeResult(req, res) {
     if (!req.session.signIn)
         return 401;
-    exports.dbClient.query('SELECT student_id, attachment_id, type, compile_error, failed_index, user_output, return_code, runtime_error, script_error ' +
+    dbClient.query('SELECT student_id, attachment_id, type, compile_error, failed_index, user_output, return_code, runtime_error, script_error ' +
         'FROM exercise_log JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
         'WHERE log_id = ?', req.params.logId, function (err, searchResult) {
         if (err) {
@@ -890,7 +472,7 @@ exports.judgeResult = judgeResult;
 function getExercise(req, res) {
     if (!req.session.signIn)
         return res.sendStatus(401);
-    exports.dbClient.query('SELECT student_id AS `studentId`, file_name AS `fileName`, original_file AS `originalFile`, name ' +
+    dbClient.query('SELECT student_id AS `studentId`, file_name AS `fileName`, original_file AS `originalFile`, name ' +
         'FROM exercise_log JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
         'WHERE exercise_log.id=?', req.params.logId, function (err, result) {
         if (err) {
@@ -915,33 +497,3 @@ function getExercise(req, res) {
     });
 }
 exports.getExercise = getExercise;
-/**
- * Send homework file.
- *
- * @method getHomework
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
-function getHomework(req, res) {
-    if (!req.session.signIn)
-        return res.sendStatus(401);
-    exports.dbClient.query('SELECT student_id AS `studentId`, file_name AS `fileName`, name ' +
-        'FROM homework_log JOIN homework_config ON homework_log.attachment_id = homework_config.id ' +
-        'WHERE homework_log.id=?', req.params.logId, function (err, result) {
-        if (err) {
-            app_1.logger.error('[rest_api::getHomework::search] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
-            res.sendStatus(500);
-            return;
-        }
-        var row = result[0];
-        if (req.session.admin || row.studentId == req.session.studentId) {
-            res.download(path.join(app_1.submittedHomeworkPath, row.fileName), row.name);
-        }
-        else {
-            app_1.logger.error('[rest_api::getHomework::student_id-mismatch]');
-            res.sendStatus(401);
-        }
-    });
-}
-exports.getHomework = getHomework;

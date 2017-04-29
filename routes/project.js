@@ -12,9 +12,17 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var util = require("util");
 var app_1 = require("../app");
-var rest_api_1 = require("./rest_api");
 var route_1 = require("./route");
 var homework_1 = require("./homework");
+var fs = require("fs");
+var mysql_1 = require("mysql");
+var dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
+var dbClient = mysql_1.createConnection({
+    host: dbConfig.host,
+    user: dbConfig.user,
+    password: dbConfig.password,
+    database: dbConfig.database
+});
 /**
  * /project route
  *
@@ -66,7 +74,7 @@ var ProjectRoute = (function (_super) {
         this.title = 'Project List';
         if (!req.session.signIn)
             return res.redirect('/');
-        rest_api_1.dbClient.query(req.session.signIn ? ProjectRoute.pjQuery(req.session.studentId) : ProjectRoute.guestPjQuery, function (err, searchResult) {
+        dbClient.query(req.session.signIn ? ProjectRoute.pjQuery(req.session.studentId) : ProjectRoute.guestPjQuery, function (err, searchResult) {
             if (err) {
                 app_1.logger.error('[ProjectRoute::project]');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));

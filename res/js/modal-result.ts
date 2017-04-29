@@ -48,7 +48,8 @@ class ResultModal {
 		this.$body.children().hide();
 		this.$correctBody.show();
 
-		this.$header.removeClass('text-danger')
+		this.$header
+			.removeClass('text-danger')
 			.addClass('text-success')
 			.html('<i class="fa fa-check-circle" aria-hidden="true"></i> Correct !');
 
@@ -63,7 +64,8 @@ class ResultModal {
 		this.$outputBox.text(output);
 		this.$answerBox.text(answer);
 
-		this.$header.removeClass('text-success')
+		this.$header
+			.removeClass('text-success')
 			.addClass('text-danger')
 			.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Incorrect !');
 
@@ -76,7 +78,8 @@ class ResultModal {
 
 		this.$timeoutInputBox.text(input);
 
-		this.$header.removeClass('text-success')
+		this.$header
+			.removeClass('text-success')
 			.addClass('text-danger')
 			.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Timeout !');
 
@@ -91,7 +94,8 @@ class ResultModal {
 		this.$runtimeErrorBox.text(errorLog);
 		this.$runtimeErrorInputBox.text(input);
 
-		this.$header.removeClass('text-success')
+		this.$header
+			.removeClass('text-success')
 			.addClass('text-danger')
 			.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Runtime Error !');
 
@@ -105,7 +109,8 @@ class ResultModal {
 		this.$compileErrorBox.text(errorMsg);
 
 
-		this.$header.removeClass('text-success')
+		this.$header
+			.removeClass('text-success')
 			.addClass('text-danger')
 			.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Compile Error !');
 
@@ -119,7 +124,8 @@ class ResultModal {
 		this.$compileErrorBox.text(errorMsg.replace('/\n/g', '<br>'));
 
 
-		this.$header.removeClass('text-success')
+		this.$header
+			.removeClass('text-success')
 			.addClass('text-danger')
 			.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Fail to run !');
 
@@ -132,7 +138,8 @@ class ResultModal {
 
 		this.$errorBox.html(errorMsg);
 
-		this.$header.removeClass('text-success')
+		this.$header
+			.removeClass('text-success')
 			.addClass('text-danger')
 			.html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Something\'s wrong !');
 

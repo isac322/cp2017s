@@ -15,7 +15,7 @@ namespace SubmissionHistoryAdmin {
 
 	let rows: Array<Row> = [];
 
-	class Data {
+	class ResponseData {
 		id: number;
 		result: number;
 		email: string;
@@ -27,7 +27,7 @@ namespace SubmissionHistoryAdmin {
 		name: string;
 	}
 
-	const queryHandler = (data: Array<Data>) => {
+	const queryHandler = (data: Array<ResponseData>) => {
 		$resultTable.children().detach();
 
 		for (let i = 0; i < data.length; i++) {
@@ -79,7 +79,7 @@ namespace SubmissionHistoryAdmin {
 		private emailTd: HTMLTableDataCellElement;
 		private userTd: HTMLTableDataCellElement;
 
-		public constructor(value: Data) {
+		public constructor(value: ResponseData) {
 			this.idTd = document.createElement('th');
 			this.idTd.setAttribute('scope', 'row');
 			this.categoryTd = document.createElement('td');
@@ -102,7 +102,7 @@ namespace SubmissionHistoryAdmin {
 			this.row.appendChild(this.userTd);
 		}
 
-		public setData(value: Data) {
+		public setData(value: ResponseData) {
 			this.id = value.id;
 			this.category = value.category;
 			this.result = value.result;

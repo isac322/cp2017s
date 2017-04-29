@@ -12,8 +12,16 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var util = require("util");
 var app_1 = require("../app");
-var rest_api_1 = require("./rest_api");
 var route_1 = require("./route");
+var fs = require("fs");
+var mysql_1 = require("mysql");
+var dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
+var dbClient = mysql_1.createConnection({
+    host: dbConfig.host,
+    user: dbConfig.user,
+    password: dbConfig.password,
+    database: dbConfig.database
+});
 exports.monthNames = [
     "January", "February", "March",
     "April", "May", "June", "July",
@@ -69,7 +77,7 @@ var HWRoute = (function (_super) {
     HWRoute.prototype.homework = function (req, res, next) {
         var _this = this;
         this.title = 'Homework List';
-        rest_api_1.dbClient.query(req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery, function (err, searchResult) {
+        dbClient.query(req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery, function (err, searchResult) {
             if (err) {
                 app_1.logger.error('[HWRoute::homework]');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));

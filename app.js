@@ -12,12 +12,16 @@ var winston = require("winston");
 var exercise_1 = require("./routes/exercise");
 var homework_1 = require("./routes/homework");
 var index_1 = require("./routes/index");
-var rest_api_1 = require("./routes/rest_api");
 var profile_1 = require("./routes/profile");
 var fs = require("fs");
 var history_1 = require("./routes/history");
 var board_1 = require("./routes/board");
 var project_1 = require("./routes/project");
+var identification_1 = require("./routes/rest_api/identification");
+var homework_2 = require("./routes/rest_api/homework");
+var history_2 = require("./routes/rest_api/history");
+var exercise_2 = require("./routes/rest_api/exercise");
+var project_2 = require("./routes/rest_api/project");
 var fileUpload = require("express-fileupload");
 require('winston-daily-rotate-file');
 var Docker = require("dockerode");
@@ -87,22 +91,22 @@ var Server = (function () {
      * @method api
      */
     Server.prototype.api = function () {
-        this.app.post('/signin', rest_api_1.signIn);
-        this.app.post('/register', rest_api_1.register);
-        this.app.post('/signout', rest_api_1.signOut);
-        this.app.post('/homework', rest_api_1.createHW);
-        this.app.get('/homework/name', rest_api_1.hwNameChecker);
-        this.app.get('/homework/:logId([0-9]+)', rest_api_1.getHomework);
-        this.app.post('/homework/:attachId([0-9]+)', rest_api_1.uploadHomework);
-        this.app.get('/exercise/:logId([0-9]+)', rest_api_1.getExercise);
+        this.app.post('/signin', identification_1.signIn);
+        this.app.post('/register', identification_1.register);
+        this.app.post('/signout', identification_1.signOut);
+        this.app.post('/homework', homework_2.createHW);
+        this.app.get('/homework/name', homework_2.hwNameChecker);
+        this.app.get('/homework/:logId([0-9]+)', homework_2.getHomework);
+        this.app.post('/homework/:attachId([0-9]+)', homework_2.uploadHomework);
+        this.app.get('/exercise/:logId([0-9]+)', exercise_2.getExercise);
         //		this.app.post('/exercise', runExercise);
-        this.app.get('/exercise/resolve', rest_api_1.resolve);
-        this.app.get('/exercise/result/:logId([0-9]+)', rest_api_1.judgeResult);
-        this.app.post('/exercise/:attachId([0-9]+)', rest_api_1.runExercise);
-        this.app.get('/history/list', rest_api_1.historyList);
-        this.app.get('/project/name', rest_api_1.pjNameChecker);
-        this.app.post('/project', rest_api_1.createProject);
-        this.app.post('/project/:attachId([0-9]+)', rest_api_1.uploadProject);
+        this.app.get('/exercise/resolve', exercise_2.resolve);
+        this.app.get('/exercise/result/:logId([0-9]+)', exercise_2.judgeResult);
+        this.app.post('/exercise/:attachId([0-9]+)', exercise_2.runExercise);
+        this.app.get('/history/list', history_2.historyList);
+        this.app.get('/project/name', project_2.pjNameChecker);
+        this.app.post('/project', project_2.createProject);
+        this.app.post('/project/:attachId([0-9]+)', project_2.uploadProject);
     };
     /**
      * Configure application
@@ -150,7 +154,7 @@ var Server = (function () {
         }, {
             t: 'judge_server',
             buildargs: { uid: process.getuid().toString() }
-        }, function (err, response) {
+        }, function (err) {
             if (err) {
                 // TODO: error handling
                 exports.logger.error(err);

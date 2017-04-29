@@ -1,10 +1,19 @@
 import {NextFunction, Request, Response, Router} from "express";
 import {BaseRoute} from "./route";
-import {dbClient} from "./rest_api";
 import {logger} from "../app";
-import {IError} from "mysql";
 import * as util from "util";
 import * as async from "async";
+import * as fs from "fs";
+import {createConnection, IConnection, IError} from "mysql";
+
+
+const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
+const dbClient: IConnection = createConnection({
+	host: dbConfig.host,
+	user: dbConfig.user,
+	password: dbConfig.password,
+	database: dbConfig.database
+});
 
 
 /**

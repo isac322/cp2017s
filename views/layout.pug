@@ -64,8 +64,6 @@ html
 						b=shortName
 				#navbar.collapse.navbar-collapse
 					ul.nav.navbar-nav
-						li(class=navPos == 1 ? 'active' : undefined)
-							a(href='/') Main
 						li(class=navPos == 2 ? 'active' : undefined)
 							a(href='/homework') Homework
 						if signIn
@@ -90,7 +88,7 @@ html
 										a(href='/profile') Profile
 									li.divider(role='separator')
 									li
-										a(href='#', onclick='signOut();') Sign out
+										a(href='#', onclick='signOut();') #[span.fa.fa-sign-out(aria-hidden="true")] Sign out
 						else
 							li
 								a#login-anchor(href='#') #[i.fa.fa-google(aria-hidden="true")] Sign In
@@ -105,16 +103,16 @@ html
 
 		footer.footer
 			.container
-				address.text-muted.col-xs-12.col-sm-3
+				address.text-muted.col-xs-12.col-sm-4.col-md-3
 					strong Assistants
 					each assistant in assistants
 						br
 						a(href='mailto:' + assistant)=assistant
-				address.text-muted.col-xs-12.col-sm-3
+				address.text-muted.col-xs-12.col-sm-4.col-md-3
 					strong DSCLAB
 					br
 					a(target='_blank', href='http://dcslab.snu.ac.kr/') http://dcslab.snu.ac.kr/
-				address.text-muted.col-xs-12.col-sm-3
+				address.text-muted.col-xs-12.col-sm-4.col-md-3
 					strong Web Manager
 					br
 					a(href='mailto:' + webManager)=webManager

@@ -8,10 +8,10 @@ var SubmissionHistory;
     var $email = $('#selectEmail');
     var prevQuery = location.search;
     var rows = [];
-    var Data = (function () {
-        function Data() {
+    var ResponseData = (function () {
+        function ResponseData() {
         }
-        return Data;
+        return ResponseData;
     }());
     var queryHandler = function (data) {
         $resultTable.children().detach();
@@ -155,7 +155,7 @@ var SubmissionHistory;
     }
     $.ajax('/history/list' + prevQuery, { success: queryHandler });
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
-        $('.selectpicker').selectpicker('mobile');
+        $('.selectpicker:not(#selectUser)').selectpicker('mobile');
     }
     var resultModal = new ResultModal($('#resultModal'));
     function onResult(id) {

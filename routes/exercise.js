@@ -10,11 +10,19 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var mysql_1 = require("mysql");
 var util = require("util");
 var app_1 = require("../app");
 var homework_1 = require("./homework");
-var rest_api_1 = require("./rest_api");
 var route_1 = require("./route");
+var fs = require("fs");
+var dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
+var dbClient = mysql_1.createConnection({
+    host: dbConfig.host,
+    user: dbConfig.user,
+    password: dbConfig.password,
+    database: dbConfig.database
+});
 /**
  * /exercise route
  *
@@ -62,7 +70,7 @@ var ExerciseRoute = (function (_super) {
         this.title = 'Exercise';
         if (!req.session.signIn)
             return res.redirect('/');
-        rest_api_1.dbClient.query('SELECT exercise.id, exercise.name, exercise.start_date, exercise.end_date, exercise.description, ' +
+        dbClient.query('SELECT exercise.id, exercise.name, exercise.start_date, exercise.end_date, exercise.description, ' +
             '       exercise_config.id AS `attach_id`, exercise_config.name AS `file_name`, ' +
             '       (result_table.student_id IS NOT NULL) as result ' +
             'FROM exercise ' +

@@ -9,10 +9,10 @@ var SubmissionHistoryAdmin;
     var $user = $('#selectUser');
     var prevQuery = location.search;
     var rows = [];
-    var Data = (function () {
-        function Data() {
+    var ResponseData = (function () {
+        function ResponseData() {
         }
-        return Data;
+        return ResponseData;
     }());
     var queryHandler = function (data) {
         $resultTable.children().detach();

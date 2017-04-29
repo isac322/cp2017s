@@ -11,10 +11,18 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var route_1 = require("./route");
-var rest_api_1 = require("./rest_api");
 var app_1 = require("../app");
 var util = require("util");
 var async = require("async");
+var fs = require("fs");
+var mysql_1 = require("mysql");
+var dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
+var dbClient = mysql_1.createConnection({
+    host: dbConfig.host,
+    user: dbConfig.user,
+    password: dbConfig.password,
+    database: dbConfig.database
+});
 /**
  * /history route
  *
@@ -64,19 +72,19 @@ var HistoryRoute = (function (_super) {
         this.title = 'History';
         var tasks = [];
         tasks.push(function (callback) {
-            rest_api_1.dbClient.query('SELECT email FROM email WHERE student_id = ?;', req.session.studentId, callback);
+            dbClient.query('SELECT email FROM email WHERE student_id = ?;', req.session.studentId, callback);
         });
         tasks.push(function (callback) {
-            rest_api_1.dbClient.query('SELECT homework.name AS `homeworkName`, homework_config.name AS `fileName`, homework_config.id ' +
+            dbClient.query('SELECT homework.name AS `homeworkName`, homework_config.name AS `fileName`, homework_config.id ' +
                 'FROM homework JOIN homework_config ON homework.homework_id = homework_config.homework_id;', callback);
         });
         tasks.push(function (callback) {
-            rest_api_1.dbClient.query('SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
+            dbClient.query('SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
                 'FROM exercise JOIN exercise_config ON exercise.id = exercise_config.exercise_id', callback);
         });
         if (req.session.admin) {
             tasks.push(function (callback) {
-                rest_api_1.dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback);
+                dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback);
             });
         }
         async.parallel(tasks, function (err, data) {

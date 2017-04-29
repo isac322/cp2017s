@@ -10,28 +10,16 @@ import * as  winston from "winston";
 import {ExerciseRoute} from "./routes/exercise";
 import {HWRoute} from "./routes/homework";
 import {IndexRoute} from "./routes/index";
-import {
-	createHW,
-	createProject,
-	getExercise,
-	getHomework,
-	historyList,
-	hwNameChecker,
-	judgeResult,
-	pjNameChecker,
-	register,
-	resolve,
-	runExercise,
-	signIn,
-	signOut,
-	uploadHomework,
-	uploadProject
-} from "./routes/rest_api";
 import {ProfileRoute} from "./routes/profile";
 import * as fs from "fs";
 import {HistoryRoute} from "./routes/history";
 import {BoardRoute} from "./routes/board";
 import {ProjectRoute} from "./routes/project";
+import {register, signIn, signOut} from "./routes/rest_api/identification";
+import {createHW, getHomework, hwNameChecker, uploadHomework} from "./routes/rest_api/homework";
+import {historyList} from "./routes/rest_api/history";
+import {getExercise, judgeResult, resolve, runExercise} from "./routes/rest_api/exercise";
+import {createProject, pjNameChecker, uploadProject} from "./routes/rest_api/project";
 import fileUpload = require('express-fileupload')
 
 require('winston-daily-rotate-file');
@@ -193,7 +181,7 @@ export class Server {
 				t: 'judge_server',
 				buildargs: {uid: process.getuid().toString()}
 			},
-			(err, response) => {
+			(err) => {
 				if (err) {
 					// TODO: error handling
 					logger.error(err);

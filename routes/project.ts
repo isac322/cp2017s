@@ -1,9 +1,19 @@
 import {NextFunction, Request, Response, Router} from "express";
 import * as util from "util";
 import {logger} from "../app";
-import {dbClient} from "./rest_api";
 import {BaseRoute} from "./route";
 import {monthNames} from "./homework";
+import * as fs from "fs";
+import {createConnection, IConnection} from "mysql";
+
+
+const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
+const dbClient: IConnection = createConnection({
+	host: dbConfig.host,
+	user: dbConfig.user,
+	password: dbConfig.password,
+	database: dbConfig.database
+});
 
 /**
  * /project route

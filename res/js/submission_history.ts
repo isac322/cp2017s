@@ -14,7 +14,7 @@ namespace SubmissionHistory {
 
 	let rows: Array<Row> = [];
 
-	class Data {
+	class ResponseData {
 		id: number;
 		result: number;
 		email: string;
@@ -25,7 +25,7 @@ namespace SubmissionHistory {
 		category: string;
 	}
 
-	const queryHandler = (data: Array<Data>) => {
+	const queryHandler = (data: Array<ResponseData>) => {
 		$resultTable.children().detach();
 
 		for (let i = 0; i < data.length; i++) {
@@ -75,7 +75,7 @@ namespace SubmissionHistory {
 		private timestampTd: HTMLTableDataCellElement;
 		private emailTd: HTMLTableDataCellElement;
 
-		public constructor(value: Data) {
+		public constructor(value: ResponseData) {
 			this.idTd = document.createElement('th');
 			this.idTd.setAttribute('scope', 'row');
 			this.categoryTd = document.createElement('td');
@@ -96,7 +96,7 @@ namespace SubmissionHistory {
 			this.row.appendChild(this.emailTd);
 		}
 
-		public setData(value: Data) {
+		public setData(value: ResponseData) {
 			this.id = value.id;
 			this.category = value.category;
 			this.result = value.result;
@@ -221,7 +221,7 @@ namespace SubmissionHistory {
 	$.ajax('/history/list' + prevQuery, {success: queryHandler});
 
 	if( /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent) ) {
-		$('.selectpicker').selectpicker('mobile');
+		$('.selectpicker:not(#selectUser)').selectpicker('mobile');
 	}
 
 	const resultModal = new ResultModal($('#resultModal'));
