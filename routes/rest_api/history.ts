@@ -3,6 +3,7 @@ import * as fs from "fs";
 import {createConnection, escape, IConnection} from "mysql";
 import {logger} from "../../app";
 import * as util from "util";
+import * as async from "async";
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
 const dbClient: IConnection = createConnection({

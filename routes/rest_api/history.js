@@ -4,6 +4,7 @@ var fs = require("fs");
 var mysql_1 = require("mysql");
 var app_1 = require("../../app");
 var util = require("util");
+var async = require("async");
 var dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
 var dbClient = mysql_1.createConnection({
     host: dbConfig.host,
