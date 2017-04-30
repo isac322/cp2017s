@@ -1,6 +1,6 @@
 {
 	"name": "cp2017s",
-	"version": "0.7.3",
+	"version": "0.7.4",
 	"engines": {
 		"node": ">=6.10.0"
 	},
@@ -11,21 +11,21 @@
 		"start": "node ./bin/www.js"
 	},
 	"dependencies": {
-		"async": ">=2.3.0",
+		"async": ">=2.4.0",
 		"body-parser": ">=1.17.1",
 		"bootstrap": ">=3.3.7",
 		"bootstrap-select": ">=1.12.2",
 		"bootstrap-social": ">=5.1.1",
 		"bootstrap-validator": ">=0.11.9",
 		"cookie-parser": ">=1.4.3",
-		"debug": ">=2.6.4",
+		"debug": ">=2.6.6",
 		"detect-character-encoding": ">=0.3.1",
 		"dockerode": ">=2.4.3",
 		"errorhandler": ">=1.5.0",
 		"express": ">=4.15.2",
 		"express-fileupload": ">=0.1.2",
 		"express-session": ">=1.15.2",
-		"fs-extra": ">=2.1.2",
+		"fs-extra": ">=3.0.0",
 		"google-auth-library": ">=0.10.0",
 		"iconv-lite": ">=0.4.16",
 		"jquery": ">=3.2.1",
@@ -55,6 +55,7 @@
 		"@types/pug": ">=2.0.4",
 		"@types/serve-favicon": ">=2.2.28",
 		"@types/winston": ">=2.3.1",
-		"typescript": ">=2.3.0"
+		"nodemon": ">=1.11.0",
+		"typescript": ">=2.3.2"
 	}
 }
