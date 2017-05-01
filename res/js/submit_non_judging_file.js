@@ -12,7 +12,7 @@ var SubmitHomework;
         var form = e.target;
         var $sendBtn = $form.find('button:last');
         var $selectBtn = $form.find('.btn-file');
-        var fileName = $form.find('input:file').val();
+        var fileName = $form.find('input:file')[0].files[0].name;
         var $listItem = $form.find('li:first');
         $confirmHeader.html('<i class="fa fa-exclamation-triangle" aria-hidden="true"></i>' +
             ' Submit <code>' + fileName + '</code>?');

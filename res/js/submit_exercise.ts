@@ -16,7 +16,7 @@ namespace SubmitExercise {
 		const form = e.target as HTMLFormElement;
 		const $sendBtn: JQuery = $form.find('button:last');
 		const $selectBtn: JQuery = $form.find('.btn-file');
-		const fileName: string = $form.find('input:file').val();
+		const fileName = ($form.find('input:file')[0] as HTMLInputElement).files[0].name;
 		const $listItem: JQuery = $form.find('li:first');
 
 		$confirmHeader.html('<i class="fa fa-exclamation-triangle" aria-hidden="true"></i>' +

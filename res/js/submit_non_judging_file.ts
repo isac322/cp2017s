@@ -11,10 +11,10 @@ namespace SubmitHomework {
 
 		const $form: JQuery = $(e.target);
 		const form = e.target as HTMLFormElement;
-		const $sendBtn = $form.find('button:last');
-		const $selectBtn = $form.find('.btn-file');
-		const fileName = $form.find('input:file').val();
-		const $listItem = $form.find('li:first');
+		const $sendBtn: JQuery = $form.find('button:last');
+		const $selectBtn: JQuery = $form.find('.btn-file');
+		const fileName = ($form.find('input:file')[0] as HTMLInputElement).files[0].name;
+		const $listItem: JQuery = $form.find('li:first');
 
 		$confirmHeader.html('<i class="fa fa-exclamation-triangle" aria-hidden="true"></i>' +
 			' Submit <code>' + fileName + '</code>?');

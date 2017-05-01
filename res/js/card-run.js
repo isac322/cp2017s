@@ -7,10 +7,9 @@ for (let i = 0; i < cards.length; i += 2) {
 // input:file handling
 const files = $(':file');
 files.on('change', function () {
-	const input = $(this);
-	const label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+	const label = this.files[0].name;
 
-	input.trigger('fileselect', label);
+	$(this).trigger('fileselect', label);
 });
 
 files.on('fileselect', function (event, label) {
