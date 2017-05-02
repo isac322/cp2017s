@@ -43,7 +43,7 @@ namespace SubmissionHistoryAdmin {
 	});
 
 	$nextPage.click((e: JQueryEventObject) => {
-		if ($prevPage.hasClass('disabled')) {
+		if ($nextPage.hasClass('disabled')) {
 			e.preventDefault();
 		}
 		else {

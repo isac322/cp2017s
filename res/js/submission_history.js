@@ -21,7 +21,7 @@ var SubmissionHistory;
         }
     });
     $nextPage.click(function (e) {
-        if ($prevPage.hasClass('disabled')) {
+        if ($nextPage.hasClass('disabled')) {
             e.preventDefault();
         }
         else {
