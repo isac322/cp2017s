@@ -32,7 +32,6 @@ namespace SubmissionHistoryAdmin {
 	const $pageUL: JQuery = $('#page-ul');
 	const $prevPage: JQuery = $('#page-prev');
 	const $nextPage: JQuery = $('#page-next');
-	let pageLink: Array<{ li: JQuery, a: JQuery }> = [];
 
 	$prevPage.click(() => {
 		send($pageUL.children(':nth-child(2)').data('val') - 1);
@@ -41,6 +40,9 @@ namespace SubmissionHistoryAdmin {
 	$nextPage.click(() => {
 		send($pageUL.children(':nth-last-child(2)').data('val') + 1);
 	});
+
+
+	let pageLink: Array<{ li: JQuery, a: JQuery }> = [];
 
 	for (let i = 0; i < MAX_PAGE; i++) {
 		const li = document.createElement('li');
@@ -231,7 +233,6 @@ namespace SubmissionHistoryAdmin {
 	const $homeworkGroup: JQuery = $('#homeworkGroup');
 	const $exerciseGroup: JQuery = $('#exerciseGroup');
 	const $projectGroup: JQuery = $('#projectGroup');
-
 	const $resultGroup: JQuery = $('#resultGroup');
 
 	$category.change(() => {
@@ -308,8 +309,7 @@ namespace SubmissionHistoryAdmin {
 		return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + projectQuery + resultQuery + emailQuery + userQuery;
 	}
 
-
-	$.ajax('/history/list' + prevQuery, {success: queryHandler});
+	send();
 
 	if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
 		$('.selectpicker:not(#selectUser)').selectpicker('mobile');

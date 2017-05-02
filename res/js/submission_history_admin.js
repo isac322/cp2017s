@@ -13,13 +13,13 @@ var SubmissionHistoryAdmin;
     var $pageUL = $('#page-ul');
     var $prevPage = $('#page-prev');
     var $nextPage = $('#page-next');
-    var pageLink = [];
     $prevPage.click(function () {
         send($pageUL.children(':nth-child(2)').data('val') - 1);
     });
     $nextPage.click(function () {
         send($pageUL.children(':nth-last-child(2)').data('val') + 1);
     });
+    var pageLink = [];
     for (var i = 0; i < MAX_PAGE; i++) {
         var li = document.createElement('li');
         var a = document.createElement('a');
@@ -225,7 +225,7 @@ var SubmissionHistoryAdmin;
         });
         return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + projectQuery + resultQuery + emailQuery + userQuery;
     }
-    $.ajax('/history/list' + prevQuery, { success: queryHandler });
+    send();
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
         $('.selectpicker:not(#selectUser)').selectpicker('mobile');
         $selects.focusout(function () {

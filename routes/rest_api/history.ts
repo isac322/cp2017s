@@ -25,8 +25,6 @@ const rowsInPage = 30;
 export function historyList(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
-	if (!('p' in req.query)) req.query.p = '0';
-
 	const query: {
 		hw: Array<string> | string,
 		ex: Array<string> | string,

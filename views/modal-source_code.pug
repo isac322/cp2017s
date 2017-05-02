@@ -1,4 +1,4 @@
-block modal-code
+append header
 	link(rel='stylesheet', href='/css/androidstudio.css')
 	script(src='/js/highlight.pack.js')
 	script(type='text/javascript').
@@ -15,12 +15,13 @@ block modal-code
 			border: 0;
 		}
 
-		.codeViewer #codeBody {
+		#codeBody {
 			white-space: pre !important;
 			word-break: normal !important;
 			word-wrap: normal !important;
 		}
 
+block modal-code
 	#codeModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='codeModalLabel')
 		.modal-dialog.modal-lg(role='document')
 			.modal-content
