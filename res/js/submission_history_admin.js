@@ -13,11 +13,21 @@ var SubmissionHistoryAdmin;
     var $pageUL = $('#page-ul');
     var $prevPage = $('#page-prev');
     var $nextPage = $('#page-next');
-    $prevPage.click(function () {
-        send($pageUL.children(':nth-child(2)').data('val') - 1);
+    $prevPage.click(function (e) {
+        if ($prevPage.hasClass('disabled')) {
+            e.preventDefault();
+        }
+        else {
+            send($pageUL.children(':nth-child(2)').data('val') - 1);
+        }
     });
-    $nextPage.click(function () {
-        send($pageUL.children(':nth-last-child(2)').data('val') + 1);
+    $nextPage.click(function (e) {
+        if ($prevPage.hasClass('disabled')) {
+            e.preventDefault();
+        }
+        else {
+            send($pageUL.children(':nth-last-child(2)').data('val') + 1);
+        }
     });
     var pageLink = [];
     for (var i = 0; i < MAX_PAGE; i++) {

@@ -31,12 +31,22 @@ namespace SubmissionHistory {
 	const $prevPage: JQuery = $('#page-prev');
 	const $nextPage: JQuery = $('#page-next');
 
-	$prevPage.click(() => {
-		send($pageUL.children(':nth-child(2)').data('val') - 1);
+	$prevPage.click((e: JQueryEventObject) => {
+		if ($prevPage.hasClass('disabled')) {
+			e.preventDefault();
+		}
+		else {
+			send($pageUL.children(':nth-child(2)').data('val') - 1);
+		}
 	});
 
-	$nextPage.click(() => {
-		send($pageUL.children(':nth-last-child(2)').data('val') + 1);
+	$nextPage.click((e: JQueryEventObject) => {
+		if ($prevPage.hasClass('disabled')) {
+			e.preventDefault();
+		}
+		else {
+			send($pageUL.children(':nth-last-child(2)').data('val') + 1);
+		}
 	});
 
 
