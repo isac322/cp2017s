@@ -218,6 +218,9 @@ var SubmissionHistory;
     $.ajax('/history/list' + prevQuery, { success: queryHandler });
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
         $('.selectpicker:not(#selectUser)').selectpicker('mobile');
+        $selects.focusout(function () {
+            send();
+        });
     }
     var resultModal = new ResultModal($('#resultModal'));
     function onResult(id) {

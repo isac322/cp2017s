@@ -299,6 +299,10 @@ namespace SubmissionHistory {
 
 	if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
 		$('.selectpicker:not(#selectUser)').selectpicker('mobile');
+
+		$selects.focusout(() => {
+			send()
+		});
 	}
 
 	const resultModal = new ResultModal($('#resultModal'));
