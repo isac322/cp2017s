@@ -1,6 +1,6 @@
 {
 	"name": "cp2017s",
-	"version": "0.8.8",
+	"version": "0.8.9",
 	"engines": {
 		"node": ">=6.10.0"
 	},
@@ -34,7 +34,7 @@
 		"jquery-form": ">=4.2.1",
 		"morgan": ">=1.8.1",
 		"mysql": ">=2.13.0",
-		"pug": ">=2.0.0-beta11",
+		"pug": ">=2.0.0-rc.1",
 		"serve-favicon": ">=2.4.2",
 		"winston": ">=2.3.1",
 		"winston-daily-rotate-file": ">=1.4.6"
@@ -50,9 +50,9 @@
 		"@types/dockerode": ">=2.4.0",
 		"@types/errorhandler": ">=0.0.30",
 		"@types/express-session": ">=0.0.32",
-		"@types/fs-extra": ">=2.1.0",
+		"@types/fs-extra": ">=3.0.0",
 		"@types/iconv-lite": ">=0.0.1",
-		"@types/jquery": ">=2.0.41",
+		"@types/jquery": ">=2.0.42",
 		"@types/jquery.form": ">=3.26.29",
 		"@types/morgan": ">=1.7.32",
 		"@types/mysql": ">=0.0.32",
