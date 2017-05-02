@@ -385,7 +385,7 @@ namespace SubmissionHistoryAdmin {
 
 	if (location.search == '') prevQuery = '?t=0&';
 	else {
-		prevQuery = location.search + 'p=0';
+		prevQuery = location.search;
 
 		interface ParsedQuery {
 			t: string[];
@@ -416,5 +416,5 @@ namespace SubmissionHistoryAdmin {
 		$user.selectpicker('val', ret.u);
 	}
 
-	$.ajax('/history/list' + prevQuery, {success: queryHandler});
+	send();
 }

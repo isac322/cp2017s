@@ -279,7 +279,7 @@ var SubmissionHistory;
     if (location.search == '')
         prevQuery = '?t=0&';
     else {
-        prevQuery = location.search + 'p=0';
+        prevQuery = location.search;
         var ret = location.search.substr(1).split('&')
             .filter(function (e) { return e != ''; })
             .map(function (e) { return e.split('='); })
@@ -295,5 +295,5 @@ var SubmissionHistory;
         $result.selectpicker('val', ret.r);
         $email.selectpicker('val', ret.e);
     }
-    $.ajax('/history/list' + prevQuery, { success: queryHandler });
+    send();
 })(SubmissionHistory || (SubmissionHistory = {}));

@@ -371,7 +371,7 @@ namespace SubmissionHistory {
 
 	if (location.search == '') prevQuery = '?t=0&';
 	else {
-		prevQuery = location.search + 'p=0';
+		prevQuery = location.search;
 
 		interface ParsedQuery {
 			t: string[];
@@ -400,5 +400,5 @@ namespace SubmissionHistory {
 		$email.selectpicker('val', ret.e);
 	}
 
-	$.ajax('/history/list' + prevQuery, {success: queryHandler});
+	send();
 }

@@ -50,7 +50,7 @@ block content
 					.col-xs-12
 						h4
 							if signIn
-								- var query = '/history?t=1&'
+								- var query = '/history?t=3&'
 								each attachment in project.attachments
 									- query += 'pj=' + attachment.id + '&'
 								a(href=query) #[i.fa.fa-history(aria-hidden='true')] View history
