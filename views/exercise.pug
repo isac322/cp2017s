@@ -49,6 +49,11 @@ block content
 
 					.col-xs-12
 						h4
+							if signIn
+								- var query = '/history?t=2&'
+								each attachment in exercise.attachments
+									- query += 'ex=' + attachment.id + '&'
+								a(href=query) #[i.fa.fa-history(aria-hidden='true')] View history
 							a.pull-right.appender(role='button', data-toggle='collapse', href='#collapseExample' + exercise.id, aria-expanded='false', aria-controls='collapseExample' + exercise.id)
 								| #[i.fa.fa-upload(aria-hidden="true")]
 								| Submit

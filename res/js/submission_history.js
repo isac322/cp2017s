@@ -2,95 +2,6 @@
 var SubmissionHistory;
 (function (SubmissionHistory) {
     var MAX_PAGE = document.documentElement.clientWidth >= 768 ? 10 : 5;
-    var $resultTable = $('#resultTable');
-    var $selects = $('.selectpicker');
-    var $category = $('#selectCategory');
-    var $result = $('#selectResult');
-    var $email = $('#selectEmail');
-    var prevQuery = location.search + '?t=0&';
-    var rows = [];
-    var $pageUL = $('#page-ul');
-    var $prevPage = $('#page-prev');
-    var $nextPage = $('#page-next');
-    $prevPage.click(function (e) {
-        if ($prevPage.hasClass('disabled')) {
-            e.preventDefault();
-        }
-        else {
-            send($pageUL.children(':nth-child(2)').data('val') - 1);
-        }
-    });
-    $nextPage.click(function (e) {
-        if ($nextPage.hasClass('disabled')) {
-            e.preventDefault();
-        }
-        else {
-            send($pageUL.children(':nth-last-child(2)').data('val') + 1);
-        }
-    });
-    var pageLink = [];
-    for (var i = 0; i < MAX_PAGE; i++) {
-        var li = document.createElement('li');
-        var a = document.createElement('a');
-        a.setAttribute('href', '#');
-        a.addEventListener('click', function (e) {
-            send($(e.target).parent().data('val'));
-        });
-        li.appendChild(a);
-        pageLink.push({ li: $(li), a: $(a) });
-        $nextPage.before(li);
-    }
-    function queryHandler(res) {
-        $resultTable.children().detach();
-        for (var i_1 = 0; i_1 < res.data.length; i_1++) {
-            if (i_1 >= rows.length) {
-                rows.push(new Row(res.data[i_1]));
-            }
-            else {
-                rows[i_1].setData(res.data[i_1]);
-            }
-            $resultTable.append(rows[i_1].row);
-        }
-        var $categoryCol = $('.categoryCol');
-        var $resultCol = $('.resultCol');
-        var $emailCol = $('.emailCol');
-        if ($category.val() === '0' || $category.val() === '2') {
-            $resultCol.show();
-        }
-        else {
-            $resultCol.hide();
-        }
-        if ($category.val() === '0') {
-            $categoryCol.show();
-        }
-        else {
-            $categoryCol.hide();
-        }
-        if ($email.children().length == 1) {
-            $emailCol.hide();
-        }
-        var i = Math.floor((res.p / MAX_PAGE)) * MAX_PAGE, j = 0;
-        for (; i < res.total && j < MAX_PAGE; i++, j++) {
-            pageLink[j].li
-                .removeClass('active')
-                .data('val', i)
-                .show();
-            pageLink[j].a.text(i + 1);
-        }
-        for (; j < MAX_PAGE; j++)
-            pageLink[j].li.hide();
-        pageLink[res.p % MAX_PAGE].li.addClass('active');
-        if (res.p < MAX_PAGE)
-            $prevPage.addClass('disabled');
-        else
-            $prevPage.removeClass('disabled');
-        if (res.total - res.p <= MAX_PAGE)
-            $nextPage.addClass('disabled');
-        else
-            $nextPage.removeClass('disabled');
-        $selects.prop('disabled', false);
-        $selects.selectpicker('refresh');
-    }
     var Row = (function () {
         function Row(value) {
             this.idTd = document.createElement('th');
@@ -152,6 +63,61 @@ var SubmissionHistory;
         return Row;
     }());
     Row.RESULTS = ['Correct', 'Incorrect', 'Compile Error', 'Timeout', 'Runtime Error', 'Fail to run'];
+    var $resultTable = $('#resultTable');
+    var $result = $('#selectResult');
+    var $email = $('#selectEmail');
+    var rows = [];
+    function queryHandler(res) {
+        $resultTable.children().detach();
+        for (var i_1 = 0; i_1 < res.data.length; i_1++) {
+            if (i_1 >= rows.length) {
+                rows.push(new Row(res.data[i_1]));
+            }
+            else {
+                rows[i_1].setData(res.data[i_1]);
+            }
+            $resultTable.append(rows[i_1].row);
+        }
+        var $categoryCol = $('.categoryCol');
+        var $resultCol = $('.resultCol');
+        var $emailCol = $('.emailCol');
+        if ($category.val() === '0' || $category.val() === '2') {
+            $resultCol.show();
+        }
+        else {
+            $resultCol.hide();
+        }
+        if ($category.val() === '0') {
+            $categoryCol.show();
+        }
+        else {
+            $categoryCol.hide();
+        }
+        if ($email.children().length == 1) {
+            $emailCol.hide();
+        }
+        var i = Math.floor((res.p / MAX_PAGE)) * MAX_PAGE, j = 0;
+        for (; i < res.total && j < MAX_PAGE; i++, j++) {
+            pageLink[j].li
+                .removeClass('active')
+                .data('val', i)
+                .show();
+            pageLink[j].a.text(i + 1);
+        }
+        for (; j < MAX_PAGE; j++)
+            pageLink[j].li.hide();
+        pageLink[res.p % MAX_PAGE].li.addClass('active');
+        if (res.p < MAX_PAGE)
+            $prevPage.addClass('disabled');
+        else
+            $prevPage.removeClass('disabled');
+        if (res.total - res.p <= MAX_PAGE)
+            $nextPage.addClass('disabled');
+        else
+            $nextPage.removeClass('disabled');
+        $selects.prop('disabled', false);
+        $selects.selectpicker('refresh');
+    }
     function send(pageNum) {
         $selects.prop('disabled', true);
         $selects.selectpicker('refresh');
@@ -167,78 +133,36 @@ var SubmissionHistory;
             $selects.selectpicker('refresh');
         }
     }
-    $selects.on('hide.bs.select', function () {
-        send();
-    });
-    var $homeworkGroup = $('#homeworkGroup');
-    var $exerciseGroup = $('#exerciseGroup');
-    var $projectGroup = $('#projectGroup');
-    var $resultGroup = $('#resultGroup');
-    $category.change(function () {
-        switch ($category.val()) {
-            case '0':
-                $homeworkGroup.children().show();
-                $exerciseGroup.children().show();
-                $projectGroup.children().show();
-                $resultGroup.show();
-                break;
-            case '1':
-                $homeworkGroup.children().show();
-                $exerciseGroup.children().prop('selected', false).hide();
-                $projectGroup.children().prop('selected', false).hide();
-                $resultGroup.hide();
-                break;
-            case '2':
-                $homeworkGroup.children().prop('selected', false).hide();
-                $exerciseGroup.children().show();
-                $projectGroup.children().prop('selected', false).hide();
-                $resultGroup.show();
-                break;
-            case '3':
-                $homeworkGroup.children().prop('selected', false).hide();
-                $exerciseGroup.children().prop('selected', false).hide();
-                $projectGroup.children().show();
-                $resultGroup.hide();
-        }
-        $selects.selectpicker('refresh');
-    });
     function genQuery() {
         // homework
         var homeworkQuery = '';
         $homeworkGroup.children(':selected').each(function (index, elem) {
-            homeworkQuery += 'hw=' + elem.value + '&';
+            homeworkQuery += 'hw=' + elem.value.substr(1) + '&';
         });
         // exercise
         var exerciseQuery = '';
         $exerciseGroup.children(':selected').each(function (index, elem) {
-            exerciseQuery += 'ex=' + elem.value + '&';
+            exerciseQuery += 'ex=' + elem.value.substr(1) + '&';
         });
         // exercise
         var projectQuery = '';
         $projectGroup.children(':selected').each(function (index, elem) {
-            projectQuery += 'pj=' + elem.value + '&';
+            projectQuery += 'pj=' + elem.value.substr(1) + '&';
         });
         // result
         var resultQuery = '';
         $result.children(':selected').each(function (index, elem) {
             resultQuery += 'r=' + elem.value + '&';
         });
-        // result
+        // email
         var emailQuery = '';
         $email.children(':selected').each(function (index, elem) {
             emailQuery += 'e=' + elem.value + '&';
         });
         return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + projectQuery + resultQuery + emailQuery;
     }
-    send();
-    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
-        $('.selectpicker:not(#selectUser)').selectpicker('mobile');
-        $selects.focusout(function () {
-            send();
-        });
-    }
-    var resultModal = new ResultModal($('#resultModal'));
     function onResult(id) {
+        var resultModal = new ResultModal($('#resultModal'));
         $.ajax('/exercise/result/' + id, {
             complete: function (jqXHR) {
                 var res = jqXHR.responseJSON;
@@ -280,4 +204,96 @@ var SubmissionHistory;
         });
     }
     SubmissionHistory.onResult = onResult;
+    /*
+     for Pagination
+     */
+    var $pageUL = $('#page-ul');
+    var $prevPage = $('#page-prev');
+    var $nextPage = $('#page-next');
+    $prevPage.click(function (e) {
+        if ($prevPage.hasClass('disabled')) {
+            e.preventDefault();
+        }
+        else {
+            send($pageUL.children(':nth-child(2)').data('val') - 1);
+        }
+    });
+    $nextPage.click(function (e) {
+        if ($nextPage.hasClass('disabled')) {
+            e.preventDefault();
+        }
+        else {
+            send($pageUL.children(':nth-last-child(2)').data('val') + 1);
+        }
+    });
+    var pageLink = [];
+    for (var i = 0; i < MAX_PAGE; i++) {
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        a.setAttribute('href', '#');
+        a.addEventListener('click', function (e) { return send($(e.target).parent().data('val')); });
+        li.appendChild(a);
+        pageLink.push({ li: $(li), a: $(a) });
+        $nextPage.before(li);
+    }
+    var $selects = $('.selectpicker');
+    var $category = $('#selectCategory');
+    $selects.on('hide.bs.select', function () { return send(); });
+    var $homeworkGroup = $('#homeworkGroup');
+    var $exerciseGroup = $('#exerciseGroup');
+    var $projectGroup = $('#projectGroup');
+    var $resultGroup = $('#resultGroup');
+    $category.change(function () {
+        switch ($category.val()) {
+            case '0':
+                $homeworkGroup.children().show();
+                $exerciseGroup.children().show();
+                $projectGroup.children().show();
+                $resultGroup.show();
+                break;
+            case '1':
+                $homeworkGroup.children().show();
+                $exerciseGroup.children().prop('selected', false).hide();
+                $projectGroup.children().prop('selected', false).hide();
+                $resultGroup.hide();
+                break;
+            case '2':
+                $homeworkGroup.children().prop('selected', false).hide();
+                $exerciseGroup.children().show();
+                $projectGroup.children().prop('selected', false).hide();
+                $resultGroup.show();
+                break;
+            case '3':
+                $homeworkGroup.children().prop('selected', false).hide();
+                $exerciseGroup.children().prop('selected', false).hide();
+                $projectGroup.children().show();
+                $resultGroup.hide();
+        }
+        $selects.selectpicker('refresh');
+    });
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
+        $('.selectpicker:not(#selectUser)').selectpicker('mobile');
+        $selects.focusout(function () { return send(); });
+    }
+    var prevQuery;
+    if (location.search == '')
+        prevQuery = '?t=0&';
+    else {
+        prevQuery = location.search + 'p=0';
+        var ret = location.search.substr(1).split('&')
+            .filter(function (e) { return e != ''; })
+            .map(function (e) { return e.split('='); })
+            .reduce(function (prev, curr) {
+            prev[curr[0]].push(curr[1]);
+            return prev;
+        }, { t: [], hw: [], ex: [], pj: [], r: [], e: [] });
+        ret.hw = ret.hw.map((function (value) { return 'h' + value; }));
+        ret.ex = ret.ex.map((function (value) { return 'e' + value; }));
+        ret.pj = ret.pj.map((function (value) { return 'p' + value; }));
+        $category.val(ret.t).change();
+        $('#selectId').selectpicker('val', ret.hw.concat(ret.ex, ret.pj));
+        $result.selectpicker('val', ret.r);
+        $email.selectpicker('val', ret.e);
+    }
+    $.ajax('/history/list' + prevQuery, { success: queryHandler });
 })(SubmissionHistory || (SubmissionHistory = {}));

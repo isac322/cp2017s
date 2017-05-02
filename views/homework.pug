@@ -49,6 +49,11 @@ block content
 
 					.col-xs-12
 						h4
+							if signIn
+								- var query = '/history?t=1&'
+								each attachment in homework.attachments
+									- query += 'hw=' + attachment.id + '&'
+								a(href=query) #[i.fa.fa-history(aria-hidden='true')] View history
 							a.pull-right.appender(role='button', data-toggle='collapse', href='#collapseExample' + homework.id, aria-expanded='false', aria-controls='collapseExample' + homework.id)
 								| #[i.fa.fa-upload(aria-hidden="true")]
 								| Submit

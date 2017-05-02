@@ -3,19 +3,6 @@
 namespace SubmissionHistory {
 	const MAX_PAGE = document.documentElement.clientWidth >= 768 ? 10 : 5;
 
-	const $resultTable: JQuery = $('#resultTable');
-
-	const $selects: JQuery = $('.selectpicker');
-
-	const $category: JQuery = $('#selectCategory');
-	const $result: JQuery = $('#selectResult');
-	const $email: JQuery = $('#selectEmail');
-
-
-	let prevQuery = location.search + '?t=0&';
-
-	let rows: Array<Row> = [];
-
 	interface RowData {
 		id: number;
 		result: number;
@@ -25,105 +12,6 @@ namespace SubmissionHistory {
 		extension: string;
 		studentId: string;
 		category: string;
-	}
-
-	const $pageUL: JQuery = $('#page-ul');
-	const $prevPage: JQuery = $('#page-prev');
-	const $nextPage: JQuery = $('#page-next');
-
-	$prevPage.click((e: JQueryEventObject) => {
-		if ($prevPage.hasClass('disabled')) {
-			e.preventDefault();
-		}
-		else {
-			send($pageUL.children(':nth-child(2)').data('val') - 1);
-		}
-	});
-
-	$nextPage.click((e: JQueryEventObject) => {
-		if ($nextPage.hasClass('disabled')) {
-			e.preventDefault();
-		}
-		else {
-			send($pageUL.children(':nth-last-child(2)').data('val') + 1);
-		}
-	});
-
-
-	let pageLink: Array<{ li: JQuery, a: JQuery }> = [];
-
-	for (let i = 0; i < MAX_PAGE; i++) {
-		const li = document.createElement('li');
-		const a = document.createElement('a');
-		a.setAttribute('href', '#');
-		a.addEventListener('click', (e: Event) => {
-			send($(e.target).parent().data('val'));
-		});
-		li.appendChild(a);
-		pageLink.push({li: $(li), a: $(a)});
-
-		$nextPage.before(li)
-	}
-
-	function queryHandler(res: { data: Array<RowData>, total: number, p: number }): void {
-		$resultTable.children().detach();
-
-		for (let i = 0; i < res.data.length; i++) {
-			if (i >= rows.length) {
-				rows.push(new Row(res.data[i]));
-			}
-			else {
-				rows[i].setData(res.data[i]);
-			}
-
-			$resultTable.append(rows[i].row);
-		}
-
-		const $categoryCol = $('.categoryCol');
-		const $resultCol = $('.resultCol');
-		const $emailCol = $('.emailCol');
-
-		if ($category.val() === '0' || $category.val() === '2') {
-			$resultCol.show();
-		}
-		else {
-			$resultCol.hide();
-		}
-
-		if ($category.val() === '0') {
-			$categoryCol.show();
-		}
-		else {
-			$categoryCol.hide();
-		}
-
-		if ($email.children().length == 1) {
-			$emailCol.hide();
-		}
-
-
-		let i = Math.floor((res.p / MAX_PAGE)) * MAX_PAGE, j = 0;
-		for (; i < res.total && j < MAX_PAGE; i++, j++) {
-			pageLink[j].li
-				.removeClass('active')
-				.data('val', i)
-				.show();
-			pageLink[j].a.text(i + 1);
-		}
-
-		for (; j < MAX_PAGE; j++) pageLink[j].li.hide();
-
-
-		pageLink[res.p % MAX_PAGE].li.addClass('active');
-
-		if (res.p < MAX_PAGE) $prevPage.addClass('disabled');
-		else $prevPage.removeClass('disabled');
-
-		if (res.total - res.p <= MAX_PAGE) $nextPage.addClass('disabled');
-		else $nextPage.removeClass('disabled');
-
-		$selects.prop('disabled', false);
-		$selects.selectpicker('refresh');
 	}
 
 	class Row {
@@ -217,6 +105,73 @@ namespace SubmissionHistory {
 		}
 	}
 
+	const $resultTable: JQuery = $('#resultTable');
+	const $result: JQuery = $('#selectResult');
+	const $email: JQuery = $('#selectEmail');
+
+	let rows: Array<Row> = [];
+
+	function queryHandler(res: { data: Array<RowData>, total: number, p: number }): void {
+		$resultTable.children().detach();
+
+		for (let i = 0; i < res.data.length; i++) {
+			if (i >= rows.length) {
+				rows.push(new Row(res.data[i]));
+			}
+			else {
+				rows[i].setData(res.data[i]);
+			}
+
+			$resultTable.append(rows[i].row);
+		}
+
+		const $categoryCol = $('.categoryCol');
+		const $resultCol = $('.resultCol');
+		const $emailCol = $('.emailCol');
+
+		if ($category.val() === '0' || $category.val() === '2') {
+			$resultCol.show();
+		}
+		else {
+			$resultCol.hide();
+		}
+
+		if ($category.val() === '0') {
+			$categoryCol.show();
+		}
+		else {
+			$categoryCol.hide();
+		}
+
+		if ($email.children().length == 1) {
+			$emailCol.hide();
+		}
+
+
+		let i = Math.floor((res.p / MAX_PAGE)) * MAX_PAGE, j = 0;
+		for (; i < res.total && j < MAX_PAGE; i++, j++) {
+			pageLink[j].li
+				.removeClass('active')
+				.data('val', i)
+				.show();
+			pageLink[j].a.text(i + 1);
+		}
+
+		for (; j < MAX_PAGE; j++) pageLink[j].li.hide();
+
+
+		pageLink[res.p % MAX_PAGE].li.addClass('active');
+
+		if (res.p < MAX_PAGE) $prevPage.addClass('disabled');
+		else $prevPage.removeClass('disabled');
+
+		if (res.total - res.p <= MAX_PAGE) $nextPage.addClass('disabled');
+		else $nextPage.removeClass('disabled');
+
+		$selects.prop('disabled', false);
+		$selects.selectpicker('refresh');
+	}
+
 	function send(pageNum?: number): void {
 		$selects.prop('disabled', true);
 		$selects.selectpicker('refresh');
@@ -234,66 +189,23 @@ namespace SubmissionHistory {
 		}
 	}
 
-	$selects.on('hide.bs.select', () => {
-		send();
-	});
-
-	const $homeworkGroup: JQuery = $('#homeworkGroup');
-	const $exerciseGroup: JQuery = $('#exerciseGroup');
-	const $projectGroup: JQuery = $('#projectGroup');
-	const $resultGroup: JQuery = $('#resultGroup');
-
-	$category.change(() => {
-		switch ($category.val()) {
-			case '0':
-				$homeworkGroup.children().show();
-				$exerciseGroup.children().show();
-				$projectGroup.children().show();
-				$resultGroup.show();
-				break;
-
-			case '1':
-				$homeworkGroup.children().show();
-				$exerciseGroup.children().prop('selected', false).hide();
-				$projectGroup.children().prop('selected', false).hide();
-				$resultGroup.hide();
-				break;
-
-			case '2':
-				$homeworkGroup.children().prop('selected', false).hide();
-				$exerciseGroup.children().show();
-				$projectGroup.children().prop('selected', false).hide();
-				$resultGroup.show();
-				break;
-
-			case '3':
-				$homeworkGroup.children().prop('selected', false).hide();
-				$exerciseGroup.children().prop('selected', false).hide();
-				$projectGroup.children().show();
-				$resultGroup.hide();
-		}
-
-		$selects.selectpicker('refresh');
-	});
-
-
 	function genQuery(): string {
 		// homework
 		let homeworkQuery = '';
 		$homeworkGroup.children(':selected').each((index: number, elem: HTMLOptionElement) => {
-			homeworkQuery += 'hw=' + elem.value + '&';
+			homeworkQuery += 'hw=' + elem.value.substr(1) + '&';
 		});
 
 		// exercise
 		let exerciseQuery = '';
 		$exerciseGroup.children(':selected').each((index: number, elem: HTMLOptionElement) => {
-			exerciseQuery += 'ex=' + elem.value + '&';
+			exerciseQuery += 'ex=' + elem.value.substr(1) + '&';
 		});
 
 		// exercise
 		let projectQuery = '';
 		$projectGroup.children(':selected').each((index: number, elem: HTMLOptionElement) => {
-			projectQuery += 'pj=' + elem.value + '&';
+			projectQuery += 'pj=' + elem.value.substr(1) + '&';
 		});
 
 		// result
@@ -302,7 +214,7 @@ namespace SubmissionHistory {
 			resultQuery += 'r=' + elem.value + '&';
 		});
 
-		// result
+		// email
 		let emailQuery = '';
 		$email.children(':selected').each((index: number, elem: HTMLOptionElement) => {
 			emailQuery += 'e=' + elem.value + '&';
@@ -311,19 +223,9 @@ namespace SubmissionHistory {
 		return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + projectQuery + resultQuery + emailQuery;
 	}
 
-	send();
-
-	if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
-		$('.selectpicker:not(#selectUser)').selectpicker('mobile');
-
-		$selects.focusout(() => {
-			send()
-		});
-	}
-
-	const resultModal = new ResultModal($('#resultModal'));
-
 	export function onResult(id: number) {
+		const resultModal = new ResultModal($('#resultModal'));
+
 		$.ajax('/exercise/result/' + id, {
 			complete: (jqXHR: JQueryXHR) => {
 				const res = jqXHR.responseJSON;
@@ -373,4 +275,130 @@ namespace SubmissionHistory {
 			}
 		})
 	}
+
+	/*
+	 for Pagination
+	 */
+	const $pageUL: JQuery = $('#page-ul');
+	const $prevPage: JQuery = $('#page-prev');
+	const $nextPage: JQuery = $('#page-next');
+
+	$prevPage.click((e: JQueryEventObject) => {
+		if ($prevPage.hasClass('disabled')) {
+			e.preventDefault();
+		}
+		else {
+			send($pageUL.children(':nth-child(2)').data('val') - 1);
+		}
+	});
+
+	$nextPage.click((e: JQueryEventObject) => {
+		if ($nextPage.hasClass('disabled')) {
+			e.preventDefault();
+		}
+		else {
+			send($pageUL.children(':nth-last-child(2)').data('val') + 1);
+		}
+	});
+
+
+	let pageLink: Array<{ li: JQuery, a: JQuery }> = [];
+
+	for (let i = 0; i < MAX_PAGE; i++) {
+		const li = document.createElement('li');
+		const a = document.createElement('a');
+		a.setAttribute('href', '#');
+		a.addEventListener('click', (e: Event) => send($(e.target).parent().data('val')));
+		li.appendChild(a);
+		pageLink.push({li: $(li), a: $(a)});
+
+		$nextPage.before(li)
+	}
+
+
+	const $selects: JQuery = $('.selectpicker');
+
+	const $category: JQuery = $('#selectCategory');
+
+
+	$selects.on('hide.bs.select', () => send());
+
+	const $homeworkGroup: JQuery = $('#homeworkGroup');
+	const $exerciseGroup: JQuery = $('#exerciseGroup');
+	const $projectGroup: JQuery = $('#projectGroup');
+	const $resultGroup: JQuery = $('#resultGroup');
+
+	$category.change(() => {
+		switch ($category.val()) {
+			case '0':
+				$homeworkGroup.children().show();
+				$exerciseGroup.children().show();
+				$projectGroup.children().show();
+				$resultGroup.show();
+				break;
+
+			case '1':
+				$homeworkGroup.children().show();
+				$exerciseGroup.children().prop('selected', false).hide();
+				$projectGroup.children().prop('selected', false).hide();
+				$resultGroup.hide();
+				break;
+
+			case '2':
+				$homeworkGroup.children().prop('selected', false).hide();
+				$exerciseGroup.children().show();
+				$projectGroup.children().prop('selected', false).hide();
+				$resultGroup.show();
+				break;
+
+			case '3':
+				$homeworkGroup.children().prop('selected', false).hide();
+				$exerciseGroup.children().prop('selected', false).hide();
+				$projectGroup.children().show();
+				$resultGroup.hide();
+		}
+
+		$selects.selectpicker('refresh');
+	});
+
+	if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
+		$('.selectpicker:not(#selectUser)').selectpicker('mobile');
+
+		$selects.focusout(() => send());
+	}
+
+	let prevQuery;
+
+	if (location.search == '') prevQuery = '?t=0&';
+	else {
+		prevQuery = location.search + 'p=0';
+
+		interface ParsedQuery {
+			t: string[];
+			hw: string[];
+			ex: string[];
+			pj: string[];
+			r: string[];
+			e: string[];
+		}
+
+		const ret: ParsedQuery = location.search.substr(1).split('&')
+			.filter((e: string) => e != '')
+			.map((e: string) => e.split('='))
+			.reduce((prev: ParsedQuery, curr: string[]) => {
+				prev[curr[0]].push(curr[1]);
+				return prev;
+			}, {t: [], hw: [], ex: [], pj: [], r: [], e: []});
+
+		ret.hw = ret.hw.map(((value: string) => 'h' + value));
+		ret.ex = ret.ex.map(((value: string) => 'e' + value));
+		ret.pj = ret.pj.map(((value: string) => 'p' + value));
+
+		$category.val(ret.t).change();
+		$('#selectId').selectpicker('val', ret.hw.concat(ret.ex, ret.pj));
+		$result.selectpicker('val', ret.r);
+		$email.selectpicker('val', ret.e);
+	}
+
+	$.ajax('/history/list' + prevQuery, {success: queryHandler});
 }

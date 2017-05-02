@@ -23,6 +23,8 @@ var rowsInPage = 30;
 function historyList(req, res) {
     if (!req.session.signIn)
         return res.sendStatus(401);
+    if (!('p' in req.query))
+        req.query.p = '0';
     var query = req.query;
     var commonQuery = '';
     if (req.session.admin) {

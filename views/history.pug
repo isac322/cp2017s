@@ -30,15 +30,15 @@ block content
 			select.form-control.selectpicker#selectId(multiple, title='All', data-selected-text-format='count > 3', data-size='10')
 				optgroup(label='Homework')#homeworkGroup
 					each file in homeworkList
-						option(title=decodeURIComponent(file.fileName), value=file.id, data-subtext=decodeURIComponent(file.homeworkName))=decodeURIComponent(file.fileName)
+						option(title=decodeURIComponent(file.fileName), value='h' + file.id, data-subtext=decodeURIComponent(file.homeworkName))=decodeURIComponent(file.fileName)
 
 				optgroup(label='Exercise')#exerciseGroup
 					each file in exerciseList
-						option(title=decodeURIComponent(file.fileName), value=file.id, data-subtext=decodeURIComponent(file.exerciseName))=decodeURIComponent(file.fileName)
+						option(title=decodeURIComponent(file.fileName), value='e' + file.id, data-subtext=decodeURIComponent(file.exerciseName))=decodeURIComponent(file.fileName)
 
 				optgroup(label='Project')#projectGroup
 					each file in projectList
-						option(title=decodeURIComponent(file.fileName), value=file.id, data-subtext=decodeURIComponent(file.projectName))=decodeURIComponent(file.fileName)
+						option(title=decodeURIComponent(file.fileName), value='p' + file.id, data-subtext=decodeURIComponent(file.projectName))=decodeURIComponent(file.fileName)
 
 		.col-xs-12.col-sm-6.col-md-2.form-group#resultGroup
 			label(for='selectResult')
