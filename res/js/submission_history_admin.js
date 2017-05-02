@@ -1,42 +1,83 @@
 ///<reference path="modal-result.ts"/>
 var SubmissionHistoryAdmin;
 (function (SubmissionHistoryAdmin) {
+    var MAX_PAGE = document.documentElement.clientWidth >= 768 ? 10 : 5;
     var $resultTable = $('#resultTable');
     var $selects = $('.selectpicker');
     var $category = $('#selectCategory');
     var $result = $('#selectResult');
     var $email = $('#selectEmail');
     var $user = $('#selectUser');
-    var prevQuery = location.search;
+    var prevQuery = location.search + '?t=0&';
     var rows = [];
-    var ResponseData = (function () {
-        function ResponseData() {
-        }
-        return ResponseData;
-    }());
-    var queryHandler = function (data) {
+    var $pageUL = $('#page-ul');
+    var $prevPage = $('#page-prev');
+    var $nextPage = $('#page-next');
+    var pageLink = [];
+    $prevPage.click(function () {
+        send($pageUL.children(':nth-child(2)').data('val') - 1);
+    });
+    $nextPage.click(function () {
+        send($pageUL.children(':nth-last-child(2)').data('val') + 1);
+    });
+    for (var i = 0; i < MAX_PAGE; i++) {
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        a.setAttribute('href', '#');
+        a.addEventListener('click', function (e) {
+            send($(e.target).parent().data('val'));
+        });
+        li.appendChild(a);
+        pageLink.push({ li: $(li), a: $(a) });
+        $nextPage.before(li);
+    }
+    function queryHandler(res) {
         $resultTable.children().detach();
-        for (var i = 0; i < data.length; i++) {
-            if (i >= rows.length)
-                rows.push(new Row(data[i]));
-            else
-                rows[i].setData(data[i]);
-            $resultTable.append(rows[i].row);
+        for (var i_1 = 0; i_1 < res.data.length; i_1++) {
+            if (i_1 >= rows.length) {
+                rows.push(new Row(res.data[i_1]));
+            }
+            else {
+                rows[i_1].setData(res.data[i_1]);
+            }
+            $resultTable.append(rows[i_1].row);
         }
         var $categoryCol = $('.categoryCol');
-        switch ($category.val()) {
-            case '3':
-                $categoryCol.show();
-                break;
-            case '1':
-                $categoryCol.hide();
-                break;
-            case '2':
-                $categoryCol.hide();
+        var $resultCol = $('.resultCol');
+        if ($category.val() === '0' || $category.val() === '2') {
+            $resultCol.show();
         }
+        else {
+            $resultCol.hide();
+        }
+        if ($category.val() === '0') {
+            $categoryCol.show();
+        }
+        else {
+            $categoryCol.hide();
+        }
+        var i = Math.floor((res.p / MAX_PAGE)) * MAX_PAGE, j = 0;
+        for (; i < res.total && j < MAX_PAGE; i++, j++) {
+            pageLink[j].li
+                .removeClass('active')
+                .data('val', i)
+                .show();
+            pageLink[j].a.text(i + 1);
+        }
+        for (; j < MAX_PAGE; j++)
+            pageLink[j].li.hide();
+        pageLink[res.p % MAX_PAGE].li.addClass('active');
+        if (res.p < MAX_PAGE)
+            $prevPage.addClass('disabled');
+        else
+            $prevPage.removeClass('disabled');
+        if (res.total - res.p <= MAX_PAGE)
+            $nextPage.addClass('disabled');
+        else
+            $nextPage.removeClass('disabled');
         $selects.prop('disabled', false);
         $selects.selectpicker('refresh');
-    };
+    }
     var Row = (function () {
         function Row(value) {
             this.idTd = document.createElement('th');
@@ -86,7 +127,7 @@ var SubmissionHistoryAdmin;
                     this.resultTd.innerHTML = '<button class="btn-link tdLinkBtn" onclick="SubmissionHistoryAdmin.onResult(' + this.id + ');">' +
                         '<strong class="text-danger">' + Row.RESULTS[this.result] + '</strong></button>';
             }
-            else if (this.category == 'Homework') {
+            else if (this.category != 'Exercise') {
                 this.resultTd.textContent = '';
             }
             else {
@@ -96,42 +137,58 @@ var SubmissionHistoryAdmin;
             this.emailTd.textContent = this.email;
             this.userTd.textContent = decodeURIComponent(this.userName);
             this.categoryTd.setAttribute('class', 'categoryCol');
+            this.resultTd.setAttribute('class', 'resultCol');
         };
         return Row;
     }());
     Row.RESULTS = ['Correct', 'Incorrect', 'Compile Error', 'Timeout', 'Runtime Error', 'Fail to run'];
-    $selects.on('hide.bs.select', function () {
+    function send(pageNum) {
         $selects.prop('disabled', true);
         $selects.selectpicker('refresh');
-        var newQuery = genQuery();
+        if (pageNum == null)
+            pageNum = 0;
+        var newQuery = genQuery() + 'p=' + pageNum;
         if (prevQuery !== newQuery) {
-            $.ajax('/history/list' + genQuery(), { success: queryHandler });
+            $.ajax('/history/list' + newQuery, { success: queryHandler });
             prevQuery = newQuery;
         }
         else {
             $selects.prop('disabled', false);
             $selects.selectpicker('refresh');
         }
+    }
+    $selects.on('hide.bs.select', function () {
+        send();
     });
     var $homeworkGroup = $('#homeworkGroup');
     var $exerciseGroup = $('#exerciseGroup');
+    var $projectGroup = $('#projectGroup');
     var $resultGroup = $('#resultGroup');
     $category.change(function () {
         switch ($category.val()) {
-            case '3':
+            case '0':
                 $homeworkGroup.children().show();
                 $exerciseGroup.children().show();
+                $projectGroup.children().show();
                 $resultGroup.show();
                 break;
             case '1':
                 $homeworkGroup.children().show();
                 $exerciseGroup.children().prop('selected', false).hide();
+                $projectGroup.children().prop('selected', false).hide();
                 $resultGroup.hide();
                 break;
             case '2':
                 $homeworkGroup.children().prop('selected', false).hide();
                 $exerciseGroup.children().show();
+                $projectGroup.children().prop('selected', false).hide();
                 $resultGroup.show();
+                break;
+            case '3':
+                $homeworkGroup.children().prop('selected', false).hide();
+                $exerciseGroup.children().prop('selected', false).hide();
+                $projectGroup.children().show();
+                $resultGroup.hide();
         }
         $selects.selectpicker('refresh');
     });
@@ -145,6 +202,11 @@ var SubmissionHistoryAdmin;
         var exerciseQuery = '';
         $exerciseGroup.children(':selected').each(function (index, elem) {
             exerciseQuery += 'ex=' + elem.value + '&';
+        });
+        // exercise
+        var projectQuery = '';
+        $projectGroup.children(':selected').each(function (index, elem) {
+            projectQuery += 'pj=' + elem.value + '&';
         });
         // result
         var resultQuery = '';
@@ -161,7 +223,7 @@ var SubmissionHistoryAdmin;
         $user.children(':selected').each(function (index, elem) {
             userQuery += 'u=' + elem.value + '&';
         });
-        return '?' + homeworkQuery + exerciseQuery + resultQuery + emailQuery + userQuery;
+        return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + projectQuery + resultQuery + emailQuery + userQuery;
     }
     $.ajax('/history/list' + prevQuery, { success: queryHandler });
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {

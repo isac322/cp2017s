@@ -88,6 +88,13 @@ export class HistoryRoute extends BaseRoute {
 				callback)
 		});
 
+		tasks.push((callback) => {
+			dbClient.query(
+				'SELECT project.name  AS `projectName`, project_config.name AS `fileName`, project_config.id ' +
+				'FROM project JOIN project_config ON project.id = project_config.project_id',
+				callback)
+		});
+
 		if (req.session.admin) {
 			tasks.push((callback) => {
 				dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback)
@@ -105,7 +112,8 @@ export class HistoryRoute extends BaseRoute {
 			res.locals.emailList = data[0][0];
 			res.locals.homeworkList = data[1][0];
 			res.locals.exerciseList = data[2][0];
-			if (req.session.admin) res.locals.userList = data[3][0];
+			res.locals.projectList = data[3][0];
+			if (req.session.admin) res.locals.userList = data[4][0];
 
 			this.render(req, res, 'history');
 		})

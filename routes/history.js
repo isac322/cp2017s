@@ -82,6 +82,10 @@ var HistoryRoute = (function (_super) {
             dbClient.query('SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
                 'FROM exercise JOIN exercise_config ON exercise.id = exercise_config.exercise_id', callback);
         });
+        tasks.push(function (callback) {
+            dbClient.query('SELECT project.name  AS `projectName`, project_config.name AS `fileName`, project_config.id ' +
+                'FROM project JOIN project_config ON project.id = project_config.project_id', callback);
+        });
         if (req.session.admin) {
             tasks.push(function (callback) {
                 dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback);
@@ -97,8 +101,9 @@ var HistoryRoute = (function (_super) {
             res.locals.emailList = data[0][0];
             res.locals.homeworkList = data[1][0];
             res.locals.exerciseList = data[2][0];
+            res.locals.projectList = data[3][0];
             if (req.session.admin)
-                res.locals.userList = data[3][0];
+                res.locals.userList = data[4][0];
             _this.render(req, res, 'history');
         });
     };

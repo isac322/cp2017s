@@ -1,20 +1,22 @@
 ///<reference path="modal-result.ts"/>
 
 namespace SubmissionHistory {
-	const $resultTable = $('#resultTable');
+	const MAX_PAGE = document.documentElement.clientWidth >= 768 ? 10 : 5;
 
-	const $selects = $('.selectpicker');
+	const $resultTable: JQuery = $('#resultTable');
 
-	const $category = $('#selectCategory');
-	const $result = $('#selectResult');
-	const $email = $('#selectEmail');
+	const $selects: JQuery = $('.selectpicker');
+
+	const $category: JQuery = $('#selectCategory');
+	const $result: JQuery = $('#selectResult');
+	const $email: JQuery = $('#selectEmail');
 
 
-	let prevQuery = location.search;
+	let prevQuery = location.search + '?t=0&';
 
 	let rows: Array<Row> = [];
 
-	class ResponseData {
+	interface RowData {
 		id: number;
 		result: number;
 		email: string;
@@ -25,36 +27,87 @@ namespace SubmissionHistory {
 		category: string;
 	}
 
-	const queryHandler = (data: Array<ResponseData>) => {
+	const $pageUL: JQuery = $('#page-ul');
+	const $prevPage: JQuery = $('#page-prev');
+	const $nextPage: JQuery = $('#page-next');
+	let pageLink: Array<{ li: JQuery, a: JQuery }> = [];
+
+	$prevPage.click(() => {
+		send($pageUL.children(':nth-child(2)').data('val') - 1);
+	});
+
+	$nextPage.click(() => {
+		send($pageUL.children(':nth-last-child(2)').data('val') + 1);
+	});
+
+	for (let i = 0; i < MAX_PAGE; i++) {
+		const li = document.createElement('li');
+		const a = document.createElement('a');
+		a.setAttribute('href', '#');
+		a.addEventListener('click', (e: Event) => {
+			send($(e.target).parent().data('val'));
+		});
+		li.appendChild(a);
+		pageLink.push({li: $(li), a: $(a)});
+
+		$nextPage.before(li)
+	}
+
+	function queryHandler(res: { data: Array<RowData>, total: number, p: number }): void {
 		$resultTable.children().detach();
 
-		for (let i = 0; i < data.length; i++) {
-			if (i >= rows.length)
-				rows.push(new Row(data[i]));
-			else
-				rows[i].setData(data[i]);
+		for (let i = 0; i < res.data.length; i++) {
+			if (i >= rows.length) {
+				rows.push(new Row(res.data[i]));
+			}
+			else {
+				rows[i].setData(res.data[i]);
+			}
 
 			$resultTable.append(rows[i].row);
 		}
 
 		const $categoryCol = $('.categoryCol');
+		const $resultCol = $('.resultCol');
 
-		switch ($category.val()) {
-			case '3':
-				$categoryCol.show();
-				break;
-
-			case '1':
-				$categoryCol.hide();
-				break;
-
-			case '2':
-				$categoryCol.hide();
+		if ($category.val() === '0' || $category.val() === '2') {
+			$resultCol.show();
 		}
+		else {
+			$resultCol.hide();
+		}
+
+		if ($category.val() === '0') {
+			$categoryCol.show();
+		}
+		else {
+			$categoryCol.hide();
+		}
+
+
+		let i = Math.floor((res.p / MAX_PAGE)) * MAX_PAGE, j = 0;
+		for (; i < res.total && j < MAX_PAGE; i++, j++) {
+			pageLink[j].li
+				.removeClass('active')
+				.data('val', i)
+				.show();
+			pageLink[j].a.text(i + 1);
+		}
+
+		for (; j < MAX_PAGE; j++) pageLink[j].li.hide();
+
+
+		pageLink[res.p % MAX_PAGE].li.addClass('active');
+
+		if (res.p < MAX_PAGE) $prevPage.addClass('disabled');
+		else $prevPage.removeClass('disabled');
+
+		if (res.total - res.p <= MAX_PAGE) $nextPage.addClass('disabled');
+		else $nextPage.removeClass('disabled');
 
 		$selects.prop('disabled', false);
 		$selects.selectpicker('refresh');
-	};
+	}
 
 	class Row {
 		private static RESULTS = ['Correct', 'Incorrect', 'Compile Error', 'Timeout', 'Runtime Error', 'Fail to run'];
@@ -75,7 +128,7 @@ namespace SubmissionHistory {
 		private timestampTd: HTMLTableDataCellElement;
 		private emailTd: HTMLTableDataCellElement;
 
-		public constructor(value: ResponseData) {
+		public constructor(value: RowData) {
 			this.idTd = document.createElement('th');
 			this.idTd.setAttribute('scope', 'row');
 			this.categoryTd = document.createElement('td');
@@ -96,7 +149,7 @@ namespace SubmissionHistory {
 			this.row.appendChild(this.emailTd);
 		}
 
-		public setData(value: ResponseData) {
+		public setData(value: RowData) {
 			this.id = value.id;
 			this.category = value.category;
 			this.result = value.result;
@@ -116,7 +169,8 @@ namespace SubmissionHistory {
 
 			if (this.extension.valueOf() !== 'report' && this.extension.valueOf() !== 'zip') {
 				content = '<button class="btn-link tdLinkBtn" onclick=\'codeModal(' + href + ', "' + this.extension + '", "' + this.fileName + '");\'>' + this.fileName + '</button>'
-			} else {
+			}
+			else {
 				content = this.fileName
 			}
 
@@ -131,7 +185,7 @@ namespace SubmissionHistory {
 					this.resultTd.innerHTML = '<button class="btn-link tdLinkBtn" onclick="SubmissionHistory.onResult(' + this.id + ');">' +
 						'<strong class="text-danger">' + Row.RESULTS[this.result] + '</strong></button>';
 			}
-			else if (this.category == 'Homework') {
+			else if (this.category != 'Exercise') {
 				this.resultTd.textContent = '';
 			}
 			else {
@@ -141,48 +195,65 @@ namespace SubmissionHistory {
 			this.emailTd.textContent = this.email;
 
 			this.categoryTd.setAttribute('class', 'categoryCol');
+			this.resultTd.setAttribute('class', 'resultCol');
 		}
 	}
 
-	$selects.on('hide.bs.select', () => {
+	function send(pageNum?: number): void {
 		$selects.prop('disabled', true);
 		$selects.selectpicker('refresh');
 
-		const newQuery = genQuery();
+		if (pageNum == null) pageNum = 0;
+		const newQuery = genQuery() + 'p=' + pageNum;
 
 		if (prevQuery !== newQuery) {
-			$.ajax('history/list' + genQuery(), {success: queryHandler});
+			$.ajax('/history/list' + newQuery, {success: queryHandler});
 			prevQuery = newQuery;
 		}
 		else {
 			$selects.prop('disabled', false);
 			$selects.selectpicker('refresh');
 		}
+	}
+
+	$selects.on('hide.bs.select', () => {
+		send();
 	});
 
-	const $homeworkGroup = $('#homeworkGroup');
-	const $exerciseGroup = $('#exerciseGroup');
+	const $homeworkGroup: JQuery = $('#homeworkGroup');
+	const $exerciseGroup: JQuery = $('#exerciseGroup');
+	const $projectGroup: JQuery = $('#projectGroup');
 
-	const $resultGroup = $('#resultGroup');
+	const $resultGroup: JQuery = $('#resultGroup');
 
 	$category.change(() => {
 		switch ($category.val()) {
-			case '3':
+			case '0':
 				$homeworkGroup.children().show();
 				$exerciseGroup.children().show();
+				$projectGroup.children().show();
 				$resultGroup.show();
 				break;
 
 			case '1':
 				$homeworkGroup.children().show();
 				$exerciseGroup.children().prop('selected', false).hide();
+				$projectGroup.children().prop('selected', false).hide();
 				$resultGroup.hide();
 				break;
 
 			case '2':
 				$homeworkGroup.children().prop('selected', false).hide();
 				$exerciseGroup.children().show();
+				$projectGroup.children().prop('selected', false).hide();
 				$resultGroup.show();
+				break;
+
+			case '3':
+				$homeworkGroup.children().prop('selected', false).hide();
+				$exerciseGroup.children().prop('selected', false).hide();
+				$projectGroup.children().show();
+				$resultGroup.hide();
 		}
 
 		$selects.selectpicker('refresh');
@@ -202,6 +273,12 @@ namespace SubmissionHistory {
 			exerciseQuery += 'ex=' + elem.value + '&';
 		});
 
+		// exercise
+		let projectQuery = '';
+		$projectGroup.children(':selected').each((index: number, elem: HTMLOptionElement) => {
+			projectQuery += 'pj=' + elem.value + '&';
+		});
+
 		// result
 		let resultQuery = '';
 		$result.children(':selected').each((index: number, elem: HTMLOptionElement) => {
@@ -214,13 +291,13 @@ namespace SubmissionHistory {
 			emailQuery += 'e=' + elem.value + '&';
 		});
 
-		return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + resultQuery + emailQuery;
+		return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + projectQuery + resultQuery + emailQuery;
 	}
 
 
 	$.ajax('/history/list' + prevQuery, {success: queryHandler});
 
-	if( /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent) ) {
+	if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
 		$('.selectpicker:not(#selectUser)').selectpicker('mobile');
 	}
 

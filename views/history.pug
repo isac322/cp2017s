@@ -18,9 +18,10 @@ block content
 		.col-xs-12.col-sm-6.col-md-2.form-group
 			label(for='selectCategory') Category
 			select.form-control.selectpicker#selectCategory
-				option(value='3') All
+				option(value='0') All
 				option(value='1') Homework
 				option(value='2') Exercise
+				option(value='3') Project
 
 		.col-xs-12.col-sm-6.col-md-5.form-group
 			label(for='selectId')
@@ -29,11 +30,15 @@ block content
 			select.form-control.selectpicker#selectId(multiple, title='All', data-selected-text-format='count > 3', data-size='10')
 				optgroup(label='Homework')#homeworkGroup
 					each file in homeworkList
-						option(title=file.fileName, value=file.id, data-subtext=file.fileName)=decodeURIComponent(file.homeworkName)
+						option(title=decodeURIComponent(file.fileName), value=file.id, data-subtext=decodeURIComponent(file.homeworkName))=decodeURIComponent(file.fileName)
 
 				optgroup(label='Exercise')#exerciseGroup
 					each file in exerciseList
-						option(title=file.fileName, value=file.id, data-subtext=file.fileName)=decodeURIComponent(file.exerciseName)
+						option(title=decodeURIComponent(file.fileName), value=file.id, data-subtext=decodeURIComponent(file.exerciseName))=decodeURIComponent(file.fileName)
+
+				optgroup(label='Exercise')#projectGroup
+					each file in projectList
+						option(title=decodeURIComponent(file.fileName), value=file.id, data-subtext=decodeURIComponent(file.projectName))=decodeURIComponent(file.fileName)
 
 		.col-xs-12.col-sm-6.col-md-2.form-group#resultGroup
 			label(for='selectResult')
@@ -69,12 +74,21 @@ block content
 							th.col-xs-1 ID
 							th.col-xs-1.categoryCol Category
 							th File name #[small.text-muted (Click to see)]
-							th.col-xs-2 Result #[small.text-muted (Click to see)]
+							th.col-xs-2.resultCol Result #[small.text-muted (Click to see)]
 							th Timestamp
 							th Email
 							if admin
 								th User
 					tbody#resultTable
+
+	nav.text-center#page-nav(aria-label='Page navigation')
+		ul.pagination#page-ul
+			li#page-prev
+				a(href='#', aria-label='Previous')
+					span(aria-hidden='true') «
+			li#page-next
+				a(href='#', aria-label='Next')
+					span(aria-hidden='true') »
 
 	include modal-source_code
 
