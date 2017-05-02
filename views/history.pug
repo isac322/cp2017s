@@ -36,7 +36,7 @@ block content
 					each file in exerciseList
 						option(title=decodeURIComponent(file.fileName), value=file.id, data-subtext=decodeURIComponent(file.exerciseName))=decodeURIComponent(file.fileName)
 
-				optgroup(label='Exercise')#projectGroup
+				optgroup(label='Project')#projectGroup
 					each file in projectList
 						option(title=decodeURIComponent(file.fileName), value=file.id, data-subtext=decodeURIComponent(file.projectName))=decodeURIComponent(file.fileName)
 
