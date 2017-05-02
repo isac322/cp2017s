@@ -83,6 +83,7 @@ namespace SubmissionHistoryAdmin {
 
 		const $categoryCol = $('.categoryCol');
 		const $resultCol = $('.resultCol');
+		const $emailCol = $('.emailCol');
 
 		if ($category.val() === '0' || $category.val() === '2') {
 			$resultCol.show();
@@ -96,6 +97,10 @@ namespace SubmissionHistoryAdmin {
 		}
 		else {
 			$categoryCol.hide();
+		}
+
+		if ($email.children().length == 1) {
+			$emailCol.hide();
 		}
 
 
@@ -216,6 +221,7 @@ namespace SubmissionHistoryAdmin {
 
 			this.categoryTd.setAttribute('class', 'categoryCol');
 			this.resultTd.setAttribute('class', 'resultCol');
+			this.emailTd.setAttribute('class', 'emailCol');
 		}
 	}
 

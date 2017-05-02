@@ -53,6 +53,7 @@ var SubmissionHistory;
         }
         var $categoryCol = $('.categoryCol');
         var $resultCol = $('.resultCol');
+        var $emailCol = $('.emailCol');
         if ($category.val() === '0' || $category.val() === '2') {
             $resultCol.show();
         }
@@ -64,6 +65,9 @@ var SubmissionHistory;
         }
         else {
             $categoryCol.hide();
+        }
+        if ($email.children().length == 1) {
+            $emailCol.hide();
         }
         var i = Math.floor((res.p / MAX_PAGE)) * MAX_PAGE, j = 0;
         for (; i < res.total && j < MAX_PAGE; i++, j++) {
@@ -143,6 +147,7 @@ var SubmissionHistory;
             this.emailTd.textContent = this.email;
             this.categoryTd.setAttribute('class', 'categoryCol');
             this.resultTd.setAttribute('class', 'resultCol');
+            this.emailTd.setAttribute('class', 'emailCol');
         };
         return Row;
     }());
