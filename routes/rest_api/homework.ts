@@ -19,11 +19,11 @@ const dbClient: IConnection = createConnection({
 /**
  * creating a new homework request api.
  *
- * @method createHW
+ * @method createHomework
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function createHW(req: Request, res: Response) {
+export function createHomework(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
 	const name = encodeURIComponent(req.body.name);
@@ -36,13 +36,13 @@ export function createHW(req: Request, res: Response) {
 		[name, start_date, end_date, req.session.studentId, req.session.email, description],
 		(err: IError, insertResult) => {
 			if (err) {
-				logger.error('[rest_api::createHW::outer_insert] : ');
+				logger.error('[rest_api::createHomework::outer_insert] : ');
 				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
 			}
 
-			logger.debug('[createHW:insert into homework]');
+			logger.debug('[rest_api::createHomework:insert into homework]');
 			logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
 
 			const homeworkId = insertResult.insertId;
@@ -60,13 +60,13 @@ export function createHW(req: Request, res: Response) {
 				'INSERT INTO homework_config(homework_id, name, extension) VALUES ' + escape(values) + ';',
 				(err: IError, result) => {
 					if (err) {
-						logger.error('[rest_api::createHW::inner_insert] : ');
+						logger.error('[rest_api::createHomework::inner_insert] : ');
 						logger.error(util.inspect(err, {showHidden: false, depth: null}));
 						res.sendStatus(500);
 						return;
 					}
 
-					logger.debug('[createHW:insert into homework_config]');
+					logger.debug('[rest_api::createHomework:insert into homework_config]');
 					logger.debug(util.inspect(result, {showHidden: false, depth: 1}));
 				}
 			);
@@ -124,18 +124,18 @@ export function uploadHomework(req: Request, res: Response) {
 /**
  * Check uploaded name is already exist.
  *
- * @method hwNameChecker
+ * @method checkHomeworkName
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function hwNameChecker(req: Request, res: Response) {
+export function checkHomeworkName(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
 	dbClient.query(
 		'SELECT * FROM homework WHERE name = ?;', encodeURIComponent(req.query.name),
 		(err: IError, searchResult) => {
 			if (err) {
-				logger.error('[rest_api::hwNameChecker::select] : ');
+				logger.error('[rest_api::checkHomeworkName::select] : ');
 				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
@@ -150,11 +150,11 @@ export function hwNameChecker(req: Request, res: Response) {
 /**
  * Send homework file.
  *
- * @method getHomework
+ * @method downloadSubmittedHomework
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function getHomework(req: Request, res: Response) {
+export function downloadSubmittedHomework(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
 	dbClient.query(
@@ -164,7 +164,7 @@ export function getHomework(req: Request, res: Response) {
 		req.params.logId,
 		(err: IError, result) => {
 			if (err) {
-				logger.error('[rest_api::getHomework::search] : ');
+				logger.error('[rest_api::downloadSubmittedHomework::search] : ');
 				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
@@ -176,7 +176,7 @@ export function getHomework(req: Request, res: Response) {
 				res.download(path.join(submittedHomeworkPath, row.fileName), row.name);
 			}
 			else {
-				logger.error('[rest_api::getHomework::student_id-mismatch]');
+				logger.error('[rest_api::downloadSubmittedHomework::student_id-mismatch]');
 				res.sendStatus(401);
 			}
 		});

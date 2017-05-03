@@ -113,7 +113,13 @@ namespace SubmissionHistoryAdmin {
 			else {
 				this.resultTd.textContent = 'Pending...';
 			}
-			this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
+			this.timestampTd.textContent = new Date(this.timestamp).toLocaleString(undefined, {
+				month: 'numeric',
+				day: 'numeric',
+				hour: 'numeric',
+				minute: 'numeric',
+				second: 'numeric'
+			});
 			this.userBtn.textContent = decodeURIComponent(this.userName);
 
 			this.userBtn.dataset.originalTitle = this.email;
@@ -192,7 +198,15 @@ namespace SubmissionHistoryAdmin {
 		const newQuery = genQuery() + 'p=' + pageNum;
 
 		if (prevQuery !== newQuery) {
-			$.ajax('/history/list' + newQuery, {success: queryHandler});
+			$.ajax('/history/list' + newQuery, {
+				success: queryHandler,
+				error: (jqXHR: JQueryXHR) => {
+					switch (jqXHR.status) {
+						case 401:
+							document.location.href = '/';
+					}
+				}
+			});
 			prevQuery = newQuery;
 		}
 		else {

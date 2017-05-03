@@ -136,7 +136,7 @@ function historyList(req, res) {
     function genProjectQuery(projectQuery) {
         if (req.session.admin) {
             return '' +
-                'project_log.id, user.student_id AS `studentId`, email, submitted AS `timestamp`, project_config.name AS `fileName`, extension, NULL AS `result`, \'project\' AS `category`, user.name ' +
+                'project_log.id, user.student_id AS `studentId`, email, submitted AS `timestamp`, project_config.name AS `fileName`, extension, NULL AS `result`, \'Project\' AS `category`, user.name ' +
                 'FROM project_log ' +
                 '    JOIN project_config ON project_log.attachment_id = project_config.id ' +
                 '    JOIN user ON project_log.student_id = user.student_id ' +
@@ -144,7 +144,7 @@ function historyList(req, res) {
         }
         else {
             return '' +
-                'project_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, project_config.name AS `fileName`, extension, NULL AS `result`, \'project\' AS `category` ' +
+                'project_log.id, student_id AS `studentId`, email, submitted AS `timestamp`, project_config.name AS `fileName`, extension, NULL AS `result`, \'Project\' AS `category` ' +
                 'FROM project_log ' +
                 '    JOIN project_config ON project_log.attachment_id = project_config.id ' +
                 'WHERE ' + projectQuery;

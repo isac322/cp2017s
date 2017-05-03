@@ -124,18 +124,18 @@ export function uploadProject(req: Request, res: Response) {
 /**
  * Check uploaded name is already exist.
  *
- * @method pjNameChecker
+ * @method checkProjectName
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function pjNameChecker(req: Request, res: Response) {
+export function checkProjectName(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
 	dbClient.query(
 		'SELECT * FROM project WHERE name = ?;', encodeURIComponent(req.query.name),
 		(err: IError, searchResult) => {
 			if (err) {
-				logger.error('[rest_api::pjNameChecker::select] : ');
+				logger.error('[rest_api::checkProjectName::select] : ');
 				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;

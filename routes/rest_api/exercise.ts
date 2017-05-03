@@ -32,11 +32,11 @@ const enum Result {correct, incorrect, compileError, timeout, runtimeError, scri
 /**
  * Run and return result uploaded exercise
  *
- * @method runExercise
+ * @method uploadExercise
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function runExercise(req: Request, res: Response) {
+export function uploadExercise(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
 	const hash = crypto.createHash('sha512');
@@ -70,7 +70,7 @@ export function runExercise(req: Request, res: Response) {
 		fs.writeFile(path.join(submittedExerciseOriginalPath, hashedOriginal), file.data, {mode: 0o600},
 			(err: NodeJS.ErrnoException) => {
 				if (err) {
-					logger.error('[rest_api::runExercise::writeOriginalFile] : ');
+					logger.error('[rest_api::uploadExercise::writeOriginalFile] : ');
 					logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				}
 			});
@@ -79,7 +79,7 @@ export function runExercise(req: Request, res: Response) {
 
 	fs.writeFile(path.join(submittedExercisePath, hashedName), fileContent, {mode: 0o600}, (err: NodeJS.ErrnoException) => {
 		if (err) {
-			logger.error('[rest_api::runExercise::writeFile] : ');
+			logger.error('[rest_api::uploadExercise::writeFile] : ');
 			logger.error(util.inspect(err, {showHidden: false, depth: null}));
 		}
 	});
@@ -90,7 +90,7 @@ export function runExercise(req: Request, res: Response) {
 		'SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', attachId,
 		(err: IError, searchResult) => {
 			if (err) {
-				logger.error('[rest_api::runExercise::select] : ');
+				logger.error('[rest_api::uploadExercise::select] : ');
 				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
@@ -124,16 +124,16 @@ export function runExercise(req: Request, res: Response) {
 				[studentId, attachId, req.session.email, hashedName, hashedOriginal],
 				(err: IError, insertResult) => {
 					if (err) {
-						logger.error('[rest_api::runExercise::insert] : ');
+						logger.error('[rest_api::uploadExercise::insert] : ');
 						logger.error(util.inspect(err, {showHidden: false, depth: null}));
 						res.sendStatus(500);
 						return;
 					}
 
-					logger.debug('[runExercise:insert into exercise_log]');
+					logger.debug('[uploadExercise:insert into exercise_log]');
 					logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
 
-					judgeExercise(res, insertResult.insertId, attachId, outputPath, sourcePath);
+					runJudging(res, insertResult.insertId, attachId, outputPath, sourcePath);
 				}
 			);
 		}
@@ -144,11 +144,11 @@ export function runExercise(req: Request, res: Response) {
 /**
  * Rejudge unresolved exercise
  *
- * @method resolve
+ * @method resolveUnhandled
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function resolve(req: Request, res: Response) {
+export function resolveUnhandled(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
 	dbClient.query(
@@ -158,7 +158,7 @@ export function resolve(req: Request, res: Response) {
 		'WHERE exercise_result.id IS NULL;',
 		(err: IError, searchList) => {
 			if (err) {
-				logger.error('[rest_api::resolve::search] : ');
+				logger.error('[rest_api::resolveUnhandled::search] : ');
 				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
@@ -170,7 +170,7 @@ export function resolve(req: Request, res: Response) {
 					'SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', log.attachId,
 					(err: IError, exerciseSetting) => {
 						if (err) {
-							logger.error('[rest_api::resolve::select] : ');
+							logger.error('[rest_api::resolveUnhandled::select] : ');
 							logger.error(util.inspect(err, {showHidden: false, depth: 1}));
 							res.sendStatus(500);
 							return;
@@ -200,7 +200,7 @@ export function resolve(req: Request, res: Response) {
 							path.join(submittedExercisePath, log.fileName),
 							path.join(sourcePath, exerciseSetting[0].name));
 
-						judgeExercise(null, log.id, log.attachId, outputPath, sourcePath);
+						runJudging(null, log.id, log.attachId, outputPath, sourcePath);
 					});
 			}
 		});
@@ -209,7 +209,7 @@ export function resolve(req: Request, res: Response) {
 }
 
 
-function judgeExercise(res: Response, logId: number, attachId: number, outputPath: string, sourcePath: string) {
+function runJudging(res: Response, logId: number, attachId: number, outputPath: string, sourcePath: string) {
 	const inputPath = path.join(exerciseSetPath, attachId.toString(), 'input');
 	const answerPath = path.join(exerciseSetPath, attachId.toString(), 'output');
 
@@ -218,12 +218,12 @@ function judgeExercise(res: Response, logId: number, attachId: number, outputPat
 		['bash', './judge.sh'],
 		[{
 			write: (message: NodeBuffer) => {
-				logger.debug('[rest_api::runExercise::docker.stdout]');
+				logger.debug('[rest_api::runJudging::docker.stdout]');
 				logger.debug(message.toString());
 			}
 		}, {
 			write: (message: NodeBuffer) => {
-				logger.error('[rest_api::runExercise::docker.stderr]');
+				logger.error('[rest_api::runJudging::docker.stderr]');
 				logger.error(message.toString());
 			}
 		}],
@@ -246,7 +246,7 @@ function judgeExercise(res: Response, logId: number, attachId: number, outputPat
 		},
 		(err, data, container) => {
 			if (err) {
-				logger.error('[rest_api::runExercise::docker_run] : ');
+				logger.error('[rest_api::runJudging::docker_run] : ');
 				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
@@ -257,7 +257,7 @@ function judgeExercise(res: Response, logId: number, attachId: number, outputPat
 			// remove input temporary folder
 			fs_ext.remove(sourcePath, (err: Error) => {
 				if (err) {
-					logger.error('[rest_api::judgeExercise::temp_remove] : ');
+					logger.error('[rest_api::runJudging::temp_remove] : ');
 					logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				}
 			});
@@ -494,13 +494,13 @@ function handleResult(res: Response, logId: number, answerPath: string, inputPat
 
 
 /**
- * Send judge result of exercise data.
+ * Send judge result of exercise data to client.
  *
- * @method judgeResult
+ * @method fetchJudgeResult
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function judgeResult(req: Request, res: Response) {
+export function fetchJudgeResult(req: Request, res: Response) {
 	if (!req.session.signIn) return 401;
 
 	dbClient.query(
@@ -510,7 +510,7 @@ export function judgeResult(req: Request, res: Response) {
 		req.params.logId,
 		(err: IError, searchResult) => {
 			if (err) {
-				logger.error('[rest_api::judgeResult::search] : ');
+				logger.error('[rest_api::fetchJudgeResult::search] : ');
 				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
@@ -546,7 +546,7 @@ export function judgeResult(req: Request, res: Response) {
 
 					async.parallel(tasks, (err: NodeJS.ErrnoException, data: Array<string>) => {
 						if (err) {
-							logger.error('[rest_api::handleResult::judgeResult::incorrect::read_file] : ');
+							logger.error('[rest_api::handleResult::fetchJudgeResult::incorrect::read_file] : ');
 							logger.error(util.inspect(err, {showHidden: false, depth: null}));
 							res.sendStatus(500);
 							return;
@@ -568,7 +568,7 @@ export function judgeResult(req: Request, res: Response) {
 					fs.readFile(path.join(testSetPath, 'input', result.failed_index + '.in'), 'UTF-8',
 						(err: NodeJS.ErrnoException, data: string) => {
 							if (err) {
-								logger.error('[rest_api::handleResult::judgeResult::timeout::read_file] : ');
+								logger.error('[rest_api::handleResult::fetchJudgeResult::timeout::read_file] : ');
 								logger.error(util.inspect(err, {showHidden: false, depth: null}));
 								res.sendStatus(500);
 								return;
@@ -582,7 +582,7 @@ export function judgeResult(req: Request, res: Response) {
 					fs.readFile(path.join(testSetPath, 'input', result.failed_index + '.in'), 'UTF-8',
 						(err: NodeJS.ErrnoException, data: string) => {
 							if (err) {
-								logger.error('[rest_api::handleResult::judgeResult::runtimeError::read_file] : ');
+								logger.error('[rest_api::handleResult::fetchJudgeResult::runtimeError::read_file] : ');
 								logger.error(util.inspect(err, {showHidden: false, depth: null}));
 								res.sendStatus(500);
 								return;
@@ -607,11 +607,11 @@ export function judgeResult(req: Request, res: Response) {
 /**
  * Send exercise file.
  *
- * @method getExercise
+ * @method downloadSubmittedFile
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function getExercise(req: Request, res: Response) {
+export function downloadSubmittedExercise(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
 	dbClient.query(
@@ -621,7 +621,7 @@ export function getExercise(req: Request, res: Response) {
 		req.params.logId,
 		(err: IError, result) => {
 			if (err) {
-				logger.error('[rest_api::getExercise::search] : ');
+				logger.error('[rest_api::downloadSubmittedExercise::search] : ');
 				logger.error(util.inspect(err, {showHidden: false, depth: null}));
 				res.sendStatus(500);
 				return;
@@ -638,7 +638,7 @@ export function getExercise(req: Request, res: Response) {
 				}
 			}
 			else {
-				logger.error('[rest_api::getExercise::student_id-mismatch]');
+				logger.error('[rest_api::downloadSubmittedExercise::student_id-mismatch]');
 				res.sendStatus(401);
 			}
 		});

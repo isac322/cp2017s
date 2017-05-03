@@ -57,7 +57,13 @@ var SubmissionHistory;
             else {
                 this.resultTd.textContent = 'Pending...';
             }
-            this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
+            this.timestampTd.textContent = new Date(this.timestamp).toLocaleString(undefined, {
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            });
             this.emailTd.textContent = this.email;
         };
         return Row;
@@ -125,7 +131,15 @@ var SubmissionHistory;
             pageNum = 0;
         var newQuery = genQuery() + 'p=' + pageNum;
         if (prevQuery !== newQuery) {
-            $.ajax('/history/list' + newQuery, { success: queryHandler });
+            $.ajax('/history/list' + newQuery, {
+                success: queryHandler,
+                error: function (jqXHR) {
+                    switch (jqXHR.status) {
+                        case 401:
+                            document.location.href = '/';
+                    }
+                }
+            });
             prevQuery = newQuery;
         }
         else {

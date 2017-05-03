@@ -16,10 +16,10 @@ import {HistoryRoute} from "./routes/history";
 import {BoardRoute} from "./routes/board";
 import {ProjectRoute} from "./routes/project";
 import {register, signIn, signOut} from "./routes/rest_api/identification";
-import {createHW, getHomework, hwNameChecker, uploadHomework} from "./routes/rest_api/homework";
+import {createHomework, downloadSubmittedHomework, checkHomeworkName, uploadHomework} from "./routes/rest_api/homework";
 import {historyList} from "./routes/rest_api/history";
-import {getExercise, judgeResult, resolve, runExercise} from "./routes/rest_api/exercise";
-import {createProject, pjNameChecker, uploadProject} from "./routes/rest_api/project";
+import {downloadSubmittedExercise, fetchJudgeResult, resolveUnhandled, uploadExercise} from "./routes/rest_api/exercise";
+import {createProject, checkProjectName, uploadProject} from "./routes/rest_api/project";
 import fileUpload = require('express-fileupload')
 
 require('winston-daily-rotate-file');
@@ -112,17 +112,17 @@ export class Server {
 		this.app.post('/signin', signIn);
 		this.app.post('/register', register);
 		this.app.post('/signout', signOut);
-		this.app.post('/homework', createHW);
-		this.app.get('/homework/name', hwNameChecker);
-		this.app.get('/homework/:logId([0-9]+)', getHomework);
+		this.app.post('/homework', createHomework);
+		this.app.get('/homework/name', checkHomeworkName);
+		this.app.get('/homework/:logId([0-9]+)', downloadSubmittedHomework);
 		this.app.post('/homework/:attachId([0-9]+)', uploadHomework);
-		this.app.get('/exercise/:logId([0-9]+)', getExercise);
-//		this.app.post('/exercise', runExercise);
-		this.app.get('/exercise/resolve', resolve);
-		this.app.get('/exercise/result/:logId([0-9]+)', judgeResult);
-		this.app.post('/exercise/:attachId([0-9]+)', runExercise);
+		this.app.get('/exercise/:logId([0-9]+)', downloadSubmittedExercise);
+//		this.app.post('/exercise', createExercise);
+		this.app.get('/exercise/resolve', resolveUnhandled);
+		this.app.get('/exercise/result/:logId([0-9]+)', fetchJudgeResult);
+		this.app.post('/exercise/:attachId([0-9]+)', uploadExercise);
 		this.app.get('/history/list', historyList);
-		this.app.get('/project/name', pjNameChecker);
+		this.app.get('/project/name', checkProjectName);
 		this.app.post('/project', createProject);
 		this.app.post('/project/:attachId([0-9]+)', uploadProject);
 	}

@@ -16,11 +16,11 @@ var dbClient = mysql_1.createConnection({
 /**
  * creating a new homework request api.
  *
- * @method createHW
+ * @method createHomework
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-function createHW(req, res) {
+function createHomework(req, res) {
     if (!req.session.admin)
         return res.sendStatus(401);
     var name = encodeURIComponent(req.body.name);
@@ -29,12 +29,12 @@ function createHW(req, res) {
     var description = req.body.description;
     dbClient.query('INSERT INTO homework(name, start_date, end_date, author_id, author_email, description) VALUES(?,?,?,?,?,?);', [name, start_date, end_date, req.session.studentId, req.session.email, description], function (err, insertResult) {
         if (err) {
-            app_1.logger.error('[rest_api::createHW::outer_insert] : ');
+            app_1.logger.error('[rest_api::createHomework::outer_insert] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
             return;
         }
-        app_1.logger.debug('[createHW:insert into homework]');
+        app_1.logger.debug('[rest_api::createHomework:insert into homework]');
         app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
         var homeworkId = insertResult.insertId;
         var values = [];
@@ -46,18 +46,18 @@ function createHW(req, res) {
         }
         dbClient.query('INSERT INTO homework_config(homework_id, name, extension) VALUES ' + mysql_1.escape(values) + ';', function (err, result) {
             if (err) {
-                app_1.logger.error('[rest_api::createHW::inner_insert] : ');
+                app_1.logger.error('[rest_api::createHomework::inner_insert] : ');
                 app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
                 res.sendStatus(500);
                 return;
             }
-            app_1.logger.debug('[createHW:insert into homework_config]');
+            app_1.logger.debug('[rest_api::createHomework:insert into homework_config]');
             app_1.logger.debug(util.inspect(result, { showHidden: false, depth: 1 }));
         });
         res.redirect('/homework');
     });
 }
-exports.createHW = createHW;
+exports.createHomework = createHomework;
 /**
  * The attachment upload request api.
  *
@@ -96,16 +96,16 @@ exports.uploadHomework = uploadHomework;
 /**
  * Check uploaded name is already exist.
  *
- * @method hwNameChecker
+ * @method checkHomeworkName
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-function hwNameChecker(req, res) {
+function checkHomeworkName(req, res) {
     if (!req.session.admin)
         return res.sendStatus(401);
     dbClient.query('SELECT * FROM homework WHERE name = ?;', encodeURIComponent(req.query.name), function (err, searchResult) {
         if (err) {
-            app_1.logger.error('[rest_api::hwNameChecker::select] : ');
+            app_1.logger.error('[rest_api::checkHomeworkName::select] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
             return;
@@ -113,22 +113,22 @@ function hwNameChecker(req, res) {
         res.sendStatus(searchResult.length == 0 ? 200 : 409);
     });
 }
-exports.hwNameChecker = hwNameChecker;
+exports.checkHomeworkName = checkHomeworkName;
 /**
  * Send homework file.
  *
- * @method getHomework
+ * @method downloadSubmittedHomework
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-function getHomework(req, res) {
+function downloadSubmittedHomework(req, res) {
     if (!req.session.signIn)
         return res.sendStatus(401);
     dbClient.query('SELECT student_id AS `studentId`, file_name AS `fileName`, name ' +
         'FROM homework_log JOIN homework_config ON homework_log.attachment_id = homework_config.id ' +
         'WHERE homework_log.id=?', req.params.logId, function (err, result) {
         if (err) {
-            app_1.logger.error('[rest_api::getHomework::search] : ');
+            app_1.logger.error('[rest_api::downloadSubmittedHomework::search] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
             res.sendStatus(500);
             return;
@@ -138,9 +138,9 @@ function getHomework(req, res) {
             res.download(path.join(app_1.submittedHomeworkPath, row.fileName), row.name);
         }
         else {
-            app_1.logger.error('[rest_api::getHomework::student_id-mismatch]');
+            app_1.logger.error('[rest_api::downloadSubmittedHomework::student_id-mismatch]');
             res.sendStatus(401);
         }
     });
 }
-exports.getHomework = getHomework;
+exports.downloadSubmittedHomework = downloadSubmittedHomework;

@@ -1,6 +1,6 @@
 {
 	"name": "cp2017s",
-	"version": "0.8.13",
+	"version": "0.8.14",
 	"engines": {
 		"node": ">=6.10.0"
 	},
