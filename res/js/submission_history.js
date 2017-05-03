@@ -11,7 +11,9 @@ var SubmissionHistory;
             this.resultTd = document.createElement('td');
             this.timestampTd = document.createElement('td');
             this.emailTd = document.createElement('td');
-            this.setData(value);
+            this.categoryTd.setAttribute('class', 'categoryCol');
+            this.resultTd.setAttribute('class', 'resultCol');
+            this.emailTd.setAttribute('class', 'emailCol');
             this.row = document.createElement('tr');
             this.row.appendChild(this.idTd);
             this.row.appendChild(this.categoryTd);
@@ -19,6 +21,7 @@ var SubmissionHistory;
             this.row.appendChild(this.resultTd);
             this.row.appendChild(this.timestampTd);
             this.row.appendChild(this.emailTd);
+            this.setData(value);
         }
         Row.prototype.setData = function (value) {
             this.id = value.id;
@@ -56,9 +59,6 @@ var SubmissionHistory;
             }
             this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
             this.emailTd.textContent = this.email;
-            this.categoryTd.setAttribute('class', 'categoryCol');
-            this.resultTd.setAttribute('class', 'resultCol');
-            this.emailTd.setAttribute('class', 'emailCol');
         };
         return Row;
     }());

@@ -35,6 +35,7 @@ namespace SubmissionHistoryAdmin {
 		private timestampTd: HTMLTableDataCellElement;
 		private emailTd: HTMLTableDataCellElement;
 		private userTd: HTMLTableDataCellElement;
+		private userBtn: HTMLButtonElement;
 
 		public constructor(value: RowData) {
 			this.idTd = document.createElement('th');
@@ -45,8 +46,19 @@ namespace SubmissionHistoryAdmin {
 			this.timestampTd = document.createElement('td');
 			this.emailTd = document.createElement('td');
 			this.userTd = document.createElement('td');
+			this.userBtn = document.createElement('button');
 
-			this.setData(value);
+			this.userBtn.setAttribute('class', 'btn-link tdLinkBtn');
+			this.userBtn.setAttribute('type', 'button');
+			this.userBtn.dataset.toggle = 'tooltip';
+			this.userBtn.dataset.placement = 'top';
+
+			this.categoryTd.setAttribute('class', 'categoryCol');
+			this.resultTd.setAttribute('class', 'resultCol');
+			this.emailTd.setAttribute('class', 'emailCol');
+
+
+			this.userTd.appendChild(this.userBtn);
 
 			this.row = document.createElement('tr');
 
@@ -57,6 +69,9 @@ namespace SubmissionHistoryAdmin {
 			this.row.appendChild(this.timestampTd);
 			this.row.appendChild(this.emailTd);
 			this.row.appendChild(this.userTd);
+
+
+			this.setData(value);
 		}
 
 		public setData(value: RowData) {
@@ -104,11 +119,10 @@ namespace SubmissionHistoryAdmin {
 			}
 			this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
 			this.emailTd.textContent = this.email;
-			this.userTd.textContent = decodeURIComponent(this.userName);
+			this.userBtn.textContent = decodeURIComponent(this.userName);
 
-			this.categoryTd.setAttribute('class', 'categoryCol');
-			this.resultTd.setAttribute('class', 'resultCol');
-			this.emailTd.setAttribute('class', 'emailCol');
+			this.userBtn.dataset.originalTitle = this.email;
+			$(this.userBtn).tooltip();
 		}
 	}
 

@@ -42,7 +42,10 @@ namespace SubmissionHistory {
 			this.timestampTd = document.createElement('td');
 			this.emailTd = document.createElement('td');
 
-			this.setData(value);
+			this.categoryTd.setAttribute('class', 'categoryCol');
+			this.resultTd.setAttribute('class', 'resultCol');
+			this.emailTd.setAttribute('class', 'emailCol');
+
 
 			this.row = document.createElement('tr');
 
@@ -52,6 +55,9 @@ namespace SubmissionHistory {
 			this.row.appendChild(this.resultTd);
 			this.row.appendChild(this.timestampTd);
 			this.row.appendChild(this.emailTd);
+
+
+			this.setData(value);
 		}
 
 		public setData(value: RowData) {
@@ -98,10 +104,6 @@ namespace SubmissionHistory {
 			}
 			this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
 			this.emailTd.textContent = this.email;
-
-			this.categoryTd.setAttribute('class', 'categoryCol');
-			this.resultTd.setAttribute('class', 'resultCol');
-			this.emailTd.setAttribute('class', 'emailCol');
 		}
 	}
 
