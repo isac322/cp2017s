@@ -10,7 +10,6 @@ var SubmissionHistoryAdmin;
             this.fileTd = document.createElement('td');
             this.resultTd = document.createElement('td');
             this.timestampTd = document.createElement('td');
-            this.emailTd = document.createElement('td');
             this.userTd = document.createElement('td');
             this.userBtn = document.createElement('button');
             this.userBtn.setAttribute('class', 'btn-link tdLinkBtn');
@@ -19,7 +18,6 @@ var SubmissionHistoryAdmin;
             this.userBtn.dataset.placement = 'top';
             this.categoryTd.setAttribute('class', 'categoryCol');
             this.resultTd.setAttribute('class', 'resultCol');
-            this.emailTd.setAttribute('class', 'emailCol');
             this.userTd.appendChild(this.userBtn);
             this.row = document.createElement('tr');
             this.row.appendChild(this.idTd);
@@ -27,7 +25,6 @@ var SubmissionHistoryAdmin;
             this.row.appendChild(this.fileTd);
             this.row.appendChild(this.resultTd);
             this.row.appendChild(this.timestampTd);
-            this.row.appendChild(this.emailTd);
             this.row.appendChild(this.userTd);
             this.setData(value);
         }
@@ -67,7 +64,6 @@ var SubmissionHistoryAdmin;
                 this.resultTd.textContent = 'Pending...';
             }
             this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
-            this.emailTd.textContent = this.email;
             this.userBtn.textContent = decodeURIComponent(this.userName);
             this.userBtn.dataset.originalTitle = this.email;
             $(this.userBtn).tooltip();
@@ -93,7 +89,6 @@ var SubmissionHistoryAdmin;
         }
         var $categoryCol = $('.categoryCol');
         var $resultCol = $('.resultCol');
-        var $emailCol = $('.emailCol');
         if ($category.val() === '0' || $category.val() === '2') {
             $resultCol.show();
         }
@@ -105,9 +100,6 @@ var SubmissionHistoryAdmin;
         }
         else {
             $categoryCol.hide();
-        }
-        if ($email.children().length == 1) {
-            $emailCol.hide();
         }
         var i = Math.floor((res.p / MAX_PAGE)) * MAX_PAGE, j = 0;
         for (; i < res.total && j < MAX_PAGE; i++, j++) {
@@ -315,4 +307,5 @@ var SubmissionHistoryAdmin;
         $user.selectpicker('val', ret.u);
     }
     send();
+    $('.emailCol').hide();
 })(SubmissionHistoryAdmin || (SubmissionHistoryAdmin = {}));

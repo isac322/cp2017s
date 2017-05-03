@@ -27,13 +27,12 @@ namespace SubmissionHistoryAdmin {
 		studentId: string;
 		userName: string;
 
-		row: HTMLTableRowElement;
+		public row: HTMLTableRowElement;
 		private idTd: HTMLTableHeaderCellElement;
 		private categoryTd: HTMLTableDataCellElement;
 		private fileTd: HTMLTableDataCellElement;
 		private resultTd: HTMLTableDataCellElement;
 		private timestampTd: HTMLTableDataCellElement;
-		private emailTd: HTMLTableDataCellElement;
 		private userTd: HTMLTableDataCellElement;
 		private userBtn: HTMLButtonElement;
 
@@ -44,7 +43,6 @@ namespace SubmissionHistoryAdmin {
 			this.fileTd = document.createElement('td');
 			this.resultTd = document.createElement('td');
 			this.timestampTd = document.createElement('td');
-			this.emailTd = document.createElement('td');
 			this.userTd = document.createElement('td');
 			this.userBtn = document.createElement('button');
 
@@ -55,7 +53,6 @@ namespace SubmissionHistoryAdmin {
 
 			this.categoryTd.setAttribute('class', 'categoryCol');
 			this.resultTd.setAttribute('class', 'resultCol');
-			this.emailTd.setAttribute('class', 'emailCol');
 
 
 			this.userTd.appendChild(this.userBtn);
@@ -67,7 +64,6 @@ namespace SubmissionHistoryAdmin {
 			this.row.appendChild(this.fileTd);
 			this.row.appendChild(this.resultTd);
 			this.row.appendChild(this.timestampTd);
-			this.row.appendChild(this.emailTd);
 			this.row.appendChild(this.userTd);
 
 
@@ -118,7 +114,6 @@ namespace SubmissionHistoryAdmin {
 				this.resultTd.textContent = 'Pending...';
 			}
 			this.timestampTd.textContent = new Date(this.timestamp).toLocaleString();
-			this.emailTd.textContent = this.email;
 			this.userBtn.textContent = decodeURIComponent(this.userName);
 
 			this.userBtn.dataset.originalTitle = this.email;
@@ -149,7 +144,6 @@ namespace SubmissionHistoryAdmin {
 
 		const $categoryCol = $('.categoryCol');
 		const $resultCol = $('.resultCol');
-		const $emailCol = $('.emailCol');
 
 		if ($category.val() === '0' || $category.val() === '2') {
 			$resultCol.show();
@@ -163,10 +157,6 @@ namespace SubmissionHistoryAdmin {
 		}
 		else {
 			$categoryCol.hide();
-		}
-
-		if ($email.children().length == 1) {
-			$emailCol.hide();
 		}
 
 
@@ -431,4 +421,6 @@ namespace SubmissionHistoryAdmin {
 	}
 
 	send();
+
+	$('.emailCol').hide();
 }
