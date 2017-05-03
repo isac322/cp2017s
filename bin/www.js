@@ -8,22 +8,28 @@
 
 const server = require('../app');
 const debug = require('debug')('cp2017s:server');
-const http = require('http');
+const https = require('https');
 const fs = require('fs');
+
+const options = {
+	key: fs.readFileSync('key.pem'),
+	cert: fs.readFileSync('cert.pem'),
+	ca: fs.readFileSync('chain.pem')
+};
 
 
 /**
  * Get port from environment and store in Express.
  */
 
-const port = normalizePort(process.env.PORT || '80');
+const port = normalizePort(process.env.PORT || '443');
 const app = server.Server.bootstrap().app;
 app.set('port', port);
 
 /**
  * Create HTTP server.
  */
-const httpsServer = http.createServer(app);
+const httpsServer = https.createServer(options, app);
 
 /**
  * Listen on provided port, on all network interfaces.
