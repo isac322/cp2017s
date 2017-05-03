@@ -1,5 +1,5 @@
 import {Request, Response} from "express";
-import * as fs from 'fs';
+import * as fs from "fs";
 
 const webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
 
@@ -47,7 +47,7 @@ export class BaseRoute {
 		res.locals.BASE_URL = '/';
 
 		// add variables
-		res.locals.title = this.title;
+		res.locals.title = this.title + ' - ' + renderOption.shortName;
 		res.locals.navPos = this.navPos;
 		res.locals.signIn = req.session.signIn;
 		res.locals.admin = req.session.admin;

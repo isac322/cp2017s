@@ -40,7 +40,7 @@ var BaseRoute = (function () {
         //add constants
         res.locals.BASE_URL = '/';
         // add variables
-        res.locals.title = this.title;
+        res.locals.title = this.title + ' - ' + renderOption.shortName;
         res.locals.navPos = this.navPos;
         res.locals.signIn = req.session.signIn;
         res.locals.admin = req.session.admin;
