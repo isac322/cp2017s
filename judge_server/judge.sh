@@ -52,9 +52,9 @@ elif [ ${extension} = 'java' ]; then
 	if [ -f "${name%.java}.class" ]; then
 		for i in $(seq 1 ${inputNum}); do
 			if [ ${throughArg} -eq 0 ]; then
-				timeout 3 java ${name%.java} < ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
+				timeout 2 java ${name%.java} < ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
 			else
-				timeout 3 java ${name%.java} ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
+				timeout 2 java ${name%.java} ./input/${i}.in > ./tmp/output.log 2> ./tmp/error.log
 			fi
 
 			./compare.py ./tmp/output.log ./answer/${i}.out ${i} $? ./tmp/error.log ./output/result.json
