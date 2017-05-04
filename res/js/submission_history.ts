@@ -116,10 +116,18 @@ namespace SubmissionHistory {
 	const $resultTable: JQuery = $('#resultTable');
 	const $result: JQuery = $('#selectResult');
 	const $email: JQuery = $('#selectEmail');
+	const $user: JQuery = $('#selectUser');
 
 	let rows: Array<Row> = [];
 
-	function queryHandler(res: { data: Array<RowData>, total: number, p: number }): void {
+	function queryHandler(res: { data: Array<RowData>, total: number, p: number }, force?: boolean): void {
+		updateTable(res);
+
+		if (force) history.replaceState(res, '', currQuery);
+		else history.pushState(res, '', currQuery);
+	}
+
+	function updateTable(res: { data: Array<RowData>, total: number, p: number }): void {
 		$resultTable.children().detach();
 
 		for (let i = 0; i < res.data.length; i++) {
@@ -180,16 +188,50 @@ namespace SubmissionHistory {
 		$selects.selectpicker('refresh');
 	}
 
-	function send(pageNum?: number): void {
+	function updateSelect() {
+		currQuery = location.search == '' ? '?t=0&' : location.search;
+
+		interface ParsedQuery {
+			t: string[];
+			hw: string[];
+			ex: string[];
+			pj: string[];
+			r: string[];
+			e: string[];
+			u: string[];
+		}
+
+		const ret: ParsedQuery = currQuery.substr(1).split('&')
+			.filter((e: string) => e != '')
+			.map((e: string) => e.split('='))
+			.reduce((prev: ParsedQuery, curr: string[]) => {
+				if (curr[0] == 'p') return prev;
+
+				prev[curr[0]].push(curr[1]);
+				return prev;
+			}, {t: [], hw: [], ex: [], pj: [], r: [], e: [], u: []});
+
+		ret.hw = ret.hw.map(((value: string) => 'h' + value));
+		ret.ex = ret.ex.map(((value: string) => 'e' + value));
+		ret.pj = ret.pj.map(((value: string) => 'p' + value));
+
+		$category.val(ret.t).change();
+		$('#selectId').selectpicker('val', ret.hw.concat(ret.ex, ret.pj));
+		$result.selectpicker('val', ret.r);
+		$email.selectpicker('val', ret.e);
+		$user.selectpicker('val', ret.u);
+	}
+
+	function send(pageNum?: number, force?: boolean): void {
 		$selects.prop('disabled', true);
 		$selects.selectpicker('refresh');
 
 		if (pageNum == null) pageNum = 0;
 		const newQuery = genQuery() + 'p=' + pageNum;
 
-		if (prevQuery !== newQuery) {
+		if (force || currQuery !== newQuery) {
 			$.ajax('/history/list' + newQuery, {
-				success: queryHandler,
+				success: (data) => queryHandler(data, force),
 				error: (jqXHR: JQueryXHR) => {
 					switch (jqXHR.status) {
 						case 401:
@@ -197,7 +239,7 @@ namespace SubmissionHistory {
 					}
 				}
 			});
-			prevQuery = newQuery;
+			currQuery = newQuery;
 		}
 		else {
 			$selects.prop('disabled', false);
@@ -383,38 +425,13 @@ namespace SubmissionHistory {
 		$selects.focusout(() => send());
 	}
 
-	let prevQuery;
+	window.onpopstate = (e: PopStateEvent) => {
+		updateSelect();
+		updateTable(e.state);
+	};
 
-	if (location.search == '') prevQuery = '?t=0&';
-	else {
-		prevQuery = location.search;
+	let currQuery: string;
+	updateSelect();
 
-		interface ParsedQuery {
-			t: string[];
-			hw: string[];
-			ex: string[];
-			pj: string[];
-			r: string[];
-			e: string[];
-		}
-
-		const ret: ParsedQuery = location.search.substr(1).split('&')
-			.filter((e: string) => e != '')
-			.map((e: string) => e.split('='))
-			.reduce((prev: ParsedQuery, curr: string[]) => {
-				prev[curr[0]].push(curr[1]);
-				return prev;
-			}, {t: [], hw: [], ex: [], pj: [], r: [], e: []});
-
-		ret.hw = ret.hw.map(((value: string) => 'h' + value));
-		ret.ex = ret.ex.map(((value: string) => 'e' + value));
-		ret.pj = ret.pj.map(((value: string) => 'p' + value));
-
-		$category.val(ret.t).change();
-		$('#selectId').selectpicker('val', ret.hw.concat(ret.ex, ret.pj));
-		$result.selectpicker('val', ret.r);
-		$email.selectpicker('val', ret.e);
-	}
-
-	send();
+	send(null, true);
 }

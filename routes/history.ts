@@ -35,9 +35,9 @@ export class HistoryRoute extends BaseRoute {
 		logger.debug('[HistoryRoute::create] Creating history route.');
 
 		//add home page route
-		router.get('/history', (req: Request, res: Response, next: NextFunction) => {
-			new HistoryRoute().history(req, res, next);
-		});
+		router.get('/history', (req: Request, res: Response, next: NextFunction) =>
+			new HistoryRoute().history(req, res, next)
+		);
 	}
 
 	/**
@@ -67,38 +67,32 @@ export class HistoryRoute extends BaseRoute {
 
 		const tasks = [];
 
-		tasks.push((callback) => {
-			dbClient.query(
-				'SELECT email FROM email WHERE student_id = ?;',
-				req.session.studentId,
-				callback)
-		});
+		tasks.push((callback) => dbClient.query(
+			'SELECT email FROM email WHERE student_id = ?;',
+			req.session.studentId,
+			callback)
+		);
 
-		tasks.push((callback) => {
-			dbClient.query(
-				'SELECT homework.name AS `homeworkName`, homework_config.name AS `fileName`, homework_config.id ' +
-				'FROM homework JOIN homework_config ON homework.homework_id = homework_config.homework_id;',
-				callback)
-		});
+		tasks.push((callback) => dbClient.query(
+			'SELECT homework.name AS `homeworkName`, homework_config.name AS `fileName`, homework_config.id ' +
+			'FROM homework JOIN homework_config ON homework.homework_id = homework_config.homework_id;',
+			callback)
+		);
 
-		tasks.push((callback) => {
-			dbClient.query(
-				'SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
-				'FROM exercise JOIN exercise_config ON exercise.id = exercise_config.exercise_id',
-				callback)
-		});
+		tasks.push((callback) => dbClient.query(
+			'SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
+			'FROM exercise JOIN exercise_config ON exercise.id = exercise_config.exercise_id',
+			callback)
+		);
 
-		tasks.push((callback) => {
-			dbClient.query(
-				'SELECT project.name  AS `projectName`, project_config.name AS `fileName`, project_config.id ' +
-				'FROM project JOIN project_config ON project.id = project_config.project_id',
-				callback)
-		});
+		tasks.push((callback) => dbClient.query(
+			'SELECT project.name  AS `projectName`, project_config.name AS `fileName`, project_config.id ' +
+			'FROM project JOIN project_config ON project.id = project_config.project_id',
+			callback)
+		);
 
 		if (req.session.admin) {
-			tasks.push((callback) => {
-				dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback)
-			})
+			tasks.push((callback) => dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback))
 		}
 
 		async.parallel(tasks, (err: IError, data: Array<Array<any>>) => {

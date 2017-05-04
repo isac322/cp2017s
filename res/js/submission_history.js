@@ -72,8 +72,16 @@ var SubmissionHistory;
     var $resultTable = $('#resultTable');
     var $result = $('#selectResult');
     var $email = $('#selectEmail');
+    var $user = $('#selectUser');
     var rows = [];
-    function queryHandler(res) {
+    function queryHandler(res, force) {
+        updateTable(res);
+        if (force)
+            history.replaceState(res, '', currQuery);
+        else
+            history.pushState(res, '', currQuery);
+    }
+    function updateTable(res) {
         $resultTable.children().detach();
         for (var i_1 = 0; i_1 < res.data.length; i_1++) {
             if (i_1 >= rows.length) {
@@ -124,15 +132,35 @@ var SubmissionHistory;
         $selects.prop('disabled', false);
         $selects.selectpicker('refresh');
     }
-    function send(pageNum) {
+    function updateSelect() {
+        currQuery = location.search == '' ? '?t=0&' : location.search;
+        var ret = currQuery.substr(1).split('&')
+            .filter(function (e) { return e != ''; })
+            .map(function (e) { return e.split('='); })
+            .reduce(function (prev, curr) {
+            if (curr[0] == 'p')
+                return prev;
+            prev[curr[0]].push(curr[1]);
+            return prev;
+        }, { t: [], hw: [], ex: [], pj: [], r: [], e: [], u: [] });
+        ret.hw = ret.hw.map((function (value) { return 'h' + value; }));
+        ret.ex = ret.ex.map((function (value) { return 'e' + value; }));
+        ret.pj = ret.pj.map((function (value) { return 'p' + value; }));
+        $category.val(ret.t).change();
+        $('#selectId').selectpicker('val', ret.hw.concat(ret.ex, ret.pj));
+        $result.selectpicker('val', ret.r);
+        $email.selectpicker('val', ret.e);
+        $user.selectpicker('val', ret.u);
+    }
+    function send(pageNum, force) {
         $selects.prop('disabled', true);
         $selects.selectpicker('refresh');
         if (pageNum == null)
             pageNum = 0;
         var newQuery = genQuery() + 'p=' + pageNum;
-        if (prevQuery !== newQuery) {
+        if (force || currQuery !== newQuery) {
             $.ajax('/history/list' + newQuery, {
-                success: queryHandler,
+                success: function (data) { return queryHandler(data, force); },
                 error: function (jqXHR) {
                     switch (jqXHR.status) {
                         case 401:
@@ -140,7 +168,7 @@ var SubmissionHistory;
                     }
                 }
             });
-            prevQuery = newQuery;
+            currQuery = newQuery;
         }
         else {
             $selects.prop('disabled', false);
@@ -289,25 +317,11 @@ var SubmissionHistory;
         $('.selectpicker:not(#selectUser)').selectpicker('mobile');
         $selects.focusout(function () { return send(); });
     }
-    var prevQuery;
-    if (location.search == '')
-        prevQuery = '?t=0&';
-    else {
-        prevQuery = location.search;
-        var ret = location.search.substr(1).split('&')
-            .filter(function (e) { return e != ''; })
-            .map(function (e) { return e.split('='); })
-            .reduce(function (prev, curr) {
-            prev[curr[0]].push(curr[1]);
-            return prev;
-        }, { t: [], hw: [], ex: [], pj: [], r: [], e: [] });
-        ret.hw = ret.hw.map((function (value) { return 'h' + value; }));
-        ret.ex = ret.ex.map((function (value) { return 'e' + value; }));
-        ret.pj = ret.pj.map((function (value) { return 'p' + value; }));
-        $category.val(ret.t).change();
-        $('#selectId').selectpicker('val', ret.hw.concat(ret.ex, ret.pj));
-        $result.selectpicker('val', ret.r);
-        $email.selectpicker('val', ret.e);
-    }
-    send();
+    window.onpopstate = function (e) {
+        updateSelect();
+        updateTable(e.state);
+    };
+    var currQuery;
+    updateSelect();
+    send(null, true);
 })(SubmissionHistory || (SubmissionHistory = {}));

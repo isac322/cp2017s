@@ -53,7 +53,7 @@ var HistoryRoute = (function (_super) {
         app_1.logger.debug('[HistoryRoute::create] Creating history route.');
         //add home page route
         router.get('/history', function (req, res, next) {
-            new HistoryRoute().history(req, res, next);
+            return new HistoryRoute().history(req, res, next);
         });
     };
     /**
@@ -71,25 +71,15 @@ var HistoryRoute = (function (_super) {
             return res.redirect('/');
         this.title = 'History';
         var tasks = [];
-        tasks.push(function (callback) {
-            dbClient.query('SELECT email FROM email WHERE student_id = ?;', req.session.studentId, callback);
-        });
-        tasks.push(function (callback) {
-            dbClient.query('SELECT homework.name AS `homeworkName`, homework_config.name AS `fileName`, homework_config.id ' +
-                'FROM homework JOIN homework_config ON homework.homework_id = homework_config.homework_id;', callback);
-        });
-        tasks.push(function (callback) {
-            dbClient.query('SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
-                'FROM exercise JOIN exercise_config ON exercise.id = exercise_config.exercise_id', callback);
-        });
-        tasks.push(function (callback) {
-            dbClient.query('SELECT project.name  AS `projectName`, project_config.name AS `fileName`, project_config.id ' +
-                'FROM project JOIN project_config ON project.id = project_config.project_id', callback);
-        });
+        tasks.push(function (callback) { return dbClient.query('SELECT email FROM email WHERE student_id = ?;', req.session.studentId, callback); });
+        tasks.push(function (callback) { return dbClient.query('SELECT homework.name AS `homeworkName`, homework_config.name AS `fileName`, homework_config.id ' +
+            'FROM homework JOIN homework_config ON homework.homework_id = homework_config.homework_id;', callback); });
+        tasks.push(function (callback) { return dbClient.query('SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
+            'FROM exercise JOIN exercise_config ON exercise.id = exercise_config.exercise_id', callback); });
+        tasks.push(function (callback) { return dbClient.query('SELECT project.name  AS `projectName`, project_config.name AS `fileName`, project_config.id ' +
+            'FROM project JOIN project_config ON project.id = project_config.project_id', callback); });
         if (req.session.admin) {
-            tasks.push(function (callback) {
-                dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback);
-            });
+            tasks.push(function (callback) { return dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback); });
         }
         async.parallel(tasks, function (err, data) {
             if (err) {
