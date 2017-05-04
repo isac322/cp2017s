@@ -3,7 +3,8 @@ import * as util from "util";
 import {logger} from "../app";
 import {BaseRoute} from "./route";
 import * as fs from "fs";
-import {createConnection, IConnection} from "mysql";
+import {createConnection, IConnection, IError} from "mysql";
+import * as async from "async";
 
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
@@ -71,6 +72,10 @@ export class HWRoute extends BaseRoute {
 
 		router.get('/homework/add', (req: Request, res: Response, next: NextFunction) => {
 			hwRouter.add(req, res, next);
+		});
+
+		router.get('/homework/manage', (req: Request, res: Response) => {
+			hwRouter.manage(req, res);
 		});
 	}
 
@@ -170,6 +175,43 @@ export class HWRoute extends BaseRoute {
 		else {
 			//render template
 			return this.render(req, res, 'homework_add');
+		}
+	}
+
+	/**
+	 * Managing page of submitted homework
+	 *
+	 * @class HWRoute
+	 * @method manage
+	 * @param req {Request} The express Request object.
+	 * @param res {Response} The express Response object.
+	 */
+	public manage(req: Request, res: Response) {
+		this.title = 'Manage Homework';
+
+		if (!req.session.admin) {
+			return res.redirect('/homework');
+		}
+		else {
+			async.parallel(
+				[
+					(callback) => dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback),
+					(callback) => dbClient.query('SELECT homework_id, name FROM homework', callback)
+				],
+				(err: IError, result: any[][]) => {
+					if (err) {
+						logger.error('[HWRoute::manage]');
+						logger.error(util.inspect(err, {showHidden: false, depth: null}));
+						res.sendStatus(500);
+						return;
+					}
+
+					res.locals.userList = result[0][0];
+					res.locals.homeworkList = result[1][0];
+
+					//render template
+					return this.render(req, res, 'homework_manage');
+				});
 		}
 	}
 }

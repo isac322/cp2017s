@@ -15,6 +15,7 @@ var app_1 = require("../app");
 var route_1 = require("./route");
 var fs = require("fs");
 var mysql_1 = require("mysql");
+var async = require("async");
 var dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
 var dbClient = mysql_1.createConnection({
     host: dbConfig.host,
@@ -63,6 +64,9 @@ var HWRoute = (function (_super) {
         });
         router.get('/homework/add', function (req, res, next) {
             hwRouter.add(req, res, next);
+        });
+        router.get('/homework/manage', function (req, res) {
+            hwRouter.manage(req, res);
         });
     };
     /**
@@ -131,6 +135,38 @@ var HWRoute = (function (_super) {
         else {
             //render template
             return this.render(req, res, 'homework_add');
+        }
+    };
+    /**
+     * Managing page of submitted homework
+     *
+     * @class HWRoute
+     * @method manage
+     * @param req {Request} The express Request object.
+     * @param res {Response} The express Response object.
+     */
+    HWRoute.prototype.manage = function (req, res) {
+        var _this = this;
+        this.title = 'Manage Homework';
+        if (!req.session.admin) {
+            return res.redirect('/homework');
+        }
+        else {
+            async.parallel([
+                function (callback) { return dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback); },
+                function (callback) { return dbClient.query('SELECT homework_id, name FROM homework', callback); }
+            ], function (err, result) {
+                if (err) {
+                    app_1.logger.error('[HWRoute::manage]');
+                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                    res.sendStatus(500);
+                    return;
+                }
+                res.locals.userList = result[0][0];
+                res.locals.homeworkList = result[1][0];
+                //render template
+                return _this.render(req, res, 'homework_manage');
+            });
         }
     };
     return HWRoute;

@@ -8,12 +8,13 @@ block header
 
 
 block content
-	.col-md-12.page-header
+	.col-xs-12.page-header
 		h2.text-info
 			b Homework List
 
 	if admin
 		.col-xs-12
+			a(role='button', href='/homework/manage') Manage
 			a.pull-right(role='button', href='/homework/add')
 				h4#btn-add
 					| #[span.glyphicon.glyphicon-plus]

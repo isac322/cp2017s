@@ -1,0 +1,23 @@
+extends layout
+
+block header
+	script(src='/js/bootstrap-select.min.js')
+	link(rel='stylesheet', href='/css/bootstrap-select.min.css')
+
+block content
+	.col-xs-12.page-header
+		h2.text-info
+			b Manage Homework
+
+	.row
+		.col-xs-6.form-group
+			label(for='selectUser') User
+			select.form-control.selectpicker#selectUser(multiple, title='All', data-actions-box='true', data-live-search='true')
+				each user in userList
+					option(value=user.student_id, data-subtext=user.student_id)=decodeURIComponent(user.name)
+
+		.col-xs-6.form-group
+			label(for='selHomework') Homework
+			select.form-control.selectpicker#selHomework
+				each homework in homeworkList
+					option(value=homework.homework_id)=decodeURIComponent(homework.name)
