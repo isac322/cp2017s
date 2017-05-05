@@ -190,7 +190,7 @@ namespace SubmissionHistoryAdmin {
 		if (res.p < MAX_PAGE) $prevPage.addClass('disabled');
 		else $prevPage.removeClass('disabled');
 
-		if (res.total - res.p <= MAX_PAGE) $nextPage.addClass('disabled');
+		if ((res.total - 1) / MAX_PAGE >> 0 == res.p / MAX_PAGE >> 0) $nextPage.addClass('disabled');
 		else $nextPage.removeClass('disabled');
 
 		$selects.prop('disabled', false);
@@ -380,7 +380,6 @@ namespace SubmissionHistoryAdmin {
 	for (let i = 0; i < MAX_PAGE; i++) {
 		const li = document.createElement('li');
 		const a = document.createElement('a');
-		a.setAttribute('href', '#');
 		a.addEventListener('click', (e: Event) => send($(e.target).parent().data('val')));
 		li.appendChild(a);
 		pageLink.push({li: $(li), a: $(a)});

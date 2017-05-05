@@ -9,6 +9,10 @@ block header
 			border: 0;
 		}
 
+		#page-ul li:not(.disabled) a:hover {
+			cursor: pointer;
+		}
+
 block content
 	.col-xs-12.page-header
 		h2.text-info
@@ -84,10 +88,10 @@ block content
 	nav.text-center#page-nav(aria-label='Page navigation')
 		ul.pagination#page-ul
 			li#page-prev
-				a(href='#', aria-label='Previous')
+				a(aria-label='Previous')
 					span(aria-hidden='true') «
 			li#page-next
-				a(href='#', aria-label='Next')
+				a(aria-label='Next')
 					span(aria-hidden='true') »
 
 	include modal-source_code

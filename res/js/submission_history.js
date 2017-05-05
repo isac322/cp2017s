@@ -125,7 +125,7 @@ var SubmissionHistory;
             $prevPage.addClass('disabled');
         else
             $prevPage.removeClass('disabled');
-        if (res.total - res.p <= MAX_PAGE)
+        if ((res.total - 1) / MAX_PAGE >> 0 == res.p / MAX_PAGE >> 0)
             $nextPage.addClass('disabled');
         else
             $nextPage.removeClass('disabled');
@@ -272,7 +272,6 @@ var SubmissionHistory;
     for (var i = 0; i < MAX_PAGE; i++) {
         var li = document.createElement('li');
         var a = document.createElement('a');
-        a.setAttribute('href', '#');
         a.addEventListener('click', function (e) { return send($(e.target).parent().data('val')); });
         li.appendChild(a);
         pageLink.push({ li: $(li), a: $(a) });
