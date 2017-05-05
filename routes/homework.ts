@@ -52,6 +52,8 @@ export class HWRoute extends BaseRoute {
 		'	LEFT JOIN homework_config ' +
 		'		ON homework.homework_id = homework_config.homework_id;';
 
+	private static rowInPage = 30;
+
 	/**
 	 * Create /homework routes.
 	 *
@@ -191,12 +193,26 @@ export class HWRoute extends BaseRoute {
 
 		if (!req.session.admin) return res.redirect('/homework');
 
+		let homeworkId = req.params.id;
+		if (homeworkId == null) homeworkId = 1;
+
 		async.parallel(
 			[
 				(callback) => dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback),
-				(callback) => dbClient.query('SELECT homework_id, name FROM homework ORDER BY created DESC', callback)
+				(callback) => dbClient.query('SELECT homework_id, name FROM homework', callback),
+				(callback) => dbClient.query(
+					'SELECT homework_board.* ' +
+					'FROM homework_config JOIN homework_board ON homework_config.id = homework_board.attachment_id ' +
+					'WHERE homework_id = ?;',
+					homeworkId,
+					callback),
+				(callback) => dbClient.query(
+					'SELECT id, name, extension FROM homework_config WHERE homework_id = ?;',
+					homeworkId,
+					callback),
+				(callback) => dbClient.query('SELECT student_id, name FROM user', callback)
 			],
-			(err: IError, result: [any, IFieldInfo[]]) => {
+			(err: IError, result: Array<[Array<any>, Array<IFieldInfo>]>) => {
 				if (err) {
 					logger.error('[HWRoute::manage]');
 					logger.error(util.inspect(err, {showHidden: false}));
@@ -206,6 +222,44 @@ export class HWRoute extends BaseRoute {
 
 				res.locals.userList = result[0][0];
 				res.locals.homeworkList = result[1][0];
+
+				res.locals.boardMap = result[2][0].reduce(
+					(prev: { [studentId: string]: Array<{ logId: number, attachId: number, submitted: string }> },
+					 curr: { student_id: string, log_id: number, attachment_id: number, submitted: Date }) => {
+						let elem = prev[curr.student_id];
+
+						const item = {
+							logId: curr.log_id,
+							attachId: curr.attachment_id,
+							submitted: curr.submitted.toLocaleString()
+						};
+
+						if (elem) {
+							elem.push(item);
+						}
+						else {
+							prev[curr.student_id] = [item];
+						}
+
+						return prev;
+					}, {});
+
+				res.locals.homeworkConfig = result[3][0].reduce(
+					(prev: { [id: number]: { name: string, extension: string } },
+					 curr: { id: number, name: string, extension: string }) => {
+						prev[curr.id] = {
+							name: decodeURIComponent(curr.name),
+							extension: curr.extension
+						};
+						return prev;
+					}, {});
+
+				res.locals.userMap = result[0][0].reduce(
+					(prev: { [studentId: string]: string }, curr: { student_id: string, name: string }) => {
+						prev[curr.student_id] = decodeURIComponent(curr.name);
+						return prev;
+					}, {});
+
 
 				//render template
 				this.render(req, res, 'homework_manage');

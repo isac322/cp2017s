@@ -96,7 +96,7 @@ export class HistoryRoute extends BaseRoute {
 				dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback))
 		}
 
-		async.parallel(tasks, (err: IError, data: [any, IFieldInfo[]]) => {
+		async.parallel(tasks, (err: IError, data: Array<[any, Array<IFieldInfo>]>) => {
 			if (err) {
 				logger.error('[history::searching_in_parallel]');
 				logger.error(util.inspect(err, {showHidden: false}));

@@ -3,6 +3,11 @@ extends layout
 block header
 	script(src='/js/bootstrap-select.min.js')
 	link(rel='stylesheet', href='/css/bootstrap-select.min.css')
+	style.
+		.tdLinkBtn {
+			padding: 0;
+			border: 0;
+		}
 
 block content
 	.col-xs-12.page-header
@@ -11,7 +16,9 @@ block content
 
 	.row
 		.col-xs-6.form-group
-			label(for='selectUser') User
+			label(for='selectUser')
+				| User
+				| #[small.text-muted (Multiple selection)]
 			select.form-control.selectpicker#selectUser(multiple, title='All', data-actions-box='true', data-live-search='true')
 				each user in userList
 					option(value=user.student_id, data-subtext=user.student_id)=decodeURIComponent(user.name)
@@ -21,3 +28,36 @@ block content
 			select.form-control.selectpicker#selHomework
 				each homework in homeworkList
 					option(value=homework.homework_id)=decodeURIComponent(homework.name)
+
+	each valueArray, student in boardMap
+		.col-xs-4.homework-table
+			h3
+				strong=userMap[student]
+				| &nbsp
+				small=student
+
+			.table-responsive
+				table.table.table-bordered.table-striped.table-hover
+					thead
+						tr
+							th File name
+							th Submitted time
+					tbody
+						each value in valueArray
+							tr
+								td
+									- const extension = homeworkConfig[value.attachId].extension;
+									- const name = homeworkConfig[value.attachId].name;
+										if extension.valueOf() !== 'zip' || extension.valueOf() !== 'report'
+											button.btn-link.tdLinkBtn(onclick='codeModal("/homework/' + value.logId + '", "' + extension + '", "' + name + '")')=name
+										else
+											#{name}
+								td=value.submitted
+
+	script(type='text/javascript').
+		const cards = $('.homework-table');
+		for (let i = 0; i < cards.length; i += 3) {
+			cards.slice(i, i + 3).wrapAll('<div class="row"></div>');
+		}
+
+	include modal-source_code
