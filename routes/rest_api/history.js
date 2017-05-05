@@ -23,8 +23,6 @@ var rowsInPage = 30;
 function historyList(req, res) {
     if (!req.session.signIn)
         return res.sendStatus(401);
-    if (!('p' in req.query))
-        req.query.p = '0';
     var query = req.query;
     var commonQuery = '';
     if (req.session.admin) {
@@ -93,7 +91,7 @@ function historyList(req, res) {
         }
         res.json({
             data: result[0][0],
-            total: Math.floor((result[1][0][0].total + rowsInPage - 1) / rowsInPage),
+            total: (result[1][0][0].total + rowsInPage - 1) / rowsInPage >> 0,
             p: Number(query.p)
         });
     });

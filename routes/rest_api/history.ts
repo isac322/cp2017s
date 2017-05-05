@@ -25,8 +25,6 @@ const rowsInPage = 30;
 export function historyList(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
-	if (!('p' in req.query)) req.query.p = '0';
-
 	const query: {
 		hw: Array<string> | string,
 		ex: Array<string> | string,
@@ -115,7 +113,7 @@ export function historyList(req: Request, res: Response) {
 
 			res.json({
 				data: result[0][0],
-				total: Math.floor((result[1][0][0].total + rowsInPage - 1) / rowsInPage),
+				total: (result[1][0][0].total + rowsInPage - 1) / rowsInPage >> 0,
 				p: Number(query.p)
 			})
 		});

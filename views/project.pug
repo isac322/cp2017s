@@ -95,7 +95,7 @@ block content
 					else if project.leftMillis < 2 * millis
 						| 1 day left
 					else
-						| #{Math.floor(project.leftMillis / millis)} days left
+						| #{project.leftMillis / millis >> 0} days left
 
 	// confirm modal
 	include modal-confirm

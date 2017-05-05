@@ -95,7 +95,7 @@ block content
 					else if exercise.leftMillis < 2 * millis
 						| 1 day left
 					else
-						| #{Math.floor(exercise.leftMillis / millis)} days left
+						| #{exercise.leftMillis / millis >> 0} days left
 
 	// Result Modal
 	include modal-result

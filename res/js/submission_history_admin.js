@@ -114,7 +114,7 @@ var SubmissionHistoryAdmin;
         else {
             $categoryCol.hide();
         }
-        var i = Math.floor((res.p / MAX_PAGE)) * MAX_PAGE, j = 0;
+        var i = res.p - res.p % MAX_PAGE, j = 0;
         for (; i < res.total && j < MAX_PAGE; i++, j++) {
             pageLink[j].li
                 .removeClass('active')

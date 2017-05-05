@@ -9,7 +9,7 @@ Date.dateDiff = function (fromDate, toDate) {
 	const diff = toDate - fromDate;
 	const divideBy = 86400000;
 
-	return Math.floor(diff / divideBy) + 1;
+	return (diff / divideBy >> 0) + 1;
 };
 
 const startInput = $('#start-date');
