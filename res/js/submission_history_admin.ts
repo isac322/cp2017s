@@ -134,6 +134,9 @@ namespace SubmissionHistoryAdmin {
 
 	let rows: Array<Row> = [];
 
+	let currPage = 0;
+	let currQuery: string;
+
 	function queryHandler(res: { data: Array<RowData>, total: number, p: number }, force?: boolean): void {
 		updateTable(res);
 
@@ -193,6 +196,8 @@ namespace SubmissionHistoryAdmin {
 		if ((res.total - 1) / MAX_PAGE >> 0 == res.p / MAX_PAGE >> 0) $nextPage.addClass('disabled');
 		else $nextPage.removeClass('disabled');
 
+		currPage = res.p;
+
 		$selects.prop('disabled', false);
 		$selects.selectpicker('refresh');
 	}
@@ -232,11 +237,10 @@ namespace SubmissionHistoryAdmin {
 		$user.selectpicker('val', ret.u);
 	}
 
-	function send(pageNum?: number, force?: boolean): void {
+	function send(pageNum: number, force?: boolean): void {
 		$selects.prop('disabled', true);
 		$selects.selectpicker('refresh');
 
-		if (pageNum == null) pageNum = 0;
 		const newQuery = genQuery() + 'p=' + pageNum;
 
 		if (force || currQuery !== newQuery) {
@@ -394,7 +398,7 @@ namespace SubmissionHistoryAdmin {
 	const $category: JQuery = $('#selectCategory');
 
 
-	$selects.on('hide.bs.select', () => send());
+	$selects.on('hide.bs.select', () => send(currPage));
 
 	const $homeworkGroup: JQuery = $('#homeworkGroup');
 	const $exerciseGroup: JQuery = $('#exerciseGroup');
@@ -437,7 +441,7 @@ namespace SubmissionHistoryAdmin {
 	if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
 		$('.selectpicker:not(#selectUser)').selectpicker('mobile');
 
-		$selects.focusout(() => send());
+		$selects.focusout(() => send(currPage));
 	}
 
 	window.onpopstate = (e: PopStateEvent) => {
@@ -445,10 +449,8 @@ namespace SubmissionHistoryAdmin {
 		updateTable(e.state);
 	};
 
-	let currQuery: string;
 	updateSelect();
-
-	send(undefined, true);
+	send(currPage, true);
 
 	$('.emailCol').hide();
 }

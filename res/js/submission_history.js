@@ -73,6 +73,8 @@ var SubmissionHistory;
     const $email = $('#selectEmail');
     const $user = $('#selectUser');
     let rows = [];
+    let currPage = 0;
+    let currQuery;
     function queryHandler(res, force) {
         updateTable(res);
         if (force)
@@ -128,6 +130,7 @@ var SubmissionHistory;
             $nextPage.addClass('disabled');
         else
             $nextPage.removeClass('disabled');
+        currPage = res.p;
         $selects.prop('disabled', false);
         $selects.selectpicker('refresh');
     }
@@ -154,8 +157,6 @@ var SubmissionHistory;
     function send(pageNum, force) {
         $selects.prop('disabled', true);
         $selects.selectpicker('refresh');
-        if (pageNum == null)
-            pageNum = 0;
         const newQuery = genQuery() + 'p=' + pageNum;
         if (force || currQuery !== newQuery) {
             $.ajax('/history/list' + newQuery, {
@@ -262,7 +263,7 @@ var SubmissionHistory;
     }
     const $selects = $('.selectpicker');
     const $category = $('#selectCategory');
-    $selects.on('hide.bs.select', () => send());
+    $selects.on('hide.bs.select', () => send(currPage));
     const $homeworkGroup = $('#homeworkGroup');
     const $exerciseGroup = $('#exerciseGroup');
     const $projectGroup = $('#projectGroup');
@@ -297,14 +298,14 @@ var SubmissionHistory;
     });
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
         $('.selectpicker:not(#selectUser)').selectpicker('mobile');
-        $selects.focusout(() => send());
+        $selects.focusout(() => send(currPage));
     }
     window.onpopstate = (e) => {
         updateSelect();
         updateTable(e.state);
     };
-    let currQuery;
     updateSelect();
+    send(currPage, true);
     send(undefined, true);
 })(SubmissionHistory || (SubmissionHistory = {}));
 //# sourceMappingURL=submission_history.js.map
