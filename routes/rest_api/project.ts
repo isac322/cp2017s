@@ -37,7 +37,7 @@ export function createProject(req: Request, res: Response) {
 		(err: IError, insertResult) => {
 			if (err) {
 				logger.error('[rest_api::createProject::outer_insert] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+				logger.error(util.inspect(err, {showHidden: false}));
 				res.sendStatus(500);
 				return;
 			}
@@ -61,7 +61,7 @@ export function createProject(req: Request, res: Response) {
 				(err: IError, result) => {
 					if (err) {
 						logger.error('[rest_api::createProject::inner_insert] : ');
-						logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+						logger.error(util.inspect(err, {showHidden: false}));
 						res.sendStatus(500);
 						return;
 					}
@@ -98,7 +98,7 @@ export function uploadProject(req: Request, res: Response) {
 		(err: IError, insertResult) => {
 			if (err) {
 				logger.error('[rest_api::uploadProject::insert] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+				logger.error(util.inspect(err, {showHidden: false}));
 				res.sendStatus(500);
 				return;
 			}
@@ -109,7 +109,7 @@ export function uploadProject(req: Request, res: Response) {
 			file.mv(path.join(submittedProjectPath, hashedName), (err: any) => {
 				if (err) {
 					logger.error('[rest_api::uploadProject::file_move] : ');
-					logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+					logger.error(util.inspect(err, {showHidden: false}));
 					res.sendStatus(500);
 					return;
 				}
@@ -136,7 +136,7 @@ export function checkProjectName(req: Request, res: Response) {
 		(err: IError, searchResult) => {
 			if (err) {
 				logger.error('[rest_api::checkProjectName::select] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+				logger.error(util.inspect(err, {showHidden: false}));
 				res.sendStatus(500);
 				return;
 			}
@@ -165,7 +165,7 @@ export function downloadSubmittedProject(req: Request, res: Response) {
 		(err: IError, result) => {
 			if (err) {
 				logger.error('[rest_api::downloadSubmittedProject::search] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+				logger.error(util.inspect(err, {showHidden: false}));
 				res.sendStatus(500);
 				return;
 			}

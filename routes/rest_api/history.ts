@@ -106,7 +106,7 @@ export function historyList(req: Request, res: Response) {
 		(err: IError, result: Array<Array<any>>) => {
 			if (err) {
 				logger.error('[rest_api::history::historyList::search] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+				logger.error(util.inspect(err, {showHidden: false}));
 				res.sendStatus(500);
 				return;
 			}

@@ -78,7 +78,7 @@ function historyList(req, res) {
     ], (err, result) => {
         if (err) {
             app_1.logger.error('[rest_api::history::historyList::search] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+            app_1.logger.error(util.inspect(err, { showHidden: false }));
             res.sendStatus(500);
             return;
         }

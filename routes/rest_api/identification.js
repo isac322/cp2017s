@@ -30,7 +30,7 @@ function signIn(req, res) {
         dbClient.query('SELECT * from email, user where email = "' + email + '" and user.student_id = email.student_id;', (err, result) => {
             if (err) {
                 app_1.logger.error('[rest_api::signIn::select] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
                 res.sendStatus(500);
                 return;
             }
@@ -83,7 +83,7 @@ function register(req, res) {
         dbClient.query('SELECT * FROM user WHERE student_id = \'' + studentId + '\';', (err, selectResult) => {
             if (err || selectResult.length > 1) {
                 app_1.logger.error('[rest_api::register::select] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
                 res.sendStatus(500);
                 return;
             }
@@ -96,7 +96,7 @@ function register(req, res) {
             dbClient.query('INSERT INTO email VALUES (?,?,?);', [studentId, email, nameInGoogle], (err, insertResult) => {
                 if (err) {
                     app_1.logger.error('[rest_api::register::insert] : ');
-                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+                    app_1.logger.error(util.inspect(err, { showHidden: false }));
                     res.sendStatus(500);
                     return;
                 }

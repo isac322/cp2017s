@@ -23,7 +23,7 @@ function createHomework(req, res) {
     dbClient.query('INSERT INTO homework(name, start_date, end_date, author_id, author_email, description) VALUES(?,?,?,?,?,?);', [name, start_date, end_date, req.session.studentId, req.session.email, description], (err, insertResult) => {
         if (err) {
             app_1.logger.error('[rest_api::createHomework::outer_insert] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+            app_1.logger.error(util.inspect(err, { showHidden: false }));
             res.sendStatus(500);
             return;
         }
@@ -39,7 +39,7 @@ function createHomework(req, res) {
         dbClient.query('INSERT INTO homework_config(homework_id, name, extension) VALUES ' + mysql_1.escape(values) + ';', (err, result) => {
             if (err) {
                 app_1.logger.error('[rest_api::createHomework::inner_insert] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
                 res.sendStatus(500);
                 return;
             }
@@ -60,7 +60,7 @@ function uploadHomework(req, res) {
     dbClient.query('INSERT INTO homework_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);', [req.session.studentId, attachmentId, req.session.email, hashedName], (err, insertResult) => {
         if (err) {
             app_1.logger.error('[rest_api::uploadHomework::insert] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+            app_1.logger.error(util.inspect(err, { showHidden: false }));
             res.sendStatus(500);
             return;
         }
@@ -69,7 +69,7 @@ function uploadHomework(req, res) {
         file.mv(path.join(app_1.submittedHomeworkPath, hashedName), (err) => {
             if (err) {
                 app_1.logger.error('[rest_api::uploadHomework::file_move] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
                 res.sendStatus(500);
                 return;
             }
@@ -84,7 +84,7 @@ function checkHomeworkName(req, res) {
     dbClient.query('SELECT * FROM homework WHERE name = ?;', encodeURIComponent(req.query.name), (err, searchResult) => {
         if (err) {
             app_1.logger.error('[rest_api::checkHomeworkName::select] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+            app_1.logger.error(util.inspect(err, { showHidden: false }));
             res.sendStatus(500);
             return;
         }
@@ -100,7 +100,7 @@ function downloadSubmittedHomework(req, res) {
         'WHERE homework_log.id = ?', req.params.logId, (err, result) => {
         if (err) {
             app_1.logger.error('[rest_api::downloadSubmittedHomework::search] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+            app_1.logger.error(util.inspect(err, { showHidden: false }));
             res.sendStatus(500);
             return;
         }

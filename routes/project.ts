@@ -98,7 +98,7 @@ export class ProjectRoute extends BaseRoute {
 			(err, searchResult) => {
 				if (err) {
 					logger.error('[ProjectRoute::project]');
-					logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+					logger.error(util.inspect(err, {showHidden: false}));
 					res.sendStatus(500);
 					return;
 				}

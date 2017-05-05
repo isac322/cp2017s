@@ -42,7 +42,7 @@ class HWRoute extends route_1.BaseRoute {
         dbClient.query(req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery, (err, searchResult) => {
             if (err) {
                 app_1.logger.error('[HWRoute::homework]');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
                 res.sendStatus(500);
                 return;
             }
@@ -85,25 +85,22 @@ class HWRoute extends route_1.BaseRoute {
     }
     manage(req, res) {
         this.title = 'Manage Homework';
-        if (!req.session.admin) {
+        if (!req.session.admin)
             return res.redirect('/homework');
-        }
-        else {
-            async.parallel([
-                (callback) => dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback),
-                (callback) => dbClient.query('SELECT homework_id, name FROM homework', callback)
-            ], (err, result) => {
-                if (err) {
-                    app_1.logger.error('[HWRoute::manage]');
-                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
-                    res.sendStatus(500);
-                    return;
-                }
-                res.locals.userList = result[0][0];
-                res.locals.homeworkList = result[1][0];
-                return this.render(req, res, 'homework_manage');
-            });
-        }
+        async.parallel([
+            (callback) => dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback),
+            (callback) => dbClient.query('SELECT homework_id, name FROM homework ORDER BY created DESC', callback)
+        ], (err, result) => {
+            if (err) {
+                app_1.logger.error('[HWRoute::manage]');
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
+                res.sendStatus(500);
+                return;
+            }
+            res.locals.userList = result[0][0];
+            res.locals.homeworkList = result[1][0];
+            this.render(req, res, 'homework_manage');
+        });
     }
 }
 HWRoute.hwQuery = (studentId) => {

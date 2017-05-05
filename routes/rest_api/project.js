@@ -23,7 +23,7 @@ function createProject(req, res) {
     dbClient.query('INSERT INTO project(name, start_date, end_date, author_id, author_email, description) VALUES(?,?,?,?,?,?);', [name, start_date, end_date, req.session.studentId, req.session.email, description], (err, insertResult) => {
         if (err) {
             app_1.logger.error('[rest_api::createProject::outer_insert] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+            app_1.logger.error(util.inspect(err, { showHidden: false }));
             res.sendStatus(500);
             return;
         }
@@ -39,7 +39,7 @@ function createProject(req, res) {
         dbClient.query('INSERT INTO project_config(project_id, name, extension) VALUES ' + mysql_1.escape(values) + ';', (err, result) => {
             if (err) {
                 app_1.logger.error('[rest_api::createProject::inner_insert] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
                 res.sendStatus(500);
                 return;
             }
@@ -60,7 +60,7 @@ function uploadProject(req, res) {
     dbClient.query('INSERT INTO project_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);', [req.session.studentId, attachmentId, req.session.email, hashedName], (err, insertResult) => {
         if (err) {
             app_1.logger.error('[rest_api::uploadProject::insert] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+            app_1.logger.error(util.inspect(err, { showHidden: false }));
             res.sendStatus(500);
             return;
         }
@@ -69,7 +69,7 @@ function uploadProject(req, res) {
         file.mv(path.join(app_1.submittedProjectPath, hashedName), (err) => {
             if (err) {
                 app_1.logger.error('[rest_api::uploadProject::file_move] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
                 res.sendStatus(500);
                 return;
             }
@@ -84,7 +84,7 @@ function checkProjectName(req, res) {
     dbClient.query('SELECT * FROM project WHERE name = ?;', encodeURIComponent(req.query.name), (err, searchResult) => {
         if (err) {
             app_1.logger.error('[rest_api::checkProjectName::select] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+            app_1.logger.error(util.inspect(err, { showHidden: false }));
             res.sendStatus(500);
             return;
         }
@@ -100,7 +100,7 @@ function downloadSubmittedProject(req, res) {
         'WHERE project_log.id = ?', req.params.logId, (err, result) => {
         if (err) {
             app_1.logger.error('[rest_api::downloadSubmittedProject::search] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+            app_1.logger.error(util.inspect(err, { showHidden: false }));
             res.sendStatus(500);
             return;
         }

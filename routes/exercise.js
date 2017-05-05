@@ -38,7 +38,7 @@ class ExerciseRoute extends route_1.BaseRoute {
             '        ON exercise_config.id = result_table.attachment_id AND result_table.student_id = ?;', req.session.studentId, (err, searchResult) => {
             if (err) {
                 app_1.logger.error('[exercise::first_select]');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
                 res.sendStatus(500);
                 return;
             }

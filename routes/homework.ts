@@ -3,7 +3,7 @@ import * as util from "util";
 import {logger} from "../app";
 import {BaseRoute} from "./route";
 import * as fs from "fs";
-import {createConnection, IConnection, IError} from "mysql";
+import {createConnection, IConnection, IError, IFieldInfo} from "mysql";
 import * as async from "async";
 
 
@@ -107,7 +107,7 @@ export class HWRoute extends BaseRoute {
 			(err, searchResult) => {
 				if (err) {
 					logger.error('[HWRoute::homework]');
-					logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+					logger.error(util.inspect(err, {showHidden: false}));
 					res.sendStatus(500);
 					return;
 				}
@@ -189,29 +189,26 @@ export class HWRoute extends BaseRoute {
 	public manage(req: Request, res: Response) {
 		this.title = 'Manage Homework';
 
-		if (!req.session.admin) {
-			return res.redirect('/homework');
-		}
-		else {
-			async.parallel(
-				[
-					(callback) => dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback),
-					(callback) => dbClient.query('SELECT homework_id, name FROM homework', callback)
-				],
-				(err: IError, result: any[][]) => {
-					if (err) {
-						logger.error('[HWRoute::manage]');
-						logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
-						res.sendStatus(500);
-						return;
-					}
+		if (!req.session.admin) return res.redirect('/homework');
 
-					res.locals.userList = result[0][0];
-					res.locals.homeworkList = result[1][0];
+		async.parallel(
+			[
+				(callback) => dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback),
+				(callback) => dbClient.query('SELECT homework_id, name FROM homework ORDER BY created DESC', callback)
+			],
+			(err: IError, result: [any, IFieldInfo[]]) => {
+				if (err) {
+					logger.error('[HWRoute::manage]');
+					logger.error(util.inspect(err, {showHidden: false}));
+					res.sendStatus(500);
+					return;
+				}
 
-					//render template
-					return this.render(req, res, 'homework_manage');
-				});
-		}
+				res.locals.userList = result[0][0];
+				res.locals.homeworkList = result[1][0];
+
+				//render template
+				this.render(req, res, 'homework_manage');
+			});
 	}
 }

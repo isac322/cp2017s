@@ -78,7 +78,7 @@ export class ExerciseRoute extends BaseRoute {
 			(err: IError, searchResult) => {
 				if (err) {
 					logger.error('[exercise::first_select]');
-					logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+					logger.error(util.inspect(err, {showHidden: false}));
 					res.sendStatus(500);
 					return;
 				}

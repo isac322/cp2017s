@@ -35,7 +35,7 @@ class ProjectRoute extends route_1.BaseRoute {
         dbClient.query(req.session.signIn ? ProjectRoute.pjQuery(req.session.studentId) : ProjectRoute.guestPjQuery, (err, searchResult) => {
             if (err) {
                 app_1.logger.error('[ProjectRoute::project]');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
                 res.sendStatus(500);
                 return;
             }

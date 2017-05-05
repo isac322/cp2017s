@@ -37,7 +37,7 @@ export function createHomework(req: Request, res: Response) {
 		(err: IError, insertResult) => {
 			if (err) {
 				logger.error('[rest_api::createHomework::outer_insert] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+				logger.error(util.inspect(err, {showHidden: false}));
 				res.sendStatus(500);
 				return;
 			}
@@ -61,7 +61,7 @@ export function createHomework(req: Request, res: Response) {
 				(err: IError, result) => {
 					if (err) {
 						logger.error('[rest_api::createHomework::inner_insert] : ');
-						logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+						logger.error(util.inspect(err, {showHidden: false}));
 						res.sendStatus(500);
 						return;
 					}
@@ -98,7 +98,7 @@ export function uploadHomework(req: Request, res: Response) {
 		(err: IError, insertResult) => {
 			if (err) {
 				logger.error('[rest_api::uploadHomework::insert] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+				logger.error(util.inspect(err, {showHidden: false}));
 				res.sendStatus(500);
 				return;
 			}
@@ -109,7 +109,7 @@ export function uploadHomework(req: Request, res: Response) {
 			file.mv(path.join(submittedHomeworkPath, hashedName), (err: any) => {
 				if (err) {
 					logger.error('[rest_api::uploadHomework::file_move] : ');
-					logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+					logger.error(util.inspect(err, {showHidden: false}));
 					res.sendStatus(500);
 					return;
 				}
@@ -136,7 +136,7 @@ export function checkHomeworkName(req: Request, res: Response) {
 		(err: IError, searchResult) => {
 			if (err) {
 				logger.error('[rest_api::checkHomeworkName::select] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+				logger.error(util.inspect(err, {showHidden: false}));
 				res.sendStatus(500);
 				return;
 			}
@@ -165,7 +165,7 @@ export function downloadSubmittedHomework(req: Request, res: Response) {
 		(err: IError, result) => {
 			if (err) {
 				logger.error('[rest_api::downloadSubmittedHomework::search] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+				logger.error(util.inspect(err, {showHidden: false}));
 				res.sendStatus(500);
 				return;
 			}

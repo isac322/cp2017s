@@ -40,7 +40,7 @@ class HistoryRoute extends route_1.BaseRoute {
         async.parallel(tasks, (err, data) => {
             if (err) {
                 app_1.logger.error('[history::searching_in_parallel]');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
                 res.sendStatus(500);
                 return;
             }
