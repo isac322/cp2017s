@@ -21,7 +21,7 @@ const dbClient: IConnection = createConnection({
  * @class ProjectRoute
  */
 export class ProjectRoute extends BaseRoute {
-	private static pjQuery = (studentId) => {
+	private static pjQuery = (studentId: string) => {
 		return '' +
 			'SELECT project.id, project.name, start_date, end_date, description, ' +
 			'		project_config.id AS `file_id`, project_config.name AS `file_name`, extension AS `file_extension`, ' +
@@ -98,7 +98,7 @@ export class ProjectRoute extends BaseRoute {
 			(err, searchResult) => {
 				if (err) {
 					logger.error('[ProjectRoute::project]');
-					logger.error(util.inspect(err, {showHidden: false, depth: null}));
+					logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 					res.sendStatus(500);
 					return;
 				}

@@ -37,7 +37,7 @@ export function signIn(req: Request, res: Response) {
 	OAuth2Client.verifyIdToken(
 		token,
 		CLIENT_ID,
-		(e, login) => {
+		(e: any, login: any) => {
 			if (e) {
 				// FIXME: error handling
 				throw e;
@@ -51,7 +51,7 @@ export function signIn(req: Request, res: Response) {
 				(err: IError, result) => {
 					if (err) {
 						logger.error('[rest_api::signIn::select] : ');
-						logger.error(util.inspect(err, {showHidden: false, depth: null}));
+						logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 						res.sendStatus(500);
 						return;
 					}
@@ -113,7 +113,7 @@ export function register(req: Request, res: Response) {
 	OAuth2Client.verifyIdToken(
 		idToken,
 		CLIENT_ID,
-		(e, login) => {
+		(e: any, login: any) => {
 			if (e) {
 				// FIXME: error handling
 				throw e;
@@ -128,7 +128,7 @@ export function register(req: Request, res: Response) {
 				(err: IError, selectResult) => {
 					if (err || selectResult.length > 1) {
 						logger.error('[rest_api::register::select] : ');
-						logger.error(util.inspect(err, {showHidden: false, depth: null}));
+						logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 						res.sendStatus(500);
 						return
 					}
@@ -146,7 +146,7 @@ export function register(req: Request, res: Response) {
 						(err: IError, insertResult) => {
 							if (err) {
 								logger.error('[rest_api::register::insert] : ');
-								logger.error(util.inspect(err, {showHidden: false, depth: null}));
+								logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 								res.sendStatus(500);
 								return
 							}

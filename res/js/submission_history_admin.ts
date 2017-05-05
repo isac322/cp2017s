@@ -85,7 +85,7 @@ namespace SubmissionHistoryAdmin {
 			this.categoryTd.textContent = this.category;
 
 
-			const href = (this.category == 'Homework' ? '"/homework/' : '"/exercise/') + this.id + '"';
+			const href = '"/' + this.category.toLowerCase() + '/' + this.id + '"';
 
 			let content: string;
 
@@ -173,7 +173,7 @@ namespace SubmissionHistoryAdmin {
 		}
 
 
-		let i = res.p  - res.p % MAX_PAGE, j = 0;
+		let i = res.p - res.p % MAX_PAGE, j = 0;
 		for (; i < res.total && j < MAX_PAGE; i++, j++) {
 			pageLink[j].li
 				.removeClass('active')
@@ -201,6 +201,7 @@ namespace SubmissionHistoryAdmin {
 		currQuery = location.search == '' ? '?t=0&' : location.search;
 
 		interface ParsedQuery {
+			[key: string]: string[];
 			t: string[];
 			hw: string[];
 			ex: string[];
@@ -447,7 +448,7 @@ namespace SubmissionHistoryAdmin {
 	let currQuery: string;
 	updateSelect();
 
-	send(null, true);
+	send(undefined, true);
 
 	$('.emailCol').hide();
 }

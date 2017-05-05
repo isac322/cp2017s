@@ -16,11 +16,16 @@ import {HistoryRoute} from "./routes/history";
 import {BoardRoute} from "./routes/board";
 import {ProjectRoute} from "./routes/project";
 import {register, signIn, signOut} from "./routes/rest_api/identification";
-import {createHomework, downloadSubmittedHomework, checkHomeworkName, uploadHomework} from "./routes/rest_api/homework";
+import {checkHomeworkName, createHomework, downloadSubmittedHomework, uploadHomework} from "./routes/rest_api/homework";
 import {historyList} from "./routes/rest_api/history";
-import {downloadSubmittedExercise, fetchJudgeResult, resolveUnhandled, uploadExercise} from "./routes/rest_api/exercise";
-import {createProject, checkProjectName, uploadProject} from "./routes/rest_api/project";
-import fileUpload = require('express-fileupload')
+import {
+	downloadSubmittedExercise,
+	fetchJudgeResult,
+	resolveUnhandled,
+	uploadExercise
+} from "./routes/rest_api/exercise";
+import {checkProjectName, createProject, downloadSubmittedProject, uploadProject} from "./routes/rest_api/project";
+const fileUpload = require('express-fileupload');
 
 require('winston-daily-rotate-file');
 
@@ -124,6 +129,7 @@ export class Server {
 		this.app.get('/history/list', historyList);
 		this.app.get('/project/name', checkProjectName);
 		this.app.post('/project', createProject);
+		this.app.get('/project/:logId([0-9]+)', downloadSubmittedProject);
 		this.app.post('/project/:attachId([0-9]+)', uploadProject);
 	}
 
@@ -181,7 +187,7 @@ export class Server {
 				t: 'judge_server',
 				buildargs: {uid: process.getuid().toString()}
 			},
-			(err) => {
+			(err: any) => {
 				if (err) {
 					// TODO: error handling
 					logger.error(err);

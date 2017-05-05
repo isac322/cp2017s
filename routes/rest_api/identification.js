@@ -1,44 +1,36 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var app_1 = require("../../app");
-var mysql_1 = require("mysql");
-var fs = require("fs");
-var util = require("util");
-var webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
-var CLIENT_ID = webConfig.google.clientId;
-var GoogleAuth = require('google-auth-library');
-var auth = new GoogleAuth;
-var OAuth2Client = new auth.OAuth2(CLIENT_ID, '', '');
-var dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
-var dbClient = mysql_1.createConnection({
+const app_1 = require("../../app");
+const mysql_1 = require("mysql");
+const fs = require("fs");
+const util = require("util");
+const webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
+const CLIENT_ID = webConfig.google.clientId;
+const GoogleAuth = require('google-auth-library');
+const auth = new GoogleAuth;
+const OAuth2Client = new auth.OAuth2(CLIENT_ID, '', '');
+const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
+const dbClient = mysql_1.createConnection({
     host: dbConfig.host,
     user: dbConfig.user,
     password: dbConfig.password,
     database: dbConfig.database
 });
-/**
- * The sign in request api.
- *
- * @method signIn
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
 function signIn(req, res) {
     if (req.session.signIn) {
         return res.sendStatus(401);
     }
-    var token = req.body.idtoken;
-    OAuth2Client.verifyIdToken(token, CLIENT_ID, function (e, login) {
+    const token = req.body.idtoken;
+    OAuth2Client.verifyIdToken(token, CLIENT_ID, (e, login) => {
         if (e) {
-            // FIXME: error handling
             throw e;
         }
-        var payload = login.getPayload();
-        var email = payload['email'];
-        dbClient.query('SELECT * from email, user where email = "' + email + '" and user.student_id = email.student_id;', function (err, result) {
+        const payload = login.getPayload();
+        const email = payload['email'];
+        dbClient.query('SELECT * from email, user where email = "' + email + '" and user.student_id = email.student_id;', (err, result) => {
             if (err) {
                 app_1.logger.error('[rest_api::signIn::select] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
                 res.sendStatus(500);
                 return;
             }
@@ -74,32 +66,24 @@ function signOut(req, res) {
     return res.sendStatus(202);
 }
 exports.signOut = signOut;
-/**
- * The register request api.
- *
- * @method register
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
 function register(req, res) {
     if (req.session.signIn)
         return res.sendStatus(401);
-    var body = req.body;
-    var studentId = body.student_id1 + '-' + body.student_id2;
-    var name = encodeURIComponent(body.name);
-    var idToken = body.id_token;
-    OAuth2Client.verifyIdToken(idToken, CLIENT_ID, function (e, login) {
+    const body = req.body;
+    const studentId = body.student_id1 + '-' + body.student_id2;
+    const name = encodeURIComponent(body.name);
+    const idToken = body.id_token;
+    OAuth2Client.verifyIdToken(idToken, CLIENT_ID, (e, login) => {
         if (e) {
-            // FIXME: error handling
             throw e;
         }
-        var payload = login.getPayload();
-        var email = payload['email'];
-        var nameInGoogle = encodeURIComponent(payload['name']);
-        dbClient.query('SELECT * FROM user WHERE student_id = \'' + studentId + '\';', function (err, selectResult) {
+        const payload = login.getPayload();
+        const email = payload['email'];
+        const nameInGoogle = encodeURIComponent(payload['name']);
+        dbClient.query('SELECT * FROM user WHERE student_id = \'' + studentId + '\';', (err, selectResult) => {
             if (err || selectResult.length > 1) {
                 app_1.logger.error('[rest_api::register::select] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
                 res.sendStatus(500);
                 return;
             }
@@ -109,10 +93,10 @@ function register(req, res) {
             }
             app_1.logger.debug('[register:outer]');
             app_1.logger.debug(util.inspect(selectResult, { showHidden: false, depth: 1 }));
-            dbClient.query('INSERT INTO email VALUES (?,?,?);', [studentId, email, nameInGoogle], function (err, insertResult) {
+            dbClient.query('INSERT INTO email VALUES (?,?,?);', [studentId, email, nameInGoogle], (err, insertResult) => {
                 if (err) {
                     app_1.logger.error('[rest_api::register::insert] : ');
-                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
                     res.sendStatus(500);
                     return;
                 }
@@ -129,3 +113,4 @@ function register(req, res) {
     });
 }
 exports.register = register;
+//# sourceMappingURL=identification.js.map

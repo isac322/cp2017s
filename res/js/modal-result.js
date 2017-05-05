@@ -1,5 +1,6 @@
-var ResultModal = (function () {
-    function ResultModal($modal) {
+"use strict";
+class ResultModal {
+    constructor($modal) {
         this.$modal = $modal;
         this.$body = $modal.find('.modal-body');
         this.$header = $modal.find('#resultModalLabel');
@@ -19,7 +20,7 @@ var ResultModal = (function () {
         this.$timeoutInputBox = this.$body.find('#timeoutInputBox');
         this.$errorBox = this.$body.find('#errorBox');
     }
-    ResultModal.prototype.setCorrect = function () {
+    setCorrect() {
         this.$body.children().hide();
         this.$correctBody.show();
         this.$header
@@ -27,8 +28,8 @@ var ResultModal = (function () {
             .addClass('text-success')
             .html('<i class="fa fa-check-circle" aria-hidden="true"></i> Correct !');
         this.$modal.modal();
-    };
-    ResultModal.prototype.setIncorrect = function (input, answer, output) {
+    }
+    setIncorrect(input, answer, output) {
         this.$body.children().hide();
         this.$incorrectBody.show();
         this.$inputBox.text(input);
@@ -39,8 +40,8 @@ var ResultModal = (function () {
             .addClass('text-danger')
             .html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Incorrect !');
         this.$modal.modal();
-    };
-    ResultModal.prototype.setTimeout = function (input) {
+    }
+    setTimeout(input) {
         this.$body.children().hide();
         this.$timeoutBody.show();
         this.$timeoutInputBox.text(input);
@@ -49,8 +50,8 @@ var ResultModal = (function () {
             .addClass('text-danger')
             .html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Timeout !');
         this.$modal.modal();
-    };
-    ResultModal.prototype.setRuntimeError = function (returnCode, errorLog, input) {
+    }
+    setRuntimeError(returnCode, errorLog, input) {
         this.$body.children().hide();
         this.$runtimeErrorBody.show();
         this.$runtimeErrorSignal.text(returnCode);
@@ -61,8 +62,8 @@ var ResultModal = (function () {
             .addClass('text-danger')
             .html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Runtime Error !');
         this.$modal.modal();
-    };
-    ResultModal.prototype.setCompileError = function (errorMsg) {
+    }
+    setCompileError(errorMsg) {
         this.$body.children().hide();
         this.$compileErrorBody.show();
         this.$compileErrorBox.text(errorMsg);
@@ -71,8 +72,8 @@ var ResultModal = (function () {
             .addClass('text-danger')
             .html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Compile Error !');
         this.$modal.modal();
-    };
-    ResultModal.prototype.setFailToRun = function (errorMsg) {
+    }
+    setFailToRun(errorMsg) {
         this.$body.children().hide();
         this.$compileErrorBody.show();
         this.$compileErrorBox.text(errorMsg.replace('/\n/g', '<br>'));
@@ -81,8 +82,8 @@ var ResultModal = (function () {
             .addClass('text-danger')
             .html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Fail to run !');
         this.$modal.modal();
-    };
-    ResultModal.prototype.setServerError = function (errorMsg) {
+    }
+    setServerError(errorMsg) {
         this.$body.children().hide();
         this.$errorBody.show();
         this.$errorBox.html(errorMsg);
@@ -91,6 +92,6 @@ var ResultModal = (function () {
             .addClass('text-danger')
             .html('<i class="fa fa-exclamation-circle" aria-hidden="true"></i> Something\'s wrong !');
         this.$modal.modal();
-    };
-    return ResultModal;
-}());
+    }
+}
+//# sourceMappingURL=modal-result.js.map

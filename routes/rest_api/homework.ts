@@ -37,7 +37,7 @@ export function createHomework(req: Request, res: Response) {
 		(err: IError, insertResult) => {
 			if (err) {
 				logger.error('[rest_api::createHomework::outer_insert] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 				res.sendStatus(500);
 				return;
 			}
@@ -61,7 +61,7 @@ export function createHomework(req: Request, res: Response) {
 				(err: IError, result) => {
 					if (err) {
 						logger.error('[rest_api::createHomework::inner_insert] : ');
-						logger.error(util.inspect(err, {showHidden: false, depth: null}));
+						logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 						res.sendStatus(500);
 						return;
 					}
@@ -98,7 +98,7 @@ export function uploadHomework(req: Request, res: Response) {
 		(err: IError, insertResult) => {
 			if (err) {
 				logger.error('[rest_api::uploadHomework::insert] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 				res.sendStatus(500);
 				return;
 			}
@@ -106,10 +106,10 @@ export function uploadHomework(req: Request, res: Response) {
 			logger.debug('[uploadHomework:insert into homework_log]');
 			logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
 
-			file.mv(path.join(submittedHomeworkPath, hashedName), (err) => {
+			file.mv(path.join(submittedHomeworkPath, hashedName), (err: any) => {
 				if (err) {
 					logger.error('[rest_api::uploadHomework::file_move] : ');
-					logger.error(util.inspect(err, {showHidden: false, depth: null}));
+					logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 					res.sendStatus(500);
 					return;
 				}
@@ -136,7 +136,7 @@ export function checkHomeworkName(req: Request, res: Response) {
 		(err: IError, searchResult) => {
 			if (err) {
 				logger.error('[rest_api::checkHomeworkName::select] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 				res.sendStatus(500);
 				return;
 			}
@@ -160,12 +160,12 @@ export function downloadSubmittedHomework(req: Request, res: Response) {
 	dbClient.query(
 		'SELECT student_id AS `studentId`, file_name AS `fileName`, name ' +
 		'FROM homework_log JOIN homework_config ON homework_log.attachment_id = homework_config.id ' +
-		'WHERE homework_log.id=?',
+		'WHERE homework_log.id = ?',
 		req.params.logId,
 		(err: IError, result) => {
 			if (err) {
 				logger.error('[rest_api::downloadSubmittedHomework::search] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 				res.sendStatus(500);
 				return;
 			}

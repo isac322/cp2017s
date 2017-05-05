@@ -1,72 +1,30 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var mysql_1 = require("mysql");
-var util = require("util");
-var app_1 = require("../app");
-var homework_1 = require("./homework");
-var route_1 = require("./route");
-var fs = require("fs");
-var dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
-var dbClient = mysql_1.createConnection({
+const mysql_1 = require("mysql");
+const util = require("util");
+const app_1 = require("../app");
+const homework_1 = require("./homework");
+const route_1 = require("./route");
+const fs = require("fs");
+const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
+const dbClient = mysql_1.createConnection({
     host: dbConfig.host,
     user: dbConfig.user,
     password: dbConfig.password,
     database: dbConfig.database
 });
-/**
- * /exercise route
- *
- * @class ExerciseRoute
- */
-var ExerciseRoute = (function (_super) {
-    __extends(ExerciseRoute, _super);
-    /**
-     * Constructor
-     *
-     * @class ExerciseRoute
-     * @constructor
-     */
-    function ExerciseRoute() {
-        var _this = _super.call(this) || this;
-        _this.navPos = 3;
-        return _this;
-    }
-    /**
-     * Create the routes.
-     *
-     * @class ExerciseRoute
-     * @method create
-     * @static
-     */
-    ExerciseRoute.create = function (router) {
-        //log
+class ExerciseRoute extends route_1.BaseRoute {
+    static create(router) {
         app_1.logger.debug('[ExerciseRoute::create] Creating exercise route.');
-        //add exercise page route
-        router.get('/exercise', function (req, res, next) {
+        router.get('/exercise', (req, res, next) => {
             new ExerciseRoute().exercise(req, res, next);
         });
-    };
-    /**
-     * The exercise page route.
-     *
-     * @class ExerciseRoute
-     * @method exercise
-     * @param req {Request} The express Request object.
-     * @param res {Response} The express Response object.
-     * @param next {NextFunction} Execute the next method.
-     */
-    ExerciseRoute.prototype.exercise = function (req, res, next) {
-        var _this = this;
+    }
+    constructor() {
+        super();
+        this.navPos = 3;
+    }
+    exercise(req, res, next) {
         this.title = 'Exercise';
         if (!req.session.signIn)
             return res.redirect('/');
@@ -77,18 +35,17 @@ var ExerciseRoute = (function (_super) {
             '    JOIN exercise_config ' +
             '        ON exercise.id = exercise_config.exercise_id ' +
             '    LEFT JOIN view_exercise_quick_result AS result_table ' +
-            '        ON exercise_config.id = result_table.attachment_id AND result_table.student_id = ?;', req.session.studentId, function (err, searchResult) {
+            '        ON exercise_config.id = result_table.attachment_id AND result_table.student_id = ?;', req.session.studentId, (err, searchResult) => {
             if (err) {
                 app_1.logger.error('[exercise::first_select]');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
                 res.sendStatus(500);
                 return;
             }
-            var currentId = -1;
-            var currentObject;
-            var exerciseList = [];
-            for (var _i = 0, searchResult_1 = searchResult; _i < searchResult_1.length; _i++) {
-                var record = searchResult_1[_i];
+            let currentId = -1;
+            let currentObject;
+            let exerciseList = [];
+            for (let record of searchResult) {
                 if (record.id != currentId) {
                     currentObject = {
                         id: record.id,
@@ -110,10 +67,9 @@ var ExerciseRoute = (function (_super) {
             }
             app_1.logger.debug(util.inspect(exerciseList, { showHidden: false, depth: 1 }));
             res.locals.exerciseList = exerciseList.reverse();
-            //render template
-            return _this.render(req, res, 'exercise');
+            return this.render(req, res, 'exercise');
         });
-    };
-    return ExerciseRoute;
-}(route_1.BaseRoute));
+    }
+}
 exports.ExerciseRoute = ExerciseRoute;
+//# sourceMappingURL=exercise.js.map

@@ -1,9 +1,9 @@
-///<reference path="modal-result.ts"/>
+"use strict";
 var SubmissionHistoryAdmin;
 (function (SubmissionHistoryAdmin) {
-    var MAX_PAGE = document.documentElement.clientWidth >= 768 ? 10 : 5;
-    var Row = (function () {
-        function Row(value) {
+    const MAX_PAGE = document.documentElement.clientWidth >= 768 ? 10 : 5;
+    class Row {
+        constructor(value) {
             this.idTd = document.createElement('th');
             this.idTd.setAttribute('scope', 'row');
             this.categoryTd = document.createElement('td');
@@ -28,7 +28,7 @@ var SubmissionHistoryAdmin;
             this.row.appendChild(this.userTd);
             this.setData(value);
         }
-        Row.prototype.setData = function (value) {
+        setData(value) {
             this.id = value.id;
             this.category = value.category;
             this.result = value.result;
@@ -40,8 +40,8 @@ var SubmissionHistoryAdmin;
             this.userName = value.name;
             this.idTd.textContent = String(this.id);
             this.categoryTd.textContent = this.category;
-            var href = (this.category == 'Homework' ? '"/homework/' : '"/exercise/') + this.id + '"';
-            var content;
+            const href = '"/' + this.category.toLowerCase() + '/' + this.id + '"';
+            let content;
             if (this.extension.valueOf() !== 'report' && this.extension.valueOf() !== 'zip') {
                 content = '<button class="btn-link tdLinkBtn" onclick=\'codeModal(' + href + ', "' + this.extension + '", "' + this.fileName + '");\'>' + this.fileName + '</button>';
             }
@@ -73,15 +73,14 @@ var SubmissionHistoryAdmin;
             this.userBtn.textContent = decodeURIComponent(this.userName);
             this.userBtn.dataset.originalTitle = this.email;
             $(this.userBtn).tooltip();
-        };
-        return Row;
-    }());
+        }
+    }
     Row.RESULTS = ['Correct', 'Incorrect', 'Compile Error', 'Timeout', 'Runtime Error', 'Fail to run'];
-    var $resultTable = $('#resultTable');
-    var $result = $('#selectResult');
-    var $email = $('#selectEmail');
-    var $user = $('#selectUser');
-    var rows = [];
+    const $resultTable = $('#resultTable');
+    const $result = $('#selectResult');
+    const $email = $('#selectEmail');
+    const $user = $('#selectUser');
+    let rows = [];
     function queryHandler(res, force) {
         updateTable(res);
         if (force)
@@ -91,17 +90,17 @@ var SubmissionHistoryAdmin;
     }
     function updateTable(res) {
         $resultTable.children().detach();
-        for (var i_1 = 0; i_1 < res.data.length; i_1++) {
-            if (i_1 >= rows.length) {
-                rows.push(new Row(res.data[i_1]));
+        for (let i = 0; i < res.data.length; i++) {
+            if (i >= rows.length) {
+                rows.push(new Row(res.data[i]));
             }
             else {
-                rows[i_1].setData(res.data[i_1]);
+                rows[i].setData(res.data[i]);
             }
-            $resultTable.append(rows[i_1].row);
+            $resultTable.append(rows[i].row);
         }
-        var $categoryCol = $('.categoryCol');
-        var $resultCol = $('.resultCol');
+        const $categoryCol = $('.categoryCol');
+        const $resultCol = $('.resultCol');
         if ($category.val() === '0' || $category.val() === '2') {
             $resultCol.show();
         }
@@ -114,7 +113,7 @@ var SubmissionHistoryAdmin;
         else {
             $categoryCol.hide();
         }
-        var i = res.p - res.p % MAX_PAGE, j = 0;
+        let i = res.p - res.p % MAX_PAGE, j = 0;
         for (; i < res.total && j < MAX_PAGE; i++, j++) {
             pageLink[j].li
                 .removeClass('active')
@@ -138,18 +137,18 @@ var SubmissionHistoryAdmin;
     }
     function updateSelect() {
         currQuery = location.search == '' ? '?t=0&' : location.search;
-        var ret = currQuery.substr(1).split('&')
-            .filter(function (e) { return e != ''; })
-            .map(function (e) { return e.split('='); })
-            .reduce(function (prev, curr) {
+        const ret = currQuery.substr(1).split('&')
+            .filter((e) => e != '')
+            .map((e) => e.split('='))
+            .reduce((prev, curr) => {
             if (curr[0] == 'p')
                 return prev;
             prev[curr[0]].push(curr[1]);
             return prev;
         }, { t: [], hw: [], ex: [], pj: [], r: [], e: [], u: [] });
-        ret.hw = ret.hw.map((function (value) { return 'h' + value; }));
-        ret.ex = ret.ex.map((function (value) { return 'e' + value; }));
-        ret.pj = ret.pj.map((function (value) { return 'p' + value; }));
+        ret.hw = ret.hw.map(((value) => 'h' + value));
+        ret.ex = ret.ex.map(((value) => 'e' + value));
+        ret.pj = ret.pj.map(((value) => 'p' + value));
         $category.val(ret.t).change();
         $('#selectId').selectpicker('val', ret.hw.concat(ret.ex, ret.pj));
         $result.selectpicker('val', ret.r);
@@ -161,11 +160,11 @@ var SubmissionHistoryAdmin;
         $selects.selectpicker('refresh');
         if (pageNum == null)
             pageNum = 0;
-        var newQuery = genQuery() + 'p=' + pageNum;
+        const newQuery = genQuery() + 'p=' + pageNum;
         if (force || currQuery !== newQuery) {
             $.ajax('/history/list' + newQuery, {
-                success: function (data) { return queryHandler(data, force); },
-                error: function (jqXHR) {
+                success: (data) => queryHandler(data, force),
+                error: (jqXHR) => {
                     switch (jqXHR.status) {
                         case 401:
                             document.location.href = '/';
@@ -180,73 +179,59 @@ var SubmissionHistoryAdmin;
         }
     }
     function genQuery() {
-        // homework
-        var homeworkQuery = '';
-        $homeworkGroup.children(':selected').each(function (index, elem) {
+        let homeworkQuery = '';
+        $homeworkGroup.children(':selected').each((index, elem) => {
             homeworkQuery += 'hw=' + elem.value.substr(1) + '&';
         });
-        // exercise
-        var exerciseQuery = '';
-        $exerciseGroup.children(':selected').each(function (index, elem) {
+        let exerciseQuery = '';
+        $exerciseGroup.children(':selected').each((index, elem) => {
             exerciseQuery += 'ex=' + elem.value.substr(1) + '&';
         });
-        // exercise
-        var projectQuery = '';
-        $projectGroup.children(':selected').each(function (index, elem) {
+        let projectQuery = '';
+        $projectGroup.children(':selected').each((index, elem) => {
             projectQuery += 'pj=' + elem.value.substr(1) + '&';
         });
-        // result
-        var resultQuery = '';
-        $result.children(':selected').each(function (index, elem) {
+        let resultQuery = '';
+        $result.children(':selected').each((index, elem) => {
             resultQuery += 'r=' + elem.value + '&';
         });
-        // email
-        var emailQuery = '';
-        $email.children(':selected').each(function (index, elem) {
+        let emailQuery = '';
+        $email.children(':selected').each((index, elem) => {
             emailQuery += 'e=' + elem.value + '&';
         });
-        // user
-        var userQuery = '';
-        $user.children(':selected').each(function (index, elem) {
+        let userQuery = '';
+        $user.children(':selected').each((index, elem) => {
             userQuery += 'u=' + elem.value + '&';
         });
         return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + projectQuery + resultQuery + emailQuery + userQuery;
     }
     function onResult(id) {
-        var resultModal = new ResultModal($('#resultModal'));
+        const resultModal = new ResultModal($('#resultModal'));
         $.ajax('/exercise/result/' + id, {
-            complete: function (jqXHR) {
-                var res = jqXHR.responseJSON;
+            complete: (jqXHR) => {
+                const res = jqXHR.responseJSON;
                 switch (jqXHR.status) {
-                    // dose not sign in yet
                     case 401:
                         document.location.href = '/';
                         break;
-                    // correct
                     case 200:
                         resultModal.setCorrect();
                         break;
-                    // incorrect
                     case 406:
                         resultModal.setIncorrect(res.input, res.answerOutput, res.userOutput);
                         break;
-                    // timeout
                     case 410:
                         resultModal.setTimeout(res.input);
                         break;
-                    // runtime error
                     case 412:
                         resultModal.setRuntimeError(res.returnCode, res.errorLog, res.input);
                         break;
-                    // compile error
                     case 400:
                         resultModal.setCompileError(res.errorMsg);
                         break;
-                    // fail to run
                     case 417:
                         resultModal.setFailToRun(res.errorMsg.replace('/\n/g', '<br>'));
                         break;
-                    // server error
                     case 500:
                         resultModal.setServerError('Some error occurs on the judging server. Please contact to web administrator with your error ID : <code>' + res.id + '</code>.');
                         break;
@@ -255,13 +240,10 @@ var SubmissionHistoryAdmin;
         });
     }
     SubmissionHistoryAdmin.onResult = onResult;
-    /*
-     for Pagination
-     */
-    var $pageUL = $('#page-ul');
-    var $prevPage = $('#page-prev');
-    var $nextPage = $('#page-next');
-    $prevPage.click(function (e) {
+    const $pageUL = $('#page-ul');
+    const $prevPage = $('#page-prev');
+    const $nextPage = $('#page-next');
+    $prevPage.click((e) => {
         if ($prevPage.hasClass('disabled')) {
             e.preventDefault();
         }
@@ -269,7 +251,7 @@ var SubmissionHistoryAdmin;
             send($pageUL.children(':nth-child(2)').data('val') - 1);
         }
     });
-    $nextPage.click(function (e) {
+    $nextPage.click((e) => {
         if ($nextPage.hasClass('disabled')) {
             e.preventDefault();
         }
@@ -277,23 +259,23 @@ var SubmissionHistoryAdmin;
             send($pageUL.children(':nth-last-child(2)').data('val') + 1);
         }
     });
-    var pageLink = [];
-    for (var i = 0; i < MAX_PAGE; i++) {
-        var li = document.createElement('li');
-        var a = document.createElement('a');
-        a.addEventListener('click', function (e) { return send($(e.target).parent().data('val')); });
+    let pageLink = [];
+    for (let i = 0; i < MAX_PAGE; i++) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.addEventListener('click', (e) => send($(e.target).parent().data('val')));
         li.appendChild(a);
         pageLink.push({ li: $(li), a: $(a) });
         $nextPage.before(li);
     }
-    var $selects = $('.selectpicker');
-    var $category = $('#selectCategory');
-    $selects.on('hide.bs.select', function () { return send(); });
-    var $homeworkGroup = $('#homeworkGroup');
-    var $exerciseGroup = $('#exerciseGroup');
-    var $projectGroup = $('#projectGroup');
-    var $resultGroup = $('#resultGroup');
-    $category.change(function () {
+    const $selects = $('.selectpicker');
+    const $category = $('#selectCategory');
+    $selects.on('hide.bs.select', () => send());
+    const $homeworkGroup = $('#homeworkGroup');
+    const $exerciseGroup = $('#exerciseGroup');
+    const $projectGroup = $('#projectGroup');
+    const $resultGroup = $('#resultGroup');
+    $category.change(() => {
         switch ($category.val()) {
             case '0':
                 $homeworkGroup.children().show();
@@ -323,14 +305,15 @@ var SubmissionHistoryAdmin;
     });
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
         $('.selectpicker:not(#selectUser)').selectpicker('mobile');
-        $selects.focusout(function () { return send(); });
+        $selects.focusout(() => send());
     }
-    window.onpopstate = function (e) {
+    window.onpopstate = (e) => {
         updateSelect();
         updateTable(e.state);
     };
-    var currQuery;
+    let currQuery;
     updateSelect();
-    send(null, true);
+    send(undefined, true);
     $('.emailCol').hide();
 })(SubmissionHistoryAdmin || (SubmissionHistoryAdmin = {}));
+//# sourceMappingURL=submission_history_admin.js.map

@@ -1,6 +1,6 @@
 {
 	"name": "cp2017s",
-	"version": "0.8.20",
+	"version": "0.8.21",
 	"engines": {
 		"node": ">=6.10.0"
 	},
@@ -52,7 +52,7 @@
 		"@types/express-session": ">=0.0.32",
 		"@types/fs-extra": ">=3.0.0",
 		"@types/iconv-lite": ">=0.0.1",
-		"@types/jquery": ">=2.0.42",
+		"@types/jquery": ">=2.0.43",
 		"@types/jquery.form": ">=3.26.29",
 		"@types/morgan": ">=1.7.32",
 		"@types/mysql": ">=0.0.32",

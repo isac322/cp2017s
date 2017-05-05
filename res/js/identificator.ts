@@ -1,5 +1,6 @@
-let auth2;
+let auth2: any;
 
+var gapi: any;
 gapi.load('auth2', () => {
 	auth2 = gapi.auth2.init();
 	if ('next' in window)

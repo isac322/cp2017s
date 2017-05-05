@@ -1,5 +1,7 @@
-var auth2;
-gapi.load('auth2', function () {
+"use strict";
+let auth2;
+var gapi;
+gapi.load('auth2', () => {
     auth2 = gapi.auth2.init();
     if ('next' in window)
         next();
@@ -7,13 +9,13 @@ gapi.load('auth2', function () {
         next2();
 });
 function onSignIn(googleUser) {
-    var name = googleUser.getBasicProfile().getName();
-    var id_token = googleUser.getAuthResponse().id_token;
-    var xhr = new XMLHttpRequest();
-    var btn = $('#login-btn').button('loading');
+    const name = googleUser.getBasicProfile().getName();
+    const id_token = googleUser.getAuthResponse().id_token;
+    const xhr = new XMLHttpRequest();
+    const btn = $('#login-btn').button('loading');
     xhr.open('POST', 'signin');
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onload = function () {
+    xhr.onload = () => {
         switch (xhr.status) {
             case 204:
                 $('#register-modal').modal();
@@ -31,8 +33,8 @@ function onSignIn(googleUser) {
     xhr.send('idtoken=' + id_token);
 }
 function signOut() {
-    auth2.signOut().then(function () {
-        var xhr = new XMLHttpRequest();
+    auth2.signOut().then(() => {
+        const xhr = new XMLHttpRequest();
         xhr.open('POST', 'signout');
         xhr.onload = function () {
             document.location.href = '/';
@@ -40,3 +42,4 @@ function signOut() {
         xhr.send();
     });
 }
+//# sourceMappingURL=identificator.js.map

@@ -1,31 +1,31 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var bodyParser = require("body-parser");
-var cookieParser = require("cookie-parser");
-var express = require("express");
-var expressSession = require("express-session");
-var fs_ext = require("fs-extra");
-var morgan = require("morgan");
-var path = require("path");
-var util = require("util");
-var winston = require("winston");
-var exercise_1 = require("./routes/exercise");
-var homework_1 = require("./routes/homework");
-var index_1 = require("./routes/index");
-var profile_1 = require("./routes/profile");
-var fs = require("fs");
-var history_1 = require("./routes/history");
-var board_1 = require("./routes/board");
-var project_1 = require("./routes/project");
-var identification_1 = require("./routes/rest_api/identification");
-var homework_2 = require("./routes/rest_api/homework");
-var history_2 = require("./routes/rest_api/history");
-var exercise_2 = require("./routes/rest_api/exercise");
-var project_2 = require("./routes/rest_api/project");
-var fileUpload = require("express-fileupload");
+const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
+const express = require("express");
+const expressSession = require("express-session");
+const fs_ext = require("fs-extra");
+const morgan = require("morgan");
+const path = require("path");
+const util = require("util");
+const winston = require("winston");
+const exercise_1 = require("./routes/exercise");
+const homework_1 = require("./routes/homework");
+const index_1 = require("./routes/index");
+const profile_1 = require("./routes/profile");
+const fs = require("fs");
+const history_1 = require("./routes/history");
+const board_1 = require("./routes/board");
+const project_1 = require("./routes/project");
+const identification_1 = require("./routes/rest_api/identification");
+const homework_2 = require("./routes/rest_api/homework");
+const history_2 = require("./routes/rest_api/history");
+const exercise_2 = require("./routes/rest_api/exercise");
+const project_2 = require("./routes/rest_api/project");
+const fileUpload = require('express-fileupload');
 require('winston-daily-rotate-file');
-var Docker = require("dockerode");
-var dockerConfig = JSON.parse(fs.readFileSync('config/docker.json', 'utf-8'));
+const Docker = require("dockerode");
+const dockerConfig = JSON.parse(fs.readFileSync('config/docker.json', 'utf-8'));
 exports.docker = new Docker(dockerConfig);
 exports.tempPath = path.join(__dirname, 'media', 'tmp');
 exports.exerciseSetPath = path.join(__dirname, 'media', 'test_set', 'exercise');
@@ -33,8 +33,8 @@ exports.submittedExercisePath = path.join(__dirname, 'media', 'exercise');
 exports.submittedExerciseOriginalPath = path.join(__dirname, 'media', 'exercise_origin');
 exports.submittedHomeworkPath = path.join(__dirname, 'media', 'homework');
 exports.submittedProjectPath = path.join(__dirname, 'media', 'project');
-var logPath = path.join(__dirname, 'logs');
-var requiredPath = [exports.tempPath, exports.exerciseSetPath, exports.submittedHomeworkPath, exports.submittedExercisePath,
+const logPath = path.join(__dirname, 'logs');
+const requiredPath = [exports.tempPath, exports.exerciseSetPath, exports.submittedHomeworkPath, exports.submittedExercisePath,
     exports.submittedExerciseOriginalPath, exports.submittedProjectPath, logPath];
 exports.logger = new winston.Logger({
     transports: [
@@ -50,47 +50,18 @@ exports.logger = new winston.Logger({
         })
     ]
 });
-/**
- * The server.
- *
- * @class Server
- */
-var Server = (function () {
-    /**
-     * Constructor.
-     *
-     * @class Server
-     * @constructor
-     */
-    function Server() {
-        //create expressjs application
+class Server {
+    static bootstrap() {
+        return new Server();
+    }
+    constructor() {
         this.app = express();
         this.createDir();
-        //configure application
         this.config();
-        //add routes
         this.routes();
-        //add api
         this.api();
     }
-    /**
-     * Bootstrap the application.
-     *
-     * @class Server
-     * @method bootstrap
-     * @static
-     * @return {Server} Returns the newly created injector for this app.
-     */
-    Server.bootstrap = function () {
-        return new Server();
-    };
-    /**
-     * Create REST API routes
-     *
-     * @class Server
-     * @method api
-     */
-    Server.prototype.api = function () {
+    api() {
         this.app.post('/signin', identification_1.signIn);
         this.app.post('/register', identification_1.register);
         this.app.post('/signout', identification_1.signOut);
@@ -99,30 +70,21 @@ var Server = (function () {
         this.app.get('/homework/:logId([0-9]+)', homework_2.downloadSubmittedHomework);
         this.app.post('/homework/:attachId([0-9]+)', homework_2.uploadHomework);
         this.app.get('/exercise/:logId([0-9]+)', exercise_2.downloadSubmittedExercise);
-        //		this.app.post('/exercise', createExercise);
         this.app.get('/exercise/resolve', exercise_2.resolveUnhandled);
         this.app.get('/exercise/result/:logId([0-9]+)', exercise_2.fetchJudgeResult);
         this.app.post('/exercise/:attachId([0-9]+)', exercise_2.uploadExercise);
         this.app.get('/history/list', history_2.historyList);
         this.app.get('/project/name', project_2.checkProjectName);
         this.app.post('/project', project_2.createProject);
+        this.app.get('/project/:logId([0-9]+)', project_2.downloadSubmittedProject);
         this.app.post('/project/:attachId([0-9]+)', project_2.uploadProject);
-    };
-    /**
-     * Configure application
-     *
-     * @class Server
-     * @method config
-     */
-    Server.prototype.config = function () {
-        // view engine setup
+    }
+    config() {
         this.app.set('views', path.join(__dirname, 'views'));
         this.app.set('view engine', 'pug');
-        // uncomment after placing your favicon in /public
-        //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
         this.app.use(morgan('dev', {
             stream: {
-                write: function (message) {
+                write: (message) => {
                     exports.logger.info(message.trim());
                 }
             }
@@ -154,21 +116,14 @@ var Server = (function () {
         }, {
             t: 'judge_server',
             buildargs: { uid: process.getuid().toString() }
-        }, function (err) {
+        }, (err) => {
             if (err) {
-                // TODO: error handling
                 exports.logger.error(err);
             }
         });
-    };
-    /**
-     * Create router
-     *
-     * @class Server
-     * @method api
-     */
-    Server.prototype.routes = function () {
-        var router = express.Router();
+    }
+    routes() {
+        let router = express.Router();
         index_1.IndexRoute.create(router);
         homework_1.HWRoute.create(router);
         exercise_1.ExerciseRoute.create(router);
@@ -177,21 +132,16 @@ var Server = (function () {
         board_1.BoardRoute.create(router);
         profile_1.ProfileRoute.create(router);
         this.app.use(router);
-    };
-    /**
-     * Create required directories
-     */
-    Server.prototype.createDir = function () {
-        for (var _i = 0, requiredPath_1 = requiredPath; _i < requiredPath_1.length; _i++) {
-            var path_1 = requiredPath_1[_i];
-            fs_ext.mkdirp(path_1, function (err) {
+    }
+    createDir() {
+        for (const path of requiredPath) {
+            fs_ext.mkdirp(path, (err) => {
                 if (err) {
-                    // TODO: error handling
                     exports.logger.error(util.inspect(err, { showHidden: false, depth: 1 }));
                 }
             });
         }
-    };
-    return Server;
-}());
+    }
+}
 exports.Server = Server;
+//# sourceMappingURL=app.js.map

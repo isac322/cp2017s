@@ -1,18 +1,17 @@
-var accumulatedRowCount = 0;
-var currentRowCount = 0;
-var currentForm = $('#create-form');
-var attachTemplate = $('#list-item_template').removeAttr('id').hide();
-var attachList = $('#attach-list');
-var btnAppend = $('#btn-append-item');
-btnAppend.click(function (event) {
+"use strict";
+let accumulatedRowCount = 0;
+let currentRowCount = 0;
+const currentForm = $('#create-form');
+const attachTemplate = $('#list-item_template').removeAttr('id').hide();
+const attachList = $('#attach-list');
+const btnAppend = $('#btn-append-item');
+btnAppend.click((event) => {
     event.preventDefault();
-    // create new row and add to list-group
-    var attachRow = attachTemplate.clone();
+    const attachRow = attachTemplate.clone();
     attachRow.appendTo(attachList).fadeIn(400);
-    // change
-    var nameColumn = attachRow.find('.file-name:first');
+    const nameColumn = attachRow.find('.file-name:first');
     nameColumn.find('input:first').attr('name', 'attachment[' + accumulatedRowCount + '][name]');
-    var extColumn = attachRow.find('.extension:first');
+    const extColumn = attachRow.find('.extension:first');
     extColumn.find('select:first').attr('name', 'attachment[' + accumulatedRowCount + '][extension]');
     currentForm.validator('update');
     accumulatedRowCount++;
@@ -23,15 +22,16 @@ btnAppend.click(function (event) {
 });
 btnAppend.trigger('click');
 attachList.children().first().find('.wrapper-btn-remove:first').hide();
-$('body').on('click', '.btn-remove-item', function (event) {
-    var clicked = $(event.target).closest('li');
+$('body').on('click', '.btn-remove-item', (event) => {
+    const clicked = $(event.target).closest('li');
     currentRowCount--;
     if (currentRowCount == 1) {
-        var sibling = clicked.siblings('li');
+        const sibling = clicked.siblings('li');
         sibling.find('.wrapper-btn-remove:first').fadeOut(150);
     }
-    clicked.fadeOut(300, function () {
+    clicked.fadeOut(300, () => {
         clicked.remove();
         currentForm.validator('update');
     });
 });
+//# sourceMappingURL=non_judging_add.js.map

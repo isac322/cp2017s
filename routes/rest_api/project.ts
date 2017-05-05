@@ -37,7 +37,7 @@ export function createProject(req: Request, res: Response) {
 		(err: IError, insertResult) => {
 			if (err) {
 				logger.error('[rest_api::createProject::outer_insert] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 				res.sendStatus(500);
 				return;
 			}
@@ -61,7 +61,7 @@ export function createProject(req: Request, res: Response) {
 				(err: IError, result) => {
 					if (err) {
 						logger.error('[rest_api::createProject::inner_insert] : ');
-						logger.error(util.inspect(err, {showHidden: false, depth: null}));
+						logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 						res.sendStatus(500);
 						return;
 					}
@@ -98,7 +98,7 @@ export function uploadProject(req: Request, res: Response) {
 		(err: IError, insertResult) => {
 			if (err) {
 				logger.error('[rest_api::uploadProject::insert] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 				res.sendStatus(500);
 				return;
 			}
@@ -106,10 +106,10 @@ export function uploadProject(req: Request, res: Response) {
 			logger.debug('[uploadProject:insert into project_log]');
 			logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
 
-			file.mv(path.join(submittedProjectPath, hashedName), (err) => {
+			file.mv(path.join(submittedProjectPath, hashedName), (err: any) => {
 				if (err) {
 					logger.error('[rest_api::uploadProject::file_move] : ');
-					logger.error(util.inspect(err, {showHidden: false, depth: null}));
+					logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 					res.sendStatus(500);
 					return;
 				}
@@ -136,7 +136,7 @@ export function checkProjectName(req: Request, res: Response) {
 		(err: IError, searchResult) => {
 			if (err) {
 				logger.error('[rest_api::checkProjectName::select] : ');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 				res.sendStatus(500);
 				return;
 			}
@@ -144,4 +144,40 @@ export function checkProjectName(req: Request, res: Response) {
 			res.sendStatus(searchResult.length == 0 ? 200 : 409);
 		}
 	);
+}
+
+
+/**
+ * Send project file.
+ *
+ * @method downloadSubmittedProject
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+export function downloadSubmittedProject(req: Request, res: Response) {
+	if (!req.session.signIn) return res.sendStatus(401);
+
+	dbClient.query(
+		'SELECT student_id AS `studentId`, file_name AS `fileName`, name ' +
+		'FROM project_log JOIN project_config ON project_log.attachment_id = project_config.id ' +
+		'WHERE project_log.id = ?',
+		req.params.logId,
+		(err: IError, result) => {
+			if (err) {
+				logger.error('[rest_api::downloadSubmittedProject::search] : ');
+				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
+				res.sendStatus(500);
+				return;
+			}
+
+			const row = result[0];
+
+			if (req.session.admin || row.studentId == req.session.studentId) {
+				res.download(path.join(submittedProjectPath, row.fileName), row.name);
+			}
+			else {
+				logger.error('[rest_api::downloadSubmittedProject::student_id-mismatch]');
+				res.sendStatus(401);
+			}
+		});
 }

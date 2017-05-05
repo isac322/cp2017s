@@ -1,23 +1,13 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var util = require("util");
-var app_1 = require("../app");
-var route_1 = require("./route");
-var fs = require("fs");
-var mysql_1 = require("mysql");
-var async = require("async");
-var dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
-var dbClient = mysql_1.createConnection({
+const util = require("util");
+const app_1 = require("../app");
+const route_1 = require("./route");
+const fs = require("fs");
+const mysql_1 = require("mysql");
+const async = require("async");
+const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
+const dbClient = mysql_1.createConnection({
     host: dbConfig.host,
     user: dbConfig.user,
     password: dbConfig.password,
@@ -29,70 +19,37 @@ exports.monthNames = [
     "August", "September", "October",
     "November", "December"
 ];
-/**
- * /homework route
- *
- * @class HWRoute
- */
-var HWRoute = (function (_super) {
-    __extends(HWRoute, _super);
-    /**
-     * Constructor
-     *
-     * @class HWRoute
-     * @constructor
-     */
-    function HWRoute() {
-        var _this = _super.call(this) || this;
-        _this.navPos = 2;
-        return _this;
+class HWRoute extends route_1.BaseRoute {
+    constructor() {
+        super();
+        this.navPos = 2;
     }
-    /**
-     * Create /homework routes.
-     *
-     * @class HWRoute
-     * @method create
-     * @static
-     */
-    HWRoute.create = function (router) {
-        //log
+    static create(router) {
         app_1.logger.debug('[HWRoute::create] Creating homework route.');
-        var hwRouter = new HWRoute();
-        //add homework page route
-        router.get('/homework', function (req, res, next) {
+        const hwRouter = new HWRoute();
+        router.get('/homework', (req, res, next) => {
             hwRouter.homework(req, res, next);
         });
-        router.get('/homework/add', function (req, res, next) {
+        router.get('/homework/add', (req, res, next) => {
             hwRouter.add(req, res, next);
         });
-        router.get('/homework/manage', function (req, res) {
+        router.get('/homework/manage', (req, res) => {
             hwRouter.manage(req, res);
         });
-    };
-    /**
-     * The homework page route.
-     *
-     * @class HWRoute
-     * @method homework
-     * @param req {Request} The express Request object.
-     * @param res {Response} The express Response object.
-     * @param next {NextFunction} Execute the next method.
-     */
-    HWRoute.prototype.homework = function (req, res, next) {
-        var _this = this;
+    }
+    homework(req, res, next) {
         this.title = 'Homework List';
-        dbClient.query(req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery, function (err, searchResult) {
+        dbClient.query(req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery, (err, searchResult) => {
             if (err) {
                 app_1.logger.error('[HWRoute::homework]');
-                app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
                 res.sendStatus(500);
                 return;
             }
-            var currentId = -1;
-            var currentObject;
-            var homework = [];
-            for (var _i = 0, searchResult_1 = searchResult; _i < searchResult_1.length; _i++) {
-                var record = searchResult_1[_i];
+            let currentId = -1;
+            let currentObject;
+            let homework = [];
+            for (let record of searchResult) {
                 if (record.homework_id != currentId) {
                     currentObject = {
                         id: record.homework_id,
@@ -114,64 +71,42 @@ var HWRoute = (function (_super) {
             }
             app_1.logger.debug(util.inspect(homework, { showHidden: false, depth: 1 }));
             res.locals.homeworkList = homework.reverse();
-            //render template
-            _this.render(req, res, 'homework');
+            this.render(req, res, 'homework');
         });
-    };
-    /**
-     * The homework issuing page route.
-     *
-     * @class HWRoute
-     * @method add
-     * @param req {Request} The express Request object.
-     * @param res {Response} The express Response object.
-     * @param next {NextFunction} Execute the next method.
-     */
-    HWRoute.prototype.add = function (req, res, next) {
+    }
+    add(req, res, next) {
         this.title = 'Create Homework';
         if (!req.session.admin) {
             return res.redirect('/homework');
         }
         else {
-            //render template
             return this.render(req, res, 'homework_add');
         }
-    };
-    /**
-     * Managing page of submitted homework
-     *
-     * @class HWRoute
-     * @method manage
-     * @param req {Request} The express Request object.
-     * @param res {Response} The express Response object.
-     */
-    HWRoute.prototype.manage = function (req, res) {
-        var _this = this;
+    }
+    manage(req, res) {
         this.title = 'Manage Homework';
         if (!req.session.admin) {
             return res.redirect('/homework');
         }
         else {
             async.parallel([
-                function (callback) { return dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback); },
-                function (callback) { return dbClient.query('SELECT homework_id, name FROM homework', callback); }
-            ], function (err, result) {
+                (callback) => dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback),
+                (callback) => dbClient.query('SELECT homework_id, name FROM homework', callback)
+            ], (err, result) => {
                 if (err) {
                     app_1.logger.error('[HWRoute::manage]');
-                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+                    app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
                     res.sendStatus(500);
                     return;
                 }
                 res.locals.userList = result[0][0];
                 res.locals.homeworkList = result[1][0];
-                //render template
-                return _this.render(req, res, 'homework_manage');
+                return this.render(req, res, 'homework_manage');
             });
         }
-    };
-    return HWRoute;
-}(route_1.BaseRoute));
-HWRoute.hwQuery = function (studentId) {
+    }
+}
+HWRoute.hwQuery = (studentId) => {
     return '' +
         'SELECT homework.homework_id, homework.name, start_date, end_date, description, ' +
         '		homework_config.id AS `file_id`, homework_config.name AS `file_name`, extension AS `file_extension`, ' +
@@ -193,3 +128,4 @@ HWRoute.guestHwQuery = 'SELECT homework.homework_id, homework.name, homework.sta
     '	LEFT JOIN homework_config ' +
     '		ON homework.homework_id = homework_config.homework_id;';
 exports.HWRoute = HWRoute;
+//# sourceMappingURL=homework.js.map

@@ -4,7 +4,7 @@ import {logger} from "../app";
 import * as util from "util";
 import * as async from "async";
 import * as fs from "fs";
-import {createConnection, IConnection, IError} from "mysql";
+import {createConnection, IConnection, IError, IFieldInfo, IQuery} from "mysql";
 
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
@@ -67,38 +67,39 @@ export class HistoryRoute extends BaseRoute {
 
 		const tasks = [];
 
-		tasks.push((callback) => dbClient.query(
+		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => IQuery) => dbClient.query(
 			'SELECT email FROM email WHERE student_id = ?;',
 			req.session.studentId,
 			callback)
 		);
 
-		tasks.push((callback) => dbClient.query(
+		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => IQuery) => dbClient.query(
 			'SELECT homework.name AS `homeworkName`, homework_config.name AS `fileName`, homework_config.id ' +
 			'FROM homework JOIN homework_config ON homework.homework_id = homework_config.homework_id;',
 			callback)
 		);
 
-		tasks.push((callback) => dbClient.query(
+		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => IQuery) => dbClient.query(
 			'SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
 			'FROM exercise JOIN exercise_config ON exercise.id = exercise_config.exercise_id',
 			callback)
 		);
 
-		tasks.push((callback) => dbClient.query(
+		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => IQuery) => dbClient.query(
 			'SELECT project.name  AS `projectName`, project_config.name AS `fileName`, project_config.id ' +
 			'FROM project JOIN project_config ON project.id = project_config.project_id',
 			callback)
 		);
 
 		if (req.session.admin) {
-			tasks.push((callback) => dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback))
+			tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => IQuery) =>
+				dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback))
 		}
 
-		async.parallel(tasks, (err: IError, data: Array<Array<any>>) => {
+		async.parallel(tasks, (err: IError, data: [any, IFieldInfo[]]) => {
 			if (err) {
 				logger.error('[history::searching_in_parallel]');
-				logger.error(util.inspect(err, {showHidden: false, depth: null}));
+				logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 				res.sendStatus(500);
 				return;
 			}

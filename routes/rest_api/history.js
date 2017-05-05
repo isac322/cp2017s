@@ -1,30 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs = require("fs");
-var mysql_1 = require("mysql");
-var util = require("util");
-var app_1 = require("../../app");
-var async = require("async");
-var dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
-var dbClient = mysql_1.createConnection({
+const fs = require("fs");
+const mysql_1 = require("mysql");
+const util = require("util");
+const app_1 = require("../../app");
+const async = require("async");
+const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
+const dbClient = mysql_1.createConnection({
     host: dbConfig.host,
     user: dbConfig.user,
     password: dbConfig.password,
     database: dbConfig.database
 });
-var rowsInPage = 30;
-/**
- * Send history data.
- *
- * @method historyList
- * @param req {Request} The express Request object.
- * @param res {Response} The express Response object.
- */
+const rowsInPage = 30;
 function historyList(req, res) {
     if (!req.session.signIn)
         return res.sendStatus(401);
-    var query = req.query;
-    var commonQuery = '';
+    const query = req.query;
+    let commonQuery = '';
     if (req.session.admin) {
         if (query.u)
             commonQuery += 'user.student_id IN (' + mysql_1.escape(query.u) + ')';
@@ -35,21 +28,21 @@ function historyList(req, res) {
         commonQuery += 'student_id = ' + mysql_1.escape(req.session.studentId);
     if (query.e)
         commonQuery += ' AND email IN (' + mysql_1.escape(query.e) + ')';
-    var exerciseQuery = commonQuery;
+    let exerciseQuery = commonQuery;
     if (query.ex)
         exerciseQuery += ' AND attachment_id IN (' + mysql_1.escape(query.ex) + ')';
     if (query.r)
         exerciseQuery += ' AND type IN (' + mysql_1.escape(query.r) + ')';
-    var homeworkQuery = commonQuery;
+    let homeworkQuery = commonQuery;
     if (query.hw)
         homeworkQuery += ' AND attachment_id IN (' + mysql_1.escape(query.hw) + ')';
-    var projectQuery = commonQuery;
+    let projectQuery = commonQuery;
     if (query.pj)
         projectQuery += ' AND attachment_id IN (' + mysql_1.escape(query.pj) + ')';
-    var queryStr;
+    let queryStr;
     switch (query.t) {
         case '0':
-            var queryArray = [];
+            const queryArray = [];
             if (query.hw == null && query.ex == null && query.pj == null) {
                 queryArray.push('(SELECT ' + genHomeworkQuery(homeworkQuery) + ')');
                 queryArray.push('(SELECT ' + genExerciseQuery(exerciseQuery) + ')');
@@ -76,16 +69,16 @@ function historyList(req, res) {
             break;
     }
     async.series([
-        function (callback) {
+        (callback) => {
             dbClient.query('SELECT SQL_CALC_FOUND_ROWS ' + queryStr + ' ORDER BY timestamp DESC LIMIT ?, ?;', [Number(query.p) * rowsInPage, rowsInPage], callback);
         },
-        function (callback) {
+        (callback) => {
             dbClient.query('SELECT FOUND_ROWS() AS total;', callback);
         }
-    ], function (err, result) {
+    ], (err, result) => {
         if (err) {
             app_1.logger.error('[rest_api::history::historyList::search] : ');
-            app_1.logger.error(util.inspect(err, { showHidden: false, depth: null }));
+            app_1.logger.error(util.inspect(err, { showHidden: false, depth: undefined }));
             res.sendStatus(500);
             return;
         }
@@ -150,3 +143,4 @@ function historyList(req, res) {
     }
 }
 exports.historyList = historyList;
+//# sourceMappingURL=history.js.map

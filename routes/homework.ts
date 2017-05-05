@@ -28,7 +28,7 @@ export const monthNames = [
  * @class HWRoute
  */
 export class HWRoute extends BaseRoute {
-	private static hwQuery = (studentId) => {
+	private static hwQuery = (studentId: string) => {
 		return '' +
 			'SELECT homework.homework_id, homework.name, start_date, end_date, description, ' +
 			'		homework_config.id AS `file_id`, homework_config.name AS `file_name`, extension AS `file_extension`, ' +
@@ -107,7 +107,7 @@ export class HWRoute extends BaseRoute {
 			(err, searchResult) => {
 				if (err) {
 					logger.error('[HWRoute::homework]');
-					logger.error(util.inspect(err, {showHidden: false, depth: null}));
+					logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 					res.sendStatus(500);
 					return;
 				}
@@ -201,7 +201,7 @@ export class HWRoute extends BaseRoute {
 				(err: IError, result: any[][]) => {
 					if (err) {
 						logger.error('[HWRoute::manage]');
-						logger.error(util.inspect(err, {showHidden: false, depth: null}));
+						logger.error(util.inspect(err, {showHidden: false, depth: undefined}));
 						res.sendStatus(500);
 						return;
 					}
