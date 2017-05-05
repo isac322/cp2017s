@@ -30,7 +30,7 @@ block content
 					option(value=homework.homework_id)=decodeURIComponent(homework.name)
 
 	each valueArray, student in boardMap
-		.col-xs-4.homework-table
+		.col-xs-12.col-sm-6.col-md-4.homework-table
 			h3
 				strong=userMap[student]
 				| &nbsp
@@ -58,9 +58,10 @@ block content
 								td=value.submitted
 
 	script(type='text/javascript').
+		const col = document.documentElement.clientWidth >= 992 ? 3 : 2;
 		const cards = $('.homework-table');
-		for (let i = 0; i < cards.length; i += 3) {
-			cards.slice(i, i + 3).wrapAll('<div class="row"></div>');
+		for (let i = 0; i < cards.length; i += col) {
+			cards.slice(i, i + col).wrapAll('<div class="row"></div>');
 		}
 
 	include modal-source_code
