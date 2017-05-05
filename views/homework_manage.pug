@@ -48,10 +48,13 @@ block content
 								td
 									- const extension = homeworkConfig[value.attachId].extension;
 									- const name = homeworkConfig[value.attachId].name;
-										if extension.valueOf() !== 'zip' || extension.valueOf() !== 'report'
+										if extension.valueOf() !== 'zip' && extension.valueOf() !== 'report'
 											button.btn-link.tdLinkBtn(onclick='codeModal("/homework/' + value.logId + '", "' + extension + '", "' + name + '")')=name
 										else
-											#{name}
+											| #{name}
+
+										a.btn-link.pull-right(href='/homework/' + value.logId)
+											i.fa.fa-download
 								td=value.submitted
 
 	script(type='text/javascript').
