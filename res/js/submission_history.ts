@@ -436,6 +436,4 @@ namespace SubmissionHistory {
 
 	updateSelect();
 	send(currPage, true);
-
-	send(undefined, true);
 }

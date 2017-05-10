@@ -306,6 +306,5 @@ var SubmissionHistory;
     };
     updateSelect();
     send(currPage, true);
-    send(undefined, true);
 })(SubmissionHistory || (SubmissionHistory = {}));
 //# sourceMappingURL=submission_history.js.map
