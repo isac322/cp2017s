@@ -626,7 +626,7 @@ export function downloadSubmittedExercise(req: Request, res: Response) {
 			const row = result[0];
 
 			if (req.session.admin || row.studentId == req.session.studentId) {
-				if (row.originalFile) {
+				if (!('encoded' in req.query) && row.originalFile) {
 					res.download(path.join(submittedExerciseOriginalPath, row.originalFile), row.name);
 				}
 				else {

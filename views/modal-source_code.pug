@@ -41,7 +41,7 @@ block modal-code
 		function codeModal(link, lang, name) {
 			if (lang === 'hpp') lang = 'cpp';
 
-			$.ajax(link, {
+			$.ajax(link + '?encoded', {
 				success: function (data) {
 					$codeModalLabel.text(name);
 
