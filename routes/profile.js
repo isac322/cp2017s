@@ -22,4 +22,3 @@ class ProfileRoute extends route_1.BaseRoute {
     }
 }
 exports.ProfileRoute = ProfileRoute;
-//# sourceMappingURL=profile.js.map

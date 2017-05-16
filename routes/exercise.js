@@ -72,4 +72,3 @@ class ExerciseRoute extends route_1.BaseRoute {
     }
 }
 exports.ExerciseRoute = ExerciseRoute;
-//# sourceMappingURL=exercise.js.map

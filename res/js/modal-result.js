@@ -94,4 +94,3 @@ class ResultModal {
         this.$modal.modal();
     }
 }
-//# sourceMappingURL=modal-result.js.map

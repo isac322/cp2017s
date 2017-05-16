@@ -115,4 +115,3 @@ function downloadSubmittedHomework(req, res) {
     });
 }
 exports.downloadSubmittedHomework = downloadSubmittedHomework;
-//# sourceMappingURL=homework.js.map

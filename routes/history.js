@@ -55,4 +55,3 @@ class HistoryRoute extends route_1.BaseRoute {
     }
 }
 exports.HistoryRoute = HistoryRoute;
-//# sourceMappingURL=history.js.map

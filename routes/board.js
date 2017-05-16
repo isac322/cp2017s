@@ -22,4 +22,3 @@ class BoardRoute extends route_1.BaseRoute {
     }
 }
 exports.BoardRoute = BoardRoute;
-//# sourceMappingURL=board.js.map

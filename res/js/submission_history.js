@@ -307,4 +307,3 @@ var SubmissionHistory;
     updateSelect();
     send(currPage, true);
 })(SubmissionHistory || (SubmissionHistory = {}));
-//# sourceMappingURL=submission_history.js.map

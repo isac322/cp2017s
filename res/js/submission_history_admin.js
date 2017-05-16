@@ -316,4 +316,3 @@ var SubmissionHistoryAdmin;
     send(currPage, true);
     $('.emailCol').hide();
 })(SubmissionHistoryAdmin || (SubmissionHistoryAdmin = {}));
-//# sourceMappingURL=submission_history_admin.js.map

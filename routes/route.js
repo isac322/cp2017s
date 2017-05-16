@@ -26,4 +26,3 @@ class BaseRoute {
     }
 }
 exports.BaseRoute = BaseRoute;
-//# sourceMappingURL=route.js.map

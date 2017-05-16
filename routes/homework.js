@@ -160,4 +160,3 @@ HWRoute.guestHwQuery = 'SELECT homework.homework_id, homework.name, homework.sta
     '		ON homework.homework_id = homework_config.homework_id;';
 HWRoute.rowInPage = 30;
 exports.HWRoute = HWRoute;
-//# sourceMappingURL=homework.js.map

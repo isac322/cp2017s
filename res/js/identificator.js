@@ -42,4 +42,3 @@ function signOut() {
         xhr.send();
     });
 }
-//# sourceMappingURL=identificator.js.map

@@ -99,4 +99,3 @@ ProjectRoute.guestPjQuery = 'SELECT project.id, project.name, project.start_date
     '        LEFT JOIN project_config ' +
     '            ON project.id = project_config.project_id;';
 exports.ProjectRoute = ProjectRoute;
-//# sourceMappingURL=project.js.map

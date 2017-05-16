@@ -42,4 +42,3 @@ var SubmitHomework;
         $confirmModal.modal('show');
     });
 })(SubmitHomework || (SubmitHomework = {}));
-//# sourceMappingURL=submit_non_judging_file.js.map

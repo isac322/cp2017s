@@ -34,4 +34,3 @@ $('body').on('click', '.btn-remove-item', (event) => {
         currentForm.validator('update');
     });
 });
-//# sourceMappingURL=non_judging_add.js.map

@@ -65,4 +65,3 @@ var SubmitExercise;
         $confirmModal.modal('show');
     });
 })(SubmitExercise || (SubmitExercise = {}));
-//# sourceMappingURL=submit_exercise.js.map

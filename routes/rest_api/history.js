@@ -143,4 +143,3 @@ function historyList(req, res) {
     }
 }
 exports.historyList = historyList;
-//# sourceMappingURL=history.js.map

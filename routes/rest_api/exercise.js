@@ -453,4 +453,3 @@ function downloadSubmittedExercise(req, res) {
     });
 }
 exports.downloadSubmittedExercise = downloadSubmittedExercise;
-//# sourceMappingURL=exercise.js.map
