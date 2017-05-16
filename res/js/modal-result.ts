@@ -132,7 +132,7 @@ class ResultModal {
 		this.$modal.modal();
 	}
 
-	public setServerError(errorMsg:string) {
+	public setServerError(errorMsg: string) {
 		this.$body.children().hide();
 		this.$errorBody.show();
 

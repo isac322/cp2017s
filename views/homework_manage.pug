@@ -12,7 +12,7 @@ block header
 block content
 	.col-xs-12.page-header
 		h2.text-info
-			b Manage Homework
+			b Judging Homework
 
 	.row
 		.col-xs-6.form-group
@@ -27,9 +27,9 @@ block content
 			label(for='selHomework') Homework
 			select.form-control.selectpicker#selHomework
 				each homework in homeworkList
-					option(value=homework.homework_id)=decodeURIComponent(homework.name)
+					option(value=homework.homework_id, selected=currentId == homework.homework_id ? "" : undefined)=decodeURIComponent(homework.name)
 
-	each valueArray, student in boardMap
+	each fileArray, student in boardMap
 		.col-xs-12.col-sm-6.col-md-4.homework-table
 			h3
 				strong=userMap[student]
@@ -43,25 +43,40 @@ block content
 							th File name
 							th Submitted time
 					tbody
-						each value in valueArray
+						each file in fileArray
 							tr
 								td
-									- const extension = homeworkConfig[value.attachId].extension;
-									- const name = homeworkConfig[value.attachId].name;
+									- const extension = homeworkConfig[file.attachId].extension;
+									- const name = homeworkConfig[file.attachId].name;
 										if extension.valueOf() !== 'zip' && extension.valueOf() !== 'report'
-											button.btn-link.tdLinkBtn(onclick='codeModal("/homework/' + value.logId + '", "' + extension + '", "' + name + '")')=name
+											button.btn-link.tdLinkBtn(onclick='codeModal("/homework/' + file.logId + '", "' + extension + '", "' + name + '")')=name
 										else
 											| #{name}
 
-										a.btn-link.pull-right(href='/homework/' + value.logId)
+										a.btn-link.pull-right(href='/homework/' + file.logId)
 											i.fa.fa-download
-								td=value.submitted
+								td=file.submitted
 
 	script(type='text/javascript').
 		const col = document.documentElement.clientWidth >= 992 ? 3 : 2;
 		const cards = $('.homework-table');
 		for (let i = 0; i < cards.length; i += col) {
 			cards.slice(i, i + col).wrapAll('<div class="row"></div>');
+		}
+
+		const $selHomework = $('#selHomework');
+
+		function homeworkChangeHandler() {
+			const id = $selHomework.val();
+			document.location.href = '/homework/judge/' + id;
+		}
+
+		if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
+			$selHomework.selectpicker('mobile');
+			$selHomework.change(homeworkChangeHandler);
+		}
+		else {
+			$selHomework.on('changed.bs.select', homeworkChangeHandler);
 		}
 
 	include modal-source_code

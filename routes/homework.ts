@@ -76,8 +76,8 @@ export class HWRoute extends BaseRoute {
 			hwRouter.add(req, res, next);
 		});
 
-		router.get('/homework/manage', (req: Request, res: Response) => {
-			hwRouter.manage(req, res);
+		router.get('/homework/judge/:homeworkId([0-9]+)', (req: Request, res: Response) => {
+			hwRouter.judge(req, res);
 		});
 	}
 
@@ -159,6 +159,7 @@ export class HWRoute extends BaseRoute {
 		);
 	}
 
+
 	/**
 	 * The homework issuing page route.
 	 *
@@ -180,41 +181,38 @@ export class HWRoute extends BaseRoute {
 		}
 	}
 
+
 	/**
-	 * Managing page of submitted homework
+	 * Judging page of submitted homework
 	 *
 	 * @class HWRoute
-	 * @method manage
+	 * @method judge
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
 	 */
-	public manage(req: Request, res: Response) {
-		this.title = 'Manage Homework';
+	public judge(req: Request, res: Response) {
+		this.title = 'Judging Homework';
 
 		if (!req.session.admin) return res.redirect('/homework');
 
-		let homeworkId = req.params.id;
-		if (homeworkId == null) homeworkId = 1;
-
 		async.parallel(
 			[
-				(callback) => dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback),
+				(callback) => dbClient.query('SELECT name, student_id FROM user WHERE NOT is_dropped ORDER BY name;', callback),
 				(callback) => dbClient.query('SELECT homework_id, name FROM homework', callback),
 				(callback) => dbClient.query(
 					'SELECT homework_board.* ' +
 					'FROM homework_config JOIN homework_board ON homework_config.id = homework_board.attachment_id ' +
 					'WHERE homework_id = ?;',
-					homeworkId,
+					req.params.homeworkId,
 					callback),
 				(callback) => dbClient.query(
 					'SELECT id, name, extension FROM homework_config WHERE homework_id = ?;',
-					homeworkId,
-					callback),
-				(callback) => dbClient.query('SELECT student_id, name FROM user', callback)
+					req.params.homeworkId,
+					callback)
 			],
 			(err: IError, result: Array<[Array<any>, Array<IFieldInfo>]>) => {
 				if (err) {
-					logger.error('[HWRoute::manage]');
+					logger.error('[HWRoute::judge]');
 					logger.error(util.inspect(err, {showHidden: false}));
 					res.sendStatus(500);
 					return;
@@ -260,6 +258,7 @@ export class HWRoute extends BaseRoute {
 						return prev;
 					}, {});
 
+				res.locals.currentId = req.params.homeworkId;
 
 				//render template
 				this.render(req, res, 'homework_manage');
