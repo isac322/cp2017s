@@ -1,10 +1,12 @@
-import {Request, Response} from "express";
+import * as async from "async";
 import * as crypto from "crypto";
+import {Request, Response} from "express";
 import * as fs from "fs";
 import * as fs_ext from "fs-extra";
 import * as iconv from "iconv-lite";
 import {createConnection, IConnection, IError} from "mysql";
 import * as path from "path";
+import * as util from "util";
 import {
 	docker,
 	exerciseSetPath,
@@ -13,8 +15,6 @@ import {
 	submittedExercisePath,
 	tempPath
 } from "../../app";
-import * as util from "util";
-import * as async from "async";
 
 const charsetDetector = require('detect-character-encoding');
 
@@ -87,7 +87,8 @@ export function uploadExercise(req: Request, res: Response) {
 
 	// get information of this exercise by given id (attachId)
 	dbClient.query(
-		'SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', attachId,
+		'SELECT name, extension, test_set_size, input_through_arg, no_compile FROM exercise_config WHERE id = ?;',
+		attachId,
 		(err: IError, searchResult) => {
 			if (err) {
 				logger.error('[rest_api::uploadExercise::select] : ');
@@ -96,46 +97,74 @@ export function uploadExercise(req: Request, res: Response) {
 				return;
 			}
 
-
-			// a temporarily created shared path that contains source code to judge
-			const sourcePath = fs.mkdtempSync(path.join(tempPath, studentId + '_'));
-			// a temporarily created shared path that will contain output
-			const outputPath = fs.mkdtempSync(path.join(tempPath, studentId + '_'));
-
-
-			// write config file of this judge to shared folder
-			fs.writeFile(
-				path.join(sourcePath, 'config.json'),
-				JSON.stringify({
-					sourceName: searchResult[0].name,
-					extension: searchResult[0].extension,
-					testSetSize: searchResult[0].test_set_size,
-					inputThroughArg: searchResult[0].input_through_arg
-				}),
-				{mode: 0o400}
-			);
-
-			// copy given source code to shared folder
-			fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, {mode: 0o600});
+			if (!searchResult[0].no_compile) {
+				// a temporarily created shared path that contains source code to judge
+				const sourcePath = fs.mkdtempSync(path.join(tempPath, studentId + '_'));
+				// a temporarily created shared path that will contain output
+				const outputPath = fs.mkdtempSync(path.join(tempPath, studentId + '_'));
 
 
-			dbClient.query(
-				'INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);',
-				[studentId, attachId, req.session.email, hashedName, hashedOriginal],
-				(err: IError, insertResult) => {
-					if (err) {
-						logger.error('[rest_api::uploadExercise::insert] : ');
-						logger.error(util.inspect(err, {showHidden: false}));
-						res.sendStatus(500);
-						return;
+				// write config file of this judge to shared folder
+				fs.writeFile(
+					path.join(sourcePath, 'config.json'),
+					JSON.stringify({
+						sourceName: searchResult[0].name,
+						extension: searchResult[0].extension,
+						testSetSize: searchResult[0].test_set_size,
+						inputThroughArg: searchResult[0].input_through_arg
+					}),
+					{mode: 0o400}
+				);
+
+				// copy given source code to shared folder
+				fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, {mode: 0o600});
+
+
+				dbClient.query(
+					'INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);',
+					[studentId, attachId, req.session.email, hashedName, hashedOriginal],
+					(err: IError, insertResult) => {
+						if (err) {
+							logger.error('[rest_api::uploadExercise::insert] : ');
+							logger.error(util.inspect(err, {showHidden: false}));
+							res.sendStatus(500);
+							return;
+						}
+
+						logger.debug('[uploadExercise:insert into exercise_log]');
+						logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
+
+						runJudging(res, insertResult.insertId, attachId, outputPath, sourcePath);
 					}
+				);
+			}
 
-					logger.debug('[uploadExercise:insert into exercise_log]');
-					logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
+			else {
+				dbClient.query(
+					'INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);',
+					[studentId, attachId, req.session.email, hashedName, hashedOriginal],
+					(err: IError, insertResult) => {
+						if (err) {
+							logger.error('[rest_api::uploadExercise::insert] : ');
+							logger.error(util.inspect(err, {showHidden: false}));
+							res.sendStatus(500);
+							return;
+						}
 
-					runJudging(res, insertResult.insertId, attachId, outputPath, sourcePath);
-				}
-			);
+						res.sendStatus(200);
+
+						dbClient.query(
+							'INSERT INTO exercise_result (log_id, type) VALUE (?, ?);',
+							[insertResult.insertId, Result.correct],
+							(err) => {
+								if (err) {
+									logger.error('[rest_api::uploadExercise::insert_judge_correct] : ');
+									logger.error(util.inspect(err, {showHidden: false}));
+								}
+							});
+					}
+				);
+			}
 		}
 	);
 }
