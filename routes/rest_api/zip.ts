@@ -6,8 +6,10 @@ export interface ZipEntry {
 	[student_id: string]: { [fileName: string]: ReadStream }
 }
 
-export function sendZip(res: express.Response, entries: ZipEntry) {
+export function sendZip(res: express.Response, entries: ZipEntry, fileName: string) {
 	const file = archiver('zip', {gzipOptions: {level: 9}});
+
+	res.setHeader('Content-disposition', `attachment; filename=${fileName}.zip`);
 
 	file.pipe(res);
 

@@ -3,7 +3,7 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import * as util from "util";
 import {logger, submittedHomeworkPath} from "../../app";
-import {createConnection, escape, IConnection, IError} from "mysql";
+import {createConnection, escape, IConnection, IError, IFieldInfo} from "mysql";
 import * as path from "path";
 import {sendZip, ZipEntry} from "./zip";
 
@@ -186,14 +186,16 @@ export function downloadSingle(req: Request, res: Response) {
 export function downloadAll(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
-	dbClient.query(
-		'SELECT student_id, file_name, name ' +
-		'FROM homework_config JOIN homework_board ON homework_config.id = homework_board.attachment_id ' +
-		`WHERE homework_id = ${req.params.homeworkId}` +
-		('studentId' in req.query ?
-			` student_id = ${req.query.studentId};` :
-			''),
-		(err: IError, result: Array<any>) => {
+	async.parallel([
+			(callback) => dbClient.query(`SELECT name FROM homework WHERE homework_id = ${req.params.homeworkId}`, callback),
+			(callback) =>
+				dbClient.query(
+					'SELECT student_id, file_name, name ' +
+					'FROM homework_config JOIN homework_board ON homework_config.id = homework_board.attachment_id ' +
+					`WHERE homework_id = ${req.params.homeworkId}` +
+					('studentId' in req.query ? ` student_id = ${req.query.studentId};` : ''), callback)
+		],
+		(err: IError, result: Array<[Array<any>, Array<IFieldInfo>]>) => {
 			if (err) {
 				logger.error('[rest_api::downloadAll::search] : ');
 				logger.error(util.inspect(err, {showHidden: false}));
@@ -207,13 +209,13 @@ export function downloadAll(req: Request, res: Response) {
 				name: string
 			};
 
-			const entries = result.reduce((prev: ZipEntry, cur: Entry) => {
+			const entries = result[0][0].reduce((prev: ZipEntry, cur: Entry) => {
 				if (!(cur.student_id in prev)) prev[cur.student_id] = {};
 				prev[cur.student_id][cur.name] = fs.createReadStream(path.join(submittedHomeworkPath, cur.file_name));
 				return prev;
 			}, {});
 
-			sendZip(res, entries);
+			sendZip(res, entries, result[1][0][0].name);
 		}
 	);
 }

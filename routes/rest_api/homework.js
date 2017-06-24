@@ -119,25 +119,26 @@ exports.downloadSingle = downloadSingle;
 function downloadAll(req, res) {
     if (!req.session.admin)
         return res.sendStatus(401);
-    dbClient.query('SELECT student_id, file_name, name ' +
-        'FROM homework_config JOIN homework_board ON homework_config.id = homework_board.attachment_id ' +
-        `WHERE homework_id = ${req.params.homeworkId}` +
-        ('studentId' in req.query ?
-            ` student_id = ${req.query.studentId};` :
-            ''), (err, result) => {
+    async.parallel([
+        (callback) => dbClient.query(`SELECT name FROM homework WHERE homework_id = ${req.params.homeworkId}`, callback),
+        (callback) => dbClient.query('SELECT student_id, file_name, name ' +
+            'FROM homework_config JOIN homework_board ON homework_config.id = homework_board.attachment_id ' +
+            `WHERE homework_id = ${req.params.homeworkId}` +
+            ('studentId' in req.query ? ` student_id = ${req.query.studentId};` : ''), callback)
+    ], (err, result) => {
         if (err) {
             app_1.logger.error('[rest_api::downloadAll::search] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false }));
             res.sendStatus(500);
             return;
         }
-        const entries = result.reduce((prev, cur) => {
+        const entries = result[0][0].reduce((prev, cur) => {
             if (!(cur.student_id in prev))
                 prev[cur.student_id] = {};
             prev[cur.student_id][cur.name] = fs.createReadStream(path.join(app_1.submittedHomeworkPath, cur.file_name));
             return prev;
         }, {});
-        zip_1.sendZip(res, entries);
+        zip_1.sendZip(res, entries, result[1][0][0].name);
     });
 }
 exports.downloadAll = downloadAll;
