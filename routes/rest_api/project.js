@@ -125,7 +125,7 @@ function downloadAll(req, res) {
         (callback) => dbClient.query('SELECT student_id, file_name, name ' +
             'FROM project_config JOIN project_board ON project_config.id = project_board.attachment_id ' +
             `WHERE project_id = ${req.params.projectId}` +
-            ('studentId' in req.query ? ` AND student_id = ${req.query.studentId};` : ''), callback)
+            ('studentId' in req.query ? ` AND student_id = \'${req.query.studentId}\';` : ''), callback)
     ], (err, result) => {
         if (err) {
             app_1.logger.error('[rest_api::downloadAll::search] : ');

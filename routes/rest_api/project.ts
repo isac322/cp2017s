@@ -194,7 +194,7 @@ export function downloadAll(req: Request, res: Response) {
 					'SELECT student_id, file_name, name ' +
 					'FROM project_config JOIN project_board ON project_config.id = project_board.attachment_id ' +
 					`WHERE project_id = ${req.params.projectId}` +
-					('studentId' in req.query ? ` AND student_id = ${req.query.studentId};` : ''), callback)
+					('studentId' in req.query ? ` AND student_id = \'${req.query.studentId}\';` : ''), callback)
 		],
 		(err: IError, result: Array<[Array<any>, Array<IFieldInfo>]>) => {
 			if (err) {
