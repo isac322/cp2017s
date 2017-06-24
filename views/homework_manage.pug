@@ -28,6 +28,8 @@ block content
 			select.form-control.selectpicker#selHomework
 				each homework in homeworkList
 					option(value=homework.homework_id, selected=currentId == homework.homework_id ? "" : undefined)=decodeURIComponent(homework.name)
+	a(href='/homework/zip/' + currentId)
+		h2 #[i.fa.fa-download] Download all as zip
 
 	each fileArray, student in boardMap
 		.col-xs-12.col-sm-6.col-md-4.homework-table
@@ -35,6 +37,7 @@ block content
 				strong=userMap[student]
 				| &nbsp
 				small=student
+				a.pull-right(href='/homework/zip/' + currentId + '?studentId=' + student) #[i.fa.fa-download] zip
 
 			.table-responsive
 				table.table.table-bordered.table-striped.table-hover

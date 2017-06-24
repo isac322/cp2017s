@@ -21,3 +21,19 @@ export function sendZip(res: express.Response, entries: ZipEntry, fileName: stri
 
 	file.finalize();
 }
+
+export function sendSingleZip(res: express.Response, entry: ZipEntry, fileName: string) {
+	const file = archiver('zip', {gzipOptions: {level: 9}});
+
+	res.setHeader('Content-disposition', `attachment; filename=${fileName}.zip`);
+
+	file.pipe(res);
+
+	for (const studentId in entry) {
+		for (const name in entry[studentId]) {
+			file.append(entry[studentId][name], {name: `${name}`})
+		}
+	}
+
+	file.finalize();
+}

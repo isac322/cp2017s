@@ -125,7 +125,7 @@ function downloadAll(req, res) {
         (callback) => dbClient.query('SELECT student_id, file_name, name ' +
             'FROM project_config JOIN project_board ON project_config.id = project_board.attachment_id ' +
             `WHERE project_id = ${req.params.projectId}` +
-            ('studentId' in req.query ? ` student_id = ${req.query.studentId};` : ''), callback)
+            ('studentId' in req.query ? ` AND student_id = ${req.query.studentId};` : ''), callback)
     ], (err, result) => {
         if (err) {
             app_1.logger.error('[rest_api::downloadAll::search] : ');
@@ -139,7 +139,10 @@ function downloadAll(req, res) {
             prev[cur.student_id][cur.name] = fs.createReadStream(path.join(app_1.submittedProjectPath, cur.file_name));
             return prev;
         }, {});
-        zip_1.sendZip(res, entries, result[0][0][0].name);
+        if (Object.keys(entries).length == 1)
+            zip_1.sendSingleZip(res, entries, result[1][0][0].student_id);
+        else
+            zip_1.sendZip(res, entries, result[0][0][0].name);
     });
 }
 exports.downloadAll = downloadAll;

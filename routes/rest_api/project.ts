@@ -6,7 +6,7 @@ import {createConnection, escape, IConnection, IError, IFieldInfo} from "mysql";
 import * as path from "path";
 import * as util from "util";
 import {logger, submittedProjectPath} from "../../app";
-import {sendZip, ZipEntry} from "./zip";
+import {sendSingleZip, sendZip, ZipEntry} from "./zip";
 
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
@@ -194,7 +194,7 @@ export function downloadAll(req: Request, res: Response) {
 					'SELECT student_id, file_name, name ' +
 					'FROM project_config JOIN project_board ON project_config.id = project_board.attachment_id ' +
 					`WHERE project_id = ${req.params.projectId}` +
-					('studentId' in req.query ? ` student_id = ${req.query.studentId};` : ''), callback)
+					('studentId' in req.query ? ` AND student_id = ${req.query.studentId};` : ''), callback)
 		],
 		(err: IError, result: Array<[Array<any>, Array<IFieldInfo>]>) => {
 			if (err) {
@@ -216,7 +216,8 @@ export function downloadAll(req: Request, res: Response) {
 				return prev;
 			}, {});
 
-			sendZip(res, entries, result[0][0][0].name);
+			if (Object.keys(entries).length == 1) sendSingleZip(res, entries, result[1][0][0].student_id);
+			else sendZip(res, entries, result[0][0][0].name);
 		}
 	);
 }
