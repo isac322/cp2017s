@@ -79,7 +79,8 @@ export function upload(req: Request, res: Response) {
 
 	// get information of this exercise by given id (attachId)
 	dbClient.query(
-		'SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', attachId,
+		'SELECT name, extension, test_set_size, input_through_arg, no_compile FROM exercise_config WHERE id = ?;',
+		attachId,
 		(err: IError, searchResult) => {
 			if (err) {
 				logger.error('[rest_api::uploadExercise::select] : ');
@@ -110,33 +111,60 @@ export function upload(req: Request, res: Response) {
 			// copy given source code to shared folder
 			fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, {mode: 0o600});
 
+			if (searchResult[0].no_compile) {
+				dbClient.query(
+					'INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);',
+					[studentId, attachId, req.session.email, hashedName, hashedOriginal],
+					(err: IError, insertResult) => {
+						if (err) {
+							logger.error('[rest_api::uploadExercise::insert] : ');
+							logger.error(util.inspect(err, {showHidden: false}));
+							res.sendStatus(500);
+							return;
+						}
 
-			dbClient.query(
-				'INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);',
-				[studentId, attachId, req.session.email, hashedName, hashedOriginal],
-				(err: IError, insertResult) => {
-					if (err) {
-						logger.error('[rest_api::uploadExercise::insert] : ');
-						logger.error(util.inspect(err, {showHidden: false}));
-						res.sendStatus(500);
-						return;
+						logger.debug('[uploadExercise:insert into exercise_log]');
+						logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
+
+						const inputPath = path.join(exerciseSetPath, attachId.toString(), 'input');
+						const answerPath = path.join(exerciseSetPath, attachId.toString(), 'output');
+
+						runJudge(outputPath, sourcePath, inputPath, answerPath,
+							(err: Error, code: ResultEnum, result: JudgeResult) => {
+								async.parallel([
+									() => sendResult(res, code, result, inputPath, answerPath, insertResult.insertId),
+									() => storeResult(code, result, insertResult.insertId)
+								]);
+							});
 					}
+				);
+			}
+			else {
+				dbClient.query(
+					'INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);',
+					[studentId, attachId, req.session.email, hashedName, hashedOriginal],
+					(err: IError, insertResult) => {
+						if (err) {
+							logger.error('[rest_api::uploadExercise::insert] : ');
+							logger.error(util.inspect(err, {showHidden: false}));
+							res.sendStatus(500);
+							return;
+						}
 
-					logger.debug('[uploadExercise:insert into exercise_log]');
-					logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
+						res.sendStatus(200);
 
-					const inputPath = path.join(exerciseSetPath, attachId.toString(), 'input');
-					const answerPath = path.join(exerciseSetPath, attachId.toString(), 'output');
-
-					runJudge(outputPath, sourcePath, inputPath, answerPath,
-						(err: Error, code: ResultEnum, result: JudgeResult) => {
-							async.parallel([
-								() => sendResult(res, code, result, inputPath, answerPath, insertResult.insertId),
-								() => storeResult(code, result, insertResult.insertId)
-							]);
-						});
-				}
-			);
+						dbClient.query(
+							'INSERT INTO exercise_result (log_id, type) VALUE (?, ?);',
+							[insertResult.insertId, ResultEnum.correct],
+							(err) => {
+								if (err) {
+									logger.error('[rest_api::uploadExercise::insert_judge_correct] : ');
+									logger.error(util.inspect(err, {showHidden: false}));
+								}
+							});
+					}
+				);
+			}
 		}
 	);
 }

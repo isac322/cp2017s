@@ -53,7 +53,7 @@ function upload(req, res) {
             app_1.logger.error(util.inspect(err, { showHidden: false }));
         }
     });
-    dbClient.query('SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', attachId, (err, searchResult) => {
+    dbClient.query('SELECT name, extension, test_set_size, input_through_arg, no_compile FROM exercise_config WHERE id = ?;', attachId, (err, searchResult) => {
         if (err) {
             app_1.logger.error('[rest_api::uploadExercise::select] : ');
             app_1.logger.error(util.inspect(err, { showHidden: false }));
@@ -69,24 +69,43 @@ function upload(req, res) {
             inputThroughArg: searchResult[0].input_through_arg
         }), { mode: 0o400 });
         fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, { mode: 0o600 });
-        dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);', [studentId, attachId, req.session.email, hashedName, hashedOriginal], (err, insertResult) => {
-            if (err) {
-                app_1.logger.error('[rest_api::uploadExercise::insert] : ');
-                app_1.logger.error(util.inspect(err, { showHidden: false }));
-                res.sendStatus(500);
-                return;
-            }
-            app_1.logger.debug('[uploadExercise:insert into exercise_log]');
-            app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
-            const inputPath = path.join(app_1.exerciseSetPath, attachId.toString(), 'input');
-            const answerPath = path.join(app_1.exerciseSetPath, attachId.toString(), 'output');
-            judge_1.runJudge(outputPath, sourcePath, inputPath, answerPath, (err, code, result) => {
-                async.parallel([
-                    () => sendResult(res, code, result, inputPath, answerPath, insertResult.insertId),
-                    () => storeResult(code, result, insertResult.insertId)
-                ]);
+        if (searchResult[0].no_compile) {
+            dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);', [studentId, attachId, req.session.email, hashedName, hashedOriginal], (err, insertResult) => {
+                if (err) {
+                    app_1.logger.error('[rest_api::uploadExercise::insert] : ');
+                    app_1.logger.error(util.inspect(err, { showHidden: false }));
+                    res.sendStatus(500);
+                    return;
+                }
+                app_1.logger.debug('[uploadExercise:insert into exercise_log]');
+                app_1.logger.debug(util.inspect(insertResult, { showHidden: false, depth: 1 }));
+                const inputPath = path.join(app_1.exerciseSetPath, attachId.toString(), 'input');
+                const answerPath = path.join(app_1.exerciseSetPath, attachId.toString(), 'output');
+                judge_1.runJudge(outputPath, sourcePath, inputPath, answerPath, (err, code, result) => {
+                    async.parallel([
+                        () => sendResult(res, code, result, inputPath, answerPath, insertResult.insertId),
+                        () => storeResult(code, result, insertResult.insertId)
+                    ]);
+                });
             });
-        });
+        }
+        else {
+            dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);', [studentId, attachId, req.session.email, hashedName, hashedOriginal], (err, insertResult) => {
+                if (err) {
+                    app_1.logger.error('[rest_api::uploadExercise::insert] : ');
+                    app_1.logger.error(util.inspect(err, { showHidden: false }));
+                    res.sendStatus(500);
+                    return;
+                }
+                res.sendStatus(200);
+                dbClient.query('INSERT INTO exercise_result (log_id, type) VALUE (?, ?);', [insertResult.insertId, 0], (err) => {
+                    if (err) {
+                        app_1.logger.error('[rest_api::uploadExercise::insert_judge_correct] : ');
+                        app_1.logger.error(util.inspect(err, { showHidden: false }));
+                    }
+                });
+            });
+        }
     });
 }
 exports.upload = upload;
