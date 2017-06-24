@@ -5,6 +5,7 @@ import {createConnection, escape, IConnection, IError} from "mysql";
 import * as util from "util";
 import {logger, submittedProjectPath} from "../../app";
 import * as path from "path";
+import {sendZip, ZipEntry} from "./zip";
 
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
@@ -19,11 +20,11 @@ const dbClient: IConnection = createConnection({
 /**
  * creating a new project request api.
  *
- * @method createProject
+ * @method create
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function createProject(req: Request, res: Response) {
+export function create(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
 	const name = encodeURIComponent(req.body.name);
@@ -80,11 +81,11 @@ export function createProject(req: Request, res: Response) {
 /**
  * The attachment upload request api.
  *
- * @method uploadProject
+ * @method upload
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function uploadProject(req: Request, res: Response) {
+export function upload(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
 	const hash = crypto.createHash('sha512');
@@ -124,11 +125,11 @@ export function uploadProject(req: Request, res: Response) {
 /**
  * Check uploaded name is already exist.
  *
- * @method checkProjectName
+ * @method checkName
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function checkProjectName(req: Request, res: Response) {
+export function checkName(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
 	dbClient.query(
@@ -150,11 +151,11 @@ export function checkProjectName(req: Request, res: Response) {
 /**
  * Send project file.
  *
- * @method downloadSubmittedProject
+ * @method downloadSingle
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function downloadSubmittedProject(req: Request, res: Response) {
+export function downloadSingle(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
 	dbClient.query(
@@ -180,4 +181,39 @@ export function downloadSubmittedProject(req: Request, res: Response) {
 				res.sendStatus(401);
 			}
 		});
+}
+
+export function downloadAll(req: Request, res: Response) {
+	if (!req.session.admin) return res.sendStatus(401);
+
+	dbClient.query(
+		'SELECT student_id, file_name, name ' +
+		'FROM project_config JOIN project_board ON project_config.id = project_board.attachment_id ' +
+		`WHERE project_id = ${req.params.projectId}` +
+		('studentId' in req.query ?
+			` student_id = ${req.query.studentId};` :
+			''),
+		(err: IError, result: Array<any>) => {
+			if (err) {
+				logger.error('[rest_api::downloadAll::search] : ');
+				logger.error(util.inspect(err, {showHidden: false}));
+				res.sendStatus(500);
+				return;
+			}
+
+			type Entry = {
+				student_id: string,
+				file_name: string,
+				name: string
+			};
+
+			const entries = result.reduce((prev: ZipEntry, cur: Entry) => {
+				if (!(cur.student_id in prev)) prev[cur.student_id] = {};
+				prev[cur.student_id][cur.name] = fs.createReadStream(path.join(submittedProjectPath, cur.file_name));
+				return prev;
+			}, {});
+
+			sendZip(res, entries);
+		}
+	);
 }

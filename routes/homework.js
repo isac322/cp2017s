@@ -27,17 +27,17 @@ class HWRoute extends route_1.BaseRoute {
     static create(router) {
         app_1.logger.debug('[HWRoute::create] Creating homework route.');
         const hwRouter = new HWRoute();
-        router.get('/homework', (req, res, next) => {
-            hwRouter.homework(req, res, next);
+        router.get('/homework', (req, res) => {
+            hwRouter.homework(req, res);
         });
-        router.get('/homework/add', (req, res, next) => {
-            hwRouter.add(req, res, next);
+        router.get('/homework/add', (req, res) => {
+            hwRouter.add(req, res);
         });
         router.get('/homework/judge/:homeworkId([0-9]+)', (req, res) => {
             hwRouter.judge(req, res);
         });
     }
-    homework(req, res, next) {
+    homework(req, res) {
         this.title = 'Homework List';
         dbClient.query(req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery, (err, searchResult) => {
             if (err) {
@@ -74,7 +74,7 @@ class HWRoute extends route_1.BaseRoute {
             this.render(req, res, 'homework');
         });
     }
-    add(req, res, next) {
+    add(req, res) {
         this.title = 'Create Homework';
         if (!req.session.admin) {
             return res.redirect('/homework');

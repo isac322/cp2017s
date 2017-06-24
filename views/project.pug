@@ -27,6 +27,9 @@ block content
 					.col-xs-12
 						h2.wrapped-text.card-header
 							b=project.name
+							if admin
+								small
+									a(href='/project/judge/' + project.id).pull-right #[i.fa.fa-gavel(aria-hidden='true')] Judge
 
 						.row
 							.col-xs-12.col-sm-4.col-md-12

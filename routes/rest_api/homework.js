@@ -6,6 +6,7 @@ const util = require("util");
 const app_1 = require("../../app");
 const mysql_1 = require("mysql");
 const path = require("path");
+const zip_1 = require("./zip");
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
 const dbClient = mysql_1.createConnection({
     host: dbConfig.host,
@@ -13,7 +14,7 @@ const dbClient = mysql_1.createConnection({
     password: dbConfig.password,
     database: dbConfig.database
 });
-function createHomework(req, res) {
+function create(req, res) {
     if (!req.session.admin)
         return res.sendStatus(401);
     const name = encodeURIComponent(req.body.name);
@@ -49,8 +50,8 @@ function createHomework(req, res) {
         res.redirect('/homework');
     });
 }
-exports.createHomework = createHomework;
-function uploadHomework(req, res) {
+exports.create = create;
+function upload(req, res) {
     if (!req.session.signIn)
         return res.sendStatus(401);
     const hash = crypto.createHash('sha512');
@@ -77,8 +78,8 @@ function uploadHomework(req, res) {
         res.sendStatus(202);
     });
 }
-exports.uploadHomework = uploadHomework;
-function checkHomeworkName(req, res) {
+exports.upload = upload;
+function checkName(req, res) {
     if (!req.session.admin)
         return res.sendStatus(401);
     dbClient.query('SELECT * FROM homework WHERE name = ?;', encodeURIComponent(req.query.name), (err, searchResult) => {
@@ -91,8 +92,8 @@ function checkHomeworkName(req, res) {
         res.sendStatus(searchResult.length == 0 ? 200 : 409);
     });
 }
-exports.checkHomeworkName = checkHomeworkName;
-function downloadSubmittedHomework(req, res) {
+exports.checkName = checkName;
+function downloadSingle(req, res) {
     if (!req.session.signIn)
         return res.sendStatus(401);
     dbClient.query('SELECT student_id AS `studentId`, file_name AS `fileName`, name ' +
@@ -114,4 +115,29 @@ function downloadSubmittedHomework(req, res) {
         }
     });
 }
-exports.downloadSubmittedHomework = downloadSubmittedHomework;
+exports.downloadSingle = downloadSingle;
+function downloadAll(req, res) {
+    if (!req.session.admin)
+        return res.sendStatus(401);
+    dbClient.query('SELECT student_id, file_name, name ' +
+        'FROM homework_config JOIN homework_board ON homework_config.id = homework_board.attachment_id ' +
+        `WHERE homework_id = ${req.params.homeworkId}` +
+        ('studentId' in req.query ?
+            ` student_id = ${req.query.studentId};` :
+            ''), (err, result) => {
+        if (err) {
+            app_1.logger.error('[rest_api::downloadAll::search] : ');
+            app_1.logger.error(util.inspect(err, { showHidden: false }));
+            res.sendStatus(500);
+            return;
+        }
+        const entries = result.reduce((prev, cur) => {
+            if (!(cur.student_id in prev))
+                prev[cur.student_id] = {};
+            prev[cur.student_id][cur.name] = fs.createReadStream(path.join(app_1.submittedHomeworkPath, cur.file_name));
+            return prev;
+        }, {});
+        zip_1.sendZip(res, entries);
+    });
+}
+exports.downloadAll = downloadAll;

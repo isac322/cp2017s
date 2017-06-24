@@ -20,11 +20,11 @@ const dbClient: IConnection = createConnection({
 /**
  * creating a new homework request api.
  *
- * @method createHomework
+ * @method create
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function createHomework(req: Request, res: Response) {
+export function create(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
 	const name = encodeURIComponent(req.body.name);
@@ -81,11 +81,11 @@ export function createHomework(req: Request, res: Response) {
 /**
  * The attachment upload request api.
  *
- * @method uploadHomework
+ * @method upload
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function uploadHomework(req: Request, res: Response) {
+export function upload(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
 	const hash = crypto.createHash('sha512');
@@ -125,11 +125,11 @@ export function uploadHomework(req: Request, res: Response) {
 /**
  * Check uploaded name is already exist.
  *
- * @method checkHomeworkName
+ * @method checkName
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function checkHomeworkName(req: Request, res: Response) {
+export function checkName(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
 	dbClient.query(
@@ -151,11 +151,11 @@ export function checkHomeworkName(req: Request, res: Response) {
 /**
  * Send homework file.
  *
- * @method downloadSubmittedHomework
+ * @method downloadSingle
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function downloadSubmittedHomework(req: Request, res: Response) {
+export function downloadSingle(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
 	dbClient.query(

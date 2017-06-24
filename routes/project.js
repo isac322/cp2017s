@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const util = require("util");
-const app_1 = require("../app");
-const route_1 = require("./route");
-const homework_1 = require("./homework");
+const async = require("async");
 const fs = require("fs");
 const mysql_1 = require("mysql");
+const util = require("util");
+const app_1 = require("../app");
+const homework_1 = require("./homework");
+const route_1 = require("./route");
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
 const dbClient = mysql_1.createConnection({
     host: dbConfig.host,
@@ -21,14 +22,17 @@ class ProjectRoute extends route_1.BaseRoute {
     static create(router) {
         app_1.logger.debug('[ProjectRoute::create] Creating project route.');
         const projectRoute = new ProjectRoute();
-        router.get('/project', (req, res, next) => {
-            projectRoute.project(req, res, next);
+        router.get('/project', (req, res) => {
+            projectRoute.project(req, res);
         });
-        router.get('/project/add', (req, res, next) => {
-            projectRoute.add(req, res, next);
+        router.get('/project/add', (req, res) => {
+            projectRoute.add(req, res);
+        });
+        router.get('/project/judge/:projectId([0-9]+)', (req, res) => {
+            projectRoute.judge(req, res);
         });
     }
-    project(req, res, next) {
+    project(req, res) {
         this.title = 'Project List';
         if (!req.session.signIn)
             return res.redirect('/');
@@ -67,7 +71,7 @@ class ProjectRoute extends route_1.BaseRoute {
             this.render(req, res, 'project');
         });
     }
-    add(req, res, next) {
+    add(req, res) {
         this.title = 'Create Project';
         if (!req.session.admin) {
             return res.redirect('/project');
@@ -75,6 +79,56 @@ class ProjectRoute extends route_1.BaseRoute {
         else {
             return this.render(req, res, 'project_add');
         }
+    }
+    judge(req, res) {
+        this.title = 'Judging Project';
+        if (!req.session.admin)
+            return res.redirect('/project');
+        async.parallel([
+            (callback) => dbClient.query('SELECT name, student_id FROM user WHERE NOT is_dropped ORDER BY name;', callback),
+            (callback) => dbClient.query('SELECT id, name FROM project', callback),
+            (callback) => dbClient.query('SELECT project_board.* ' +
+                'FROM project_config JOIN project_board ON project_config.id = project_board.attachment_id ' +
+                'WHERE project_id = ?;', req.params.projectId, callback),
+            (callback) => dbClient.query('SELECT id, name, extension FROM project_config WHERE project_id = ?;', req.params.projectId, callback)
+        ], (err, result) => {
+            if (err) {
+                app_1.logger.error('[ProjectRoute::judge]');
+                app_1.logger.error(util.inspect(err, { showHidden: false }));
+                res.sendStatus(500);
+                return;
+            }
+            res.locals.userList = result[0][0];
+            res.locals.projectList = result[1][0];
+            res.locals.boardMap = result[2][0].reduce((prev, curr) => {
+                let elem = prev[curr.student_id];
+                const item = {
+                    logId: curr.log_id,
+                    attachId: curr.attachment_id,
+                    submitted: curr.submitted.toLocaleString()
+                };
+                if (elem) {
+                    elem.push(item);
+                }
+                else {
+                    prev[curr.student_id] = [item];
+                }
+                return prev;
+            }, {});
+            res.locals.projectConfig = result[3][0].reduce((prev, curr) => {
+                prev[curr.id] = {
+                    name: decodeURIComponent(curr.name),
+                    extension: curr.extension
+                };
+                return prev;
+            }, {});
+            res.locals.userMap = result[0][0].reduce((prev, curr) => {
+                prev[curr.student_id] = decodeURIComponent(curr.name);
+                return prev;
+            }, {});
+            res.locals.currentId = req.params.projectId;
+            this.render(req, res, 'project_manage');
+        });
     }
 }
 ProjectRoute.pjQuery = (studentId) => {

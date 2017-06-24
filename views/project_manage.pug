@@ -1,0 +1,82 @@
+extends layout
+
+block header
+	script(src='/js/bootstrap-select.min.js')
+	link(rel='stylesheet', href='/css/bootstrap-select.min.css')
+	style.
+		.tdLinkBtn {
+			padding: 0;
+			border: 0;
+		}
+
+block content
+	.col-xs-12.page-header
+		h2.text-info
+			b Judging Project
+
+	.row
+		.col-xs-6.form-group
+			label(for='selectUser')
+				| User
+				| #[small.text-muted (Multiple selection)]
+			select.form-control.selectpicker#selectUser(multiple, title='All', data-actions-box='true', data-live-search='true')
+				each user in userList
+					option(value=user.student_id, data-subtext=user.student_id)=decodeURIComponent(user.name)
+
+		.col-xs-6.form-group
+			label(for='selProject') Project
+			select.form-control.selectpicker#selProject
+				each project in projectList
+					option(value=project.id, selected=currentId == project.id ? "" : undefined)=decodeURIComponent(project.name)
+
+	each fileArray, student in boardMap
+		.col-xs-12.col-sm-6.col-md-4.project-table
+			h3
+				strong=userMap[student]
+				| &nbsp
+				small=student
+
+			.table-responsive
+				table.table.table-bordered.table-striped.table-hover
+					thead
+						tr
+							th File name
+							th Submitted time
+					tbody
+						each file in fileArray
+							tr
+								td
+									- const extension = projectConfig[file.attachId].extension;
+									- const name = projectConfig[file.attachId].name;
+										if extension.valueOf() !== 'zip' && extension.valueOf() !== 'report'
+											button.btn-link.tdLinkBtn(onclick='codeModal("/project/' + file.logId + '", "' + extension + '", "' + name + '")')=name
+										else
+											| #{name}
+
+										a.btn-link.pull-right(href='/project/' + file.logId)
+											i.fa.fa-download
+								td=file.submitted
+
+	script(type='text/javascript').
+		const col = document.documentElement.clientWidth >= 992 ? 3 : 2;
+		const cards = $('.project-table');
+		for (let i = 0; i < cards.length; i += col) {
+			cards.slice(i, i + col).wrapAll('<div class="row"></div>');
+		}
+
+		const $selProject = $('#selProject');
+
+		function projectChangeHandler() {
+			const id = $selProject.val();
+			document.location.href = '/project/judge/' + id;
+		}
+
+		if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
+			$selProject.selectpicker('mobile');
+			$selProject.change(projectChangeHandler);
+		}
+		else {
+			$selProject.on('changed.bs.select', projectChangeHandler);
+		}
+
+	include modal-source_code

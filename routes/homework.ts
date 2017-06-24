@@ -1,4 +1,4 @@
-import {NextFunction, Request, Response, Router} from "express";
+import {Request, Response, Router} from "express";
 import * as util from "util";
 import {logger} from "../app";
 import {BaseRoute} from "./route";
@@ -68,12 +68,12 @@ export class HWRoute extends BaseRoute {
 		const hwRouter = new HWRoute();
 
 		//add homework page route
-		router.get('/homework', (req: Request, res: Response, next: NextFunction) => {
-			hwRouter.homework(req, res, next);
+		router.get('/homework', (req: Request, res: Response) => {
+			hwRouter.homework(req, res);
 		});
 
-		router.get('/homework/add', (req: Request, res: Response, next: NextFunction) => {
-			hwRouter.add(req, res, next);
+		router.get('/homework/add', (req: Request, res: Response) => {
+			hwRouter.add(req, res);
 		});
 
 		router.get('/homework/judge/:homeworkId([0-9]+)', (req: Request, res: Response) => {
@@ -99,9 +99,8 @@ export class HWRoute extends BaseRoute {
 	 * @method homework
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
-	 * @param next {NextFunction} Execute the next method.
 	 */
-	public homework(req: Request, res: Response, next: NextFunction) {
+	public homework(req: Request, res: Response) {
 		this.title = 'Homework List';
 
 		dbClient.query(
@@ -167,9 +166,8 @@ export class HWRoute extends BaseRoute {
 	 * @method add
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
-	 * @param next {NextFunction} Execute the next method.
 	 */
-	public add(req: Request, res: Response, next: NextFunction) {
+	public add(req: Request, res: Response) {
 		this.title = 'Create Homework';
 
 		if (!req.session.admin) {

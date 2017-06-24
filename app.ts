@@ -1,34 +1,30 @@
 import * as bodyParser from "body-parser";
 import * as cookieParser from "cookie-parser";
+
 import * as express from "express";
 import * as expressSession from "express-session";
+import * as fs from "fs";
 import * as fs_ext from "fs-extra";
 import * as morgan from "morgan";
 import * as path from "path";
 import * as util from "util";
 import * as  winston from "winston";
+
+import "winston-daily-rotate-file";
+import {BoardRoute} from "./routes/board";
 import {ExerciseRoute} from "./routes/exercise";
+import {HistoryRoute} from "./routes/history";
 import {HWRoute} from "./routes/homework";
 import {IndexRoute} from "./routes/index";
 import {ProfileRoute} from "./routes/profile";
-import * as fs from "fs";
-import {HistoryRoute} from "./routes/history";
-import {BoardRoute} from "./routes/board";
 import {ProjectRoute} from "./routes/project";
-import {register, signIn, signOut} from "./routes/rest_api/identification";
-import {checkHomeworkName, createHomework, downloadSubmittedHomework, uploadHomework} from "./routes/rest_api/homework";
+import * as exercise from "./routes/rest_api/exercise";
 import {historyList} from "./routes/rest_api/history";
-import {
-	downloadSubmittedExercise,
-	fetchJudgeResult,
-	resolveUnhandled,
-	uploadExercise
-} from "./routes/rest_api/exercise";
-import {checkProjectName, createProject, downloadSubmittedProject, uploadProject} from "./routes/rest_api/project";
+import * as homework from "./routes/rest_api/homework";
+import {register, signIn, signOut} from "./routes/rest_api/identification";
+import * as project from "./routes/rest_api/project";
+
 const fileUpload = require('express-fileupload');
-
-require('winston-daily-rotate-file');
-
 const Docker = require("dockerode");
 
 
@@ -117,20 +113,22 @@ export class Server {
 		this.app.post('/signin', signIn);
 		this.app.post('/register', register);
 		this.app.post('/signout', signOut);
-		this.app.post('/homework', createHomework);
-		this.app.get('/homework/name', checkHomeworkName);
-		this.app.get('/homework/:logId([0-9]+)', downloadSubmittedHomework);
-		this.app.post('/homework/:attachId([0-9]+)', uploadHomework);
-		this.app.get('/exercise/:logId([0-9]+)', downloadSubmittedExercise);
+		this.app.post('/homework', homework.create);
+		this.app.get('/homework/name', homework.checkName);
+		this.app.get('/homework/:logId([0-9]+)', homework.downloadSingle);
+		this.app.post('/homework/:attachId([0-9]+)', homework.upload);
+		this.app.get('/homework/zip/:homeworkId([0-9]+)', homework.downloadAll);
+		this.app.get('/exercise/:logId([0-9]+)', exercise.downloadSingle);
 //		this.app.post('/exercise', createExercise);
-		this.app.get('/exercise/resolve', resolveUnhandled);
-		this.app.get('/exercise/result/:logId([0-9]+)', fetchJudgeResult);
-		this.app.post('/exercise/:attachId([0-9]+)', uploadExercise);
+		this.app.get('/exercise/resolve', exercise.resolveUnhandled);
+		this.app.get('/exercise/result/:logId([0-9]+)', exercise.fetchJudgeResult);
+		this.app.post('/exercise/:attachId([0-9]+)', exercise.upload);
 		this.app.get('/history/list', historyList);
-		this.app.get('/project/name', checkProjectName);
-		this.app.post('/project', createProject);
-		this.app.get('/project/:logId([0-9]+)', downloadSubmittedProject);
-		this.app.post('/project/:attachId([0-9]+)', uploadProject);
+		this.app.get('/project/name', project.checkName);
+		this.app.post('/project', project.create);
+		this.app.get('/project/:logId([0-9]+)', project.downloadSingle);
+		this.app.post('/project/:attachId([0-9]+)', project.upload);
+		this.app.get('/project/zip/:projectId([0-9]+)', project.downloadAll);
 	}
 
 	/**

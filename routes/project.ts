@@ -1,10 +1,11 @@
-import {NextFunction, Request, Response, Router} from "express";
+import * as async from "async";
+import {Request, Response, Router} from "express";
+import * as fs from "fs";
+import {createConnection, IConnection, IError, IFieldInfo} from "mysql";
 import * as util from "util";
 import {logger} from "../app";
-import {BaseRoute} from "./route";
 import {monthNames} from "./homework";
-import * as fs from "fs";
-import {createConnection, IConnection} from "mysql";
+import {BaseRoute} from "./route";
 
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
@@ -59,12 +60,16 @@ export class ProjectRoute extends BaseRoute {
 		const projectRoute = new ProjectRoute();
 
 		//add project page route
-		router.get('/project', (req: Request, res: Response, next: NextFunction) => {
-			projectRoute.project(req, res, next);
+		router.get('/project', (req: Request, res: Response) => {
+			projectRoute.project(req, res);
 		});
 
-		router.get('/project/add', (req: Request, res: Response, next: NextFunction) => {
-			projectRoute.add(req, res, next);
+		router.get('/project/add', (req: Request, res: Response) => {
+			projectRoute.add(req, res);
+		});
+
+		router.get('/project/judge/:projectId([0-9]+)', (req: Request, res: Response) => {
+			projectRoute.judge(req, res);
 		});
 	}
 
@@ -86,9 +91,8 @@ export class ProjectRoute extends BaseRoute {
 	 * @method project
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
-	 * @param next {NextFunction} Execute the next method.
 	 */
-	public project(req: Request, res: Response, next: NextFunction) {
+	public project(req: Request, res: Response) {
 		this.title = 'Project List';
 
 		if (!req.session.signIn) return res.redirect('/');
@@ -155,9 +159,8 @@ export class ProjectRoute extends BaseRoute {
 	 * @method add
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
-	 * @param next {NextFunction} Execute the next method.
 	 */
-	public add(req: Request, res: Response, next: NextFunction) {
+	public add(req: Request, res: Response) {
 		this.title = 'Create Project';
 
 		if (!req.session.admin) {
@@ -167,5 +170,89 @@ export class ProjectRoute extends BaseRoute {
 			//render template
 			return this.render(req, res, 'project_add');
 		}
+	}
+
+
+	/**
+	 * Judging page of submitted project
+	 *
+	 * @class ProjectRoute
+	 * @method judge
+	 * @param req {Request} The express Request object.
+	 * @param res {Response} The express Response object.
+	 */
+	public judge(req: Request, res: Response) {
+		this.title = 'Judging Project';
+
+		if (!req.session.admin) return res.redirect('/project');
+
+		async.parallel(
+			[
+				(callback) => dbClient.query('SELECT name, student_id FROM user WHERE NOT is_dropped ORDER BY name;', callback),
+				(callback) => dbClient.query('SELECT id, name FROM project', callback),
+				(callback) => dbClient.query(
+					'SELECT project_board.* ' +
+					'FROM project_config JOIN project_board ON project_config.id = project_board.attachment_id ' +
+					'WHERE project_id = ?;',
+					req.params.projectId,
+					callback),
+				(callback) => dbClient.query(
+					'SELECT id, name, extension FROM project_config WHERE project_id = ?;',
+					req.params.projectId,
+					callback)
+			],
+			(err: IError, result: Array<[Array<any>, Array<IFieldInfo>]>) => {
+				if (err) {
+					logger.error('[ProjectRoute::judge]');
+					logger.error(util.inspect(err, {showHidden: false}));
+					res.sendStatus(500);
+					return;
+				}
+
+				res.locals.userList = result[0][0];
+				res.locals.projectList = result[1][0];
+
+				res.locals.boardMap = result[2][0].reduce(
+					(prev: { [studentId: string]: Array<{ logId: number, attachId: number, submitted: string }> },
+					 curr: { student_id: string, log_id: number, attachment_id: number, submitted: Date }) => {
+						let elem = prev[curr.student_id];
+
+						const item = {
+							logId: curr.log_id,
+							attachId: curr.attachment_id,
+							submitted: curr.submitted.toLocaleString()
+						};
+
+						if (elem) {
+							elem.push(item);
+						}
+						else {
+							prev[curr.student_id] = [item];
+						}
+
+						return prev;
+					}, {});
+
+				res.locals.projectConfig = result[3][0].reduce(
+					(prev: { [id: number]: { name: string, extension: string } },
+					 curr: { id: number, name: string, extension: string }) => {
+						prev[curr.id] = {
+							name: decodeURIComponent(curr.name),
+							extension: curr.extension
+						};
+						return prev;
+					}, {});
+
+				res.locals.userMap = result[0][0].reduce(
+					(prev: { [studentId: string]: string }, curr: { student_id: string, name: string }) => {
+						prev[curr.student_id] = decodeURIComponent(curr.name);
+						return prev;
+					}, {});
+
+				res.locals.currentId = req.params.projectId;
+
+				//render template
+				this.render(req, res, 'project_manage');
+			});
 	}
 }
