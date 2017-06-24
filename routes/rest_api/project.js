@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const fs = require("fs");
+const async = require("async");
 const crypto = require("crypto");
+const fs = require("fs");
 const mysql_1 = require("mysql");
+const path = require("path");
 const util = require("util");
 const app_1 = require("../../app");
-const path = require("path");
 const zip_1 = require("./zip");
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
 const dbClient = mysql_1.createConnection({
@@ -120,7 +121,7 @@ function downloadAll(req, res) {
     if (!req.session.admin)
         return res.sendStatus(401);
     async.parallel([
-        (callback) => dbClient.query(`SELECT name FROM homework WHERE homework_id = ${req.params.homeworkId}`, callback),
+        (callback) => dbClient.query(`SELECT name FROM project WHERE id = ${req.params.projectId}`, callback),
         (callback) => dbClient.query('SELECT student_id, file_name, name ' +
             'FROM project_config JOIN project_board ON project_config.id = project_board.attachment_id ' +
             `WHERE project_id = ${req.params.projectId}` +
@@ -132,13 +133,13 @@ function downloadAll(req, res) {
             res.sendStatus(500);
             return;
         }
-        const entries = result[0][0].reduce((prev, cur) => {
+        const entries = result[1][0].reduce((prev, cur) => {
             if (!(cur.student_id in prev))
                 prev[cur.student_id] = {};
             prev[cur.student_id][cur.name] = fs.createReadStream(path.join(app_1.submittedProjectPath, cur.file_name));
             return prev;
         }, {});
-        zip_1.sendZip(res, entries, result[1][0][0].name);
+        zip_1.sendZip(res, entries, result[0][0][0].name);
     });
 }
 exports.downloadAll = downloadAll;

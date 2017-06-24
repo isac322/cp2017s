@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const async = require("async");
 const crypto = require("crypto");
 const fs = require("fs");
-const util = require("util");
-const app_1 = require("../../app");
 const mysql_1 = require("mysql");
 const path = require("path");
+const util = require("util");
+const app_1 = require("../../app");
 const zip_1 = require("./zip");
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
 const dbClient = mysql_1.createConnection({
@@ -132,13 +133,13 @@ function downloadAll(req, res) {
             res.sendStatus(500);
             return;
         }
-        const entries = result[0][0].reduce((prev, cur) => {
+        const entries = result[1][0].reduce((prev, cur) => {
             if (!(cur.student_id in prev))
                 prev[cur.student_id] = {};
             prev[cur.student_id][cur.name] = fs.createReadStream(path.join(app_1.submittedHomeworkPath, cur.file_name));
             return prev;
         }, {});
-        zip_1.sendZip(res, entries, result[1][0][0].name);
+        zip_1.sendZip(res, entries, result[0][0][0].name);
     });
 }
 exports.downloadAll = downloadAll;

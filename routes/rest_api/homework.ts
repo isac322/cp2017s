@@ -1,10 +1,11 @@
-import {Request, Response} from "express";
+import * as async from "async";
 import * as crypto from "crypto";
+import {Request, Response} from "express";
 import * as fs from "fs";
-import * as util from "util";
-import {logger, submittedHomeworkPath} from "../../app";
 import {createConnection, escape, IConnection, IError, IFieldInfo} from "mysql";
 import * as path from "path";
+import * as util from "util";
+import {logger, submittedHomeworkPath} from "../../app";
 import {sendZip, ZipEntry} from "./zip";
 
 
@@ -209,13 +210,13 @@ export function downloadAll(req: Request, res: Response) {
 				name: string
 			};
 
-			const entries = result[0][0].reduce((prev: ZipEntry, cur: Entry) => {
+			const entries = result[1][0].reduce((prev: ZipEntry, cur: Entry) => {
 				if (!(cur.student_id in prev)) prev[cur.student_id] = {};
 				prev[cur.student_id][cur.name] = fs.createReadStream(path.join(submittedHomeworkPath, cur.file_name));
 				return prev;
 			}, {});
 
-			sendZip(res, entries, result[1][0][0].name);
+			sendZip(res, entries, result[0][0][0].name);
 		}
 	);
 }
