@@ -29,12 +29,16 @@ block content
 				each project in projectList
 					option(value=project.id, selected=currentId == project.id ? "" : undefined)=decodeURIComponent(project.name)
 
+		a(href='/project/zip/' + currentId)
+			h2 #[i.fa.fa-download] Download all as zip
+
 	each fileArray, student in boardMap
 		.col-xs-12.col-sm-6.col-md-4.project-table
 			h3
 				strong=userMap[student]
 				| &nbsp
 				small=student
+				a.pull-right(href='/project/zip/' + currentId + '?studentId=' + student) #[i.fa.fa-download] zip
 
 			.table-responsive
 				table.table.table-bordered.table-striped.table-hover

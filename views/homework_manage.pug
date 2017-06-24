@@ -28,6 +28,7 @@ block content
 			select.form-control.selectpicker#selHomework
 				each homework in homeworkList
 					option(value=homework.homework_id, selected=currentId == homework.homework_id ? "" : undefined)=decodeURIComponent(homework.name)
+
 	a(href='/homework/zip/' + currentId)
 		h2 #[i.fa.fa-download] Download all as zip
 
