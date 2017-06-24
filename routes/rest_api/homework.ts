@@ -5,6 +5,7 @@ import * as util from "util";
 import {logger, submittedHomeworkPath} from "../../app";
 import {createConnection, escape, IConnection, IError} from "mysql";
 import * as path from "path";
+import {sendZip, ZipEntry} from "./zip";
 
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
@@ -162,7 +163,7 @@ export function downloadSubmittedHomework(req: Request, res: Response) {
 		'FROM homework_log JOIN homework_config ON homework_log.attachment_id = homework_config.id ' +
 		'WHERE homework_log.id = ?',
 		req.params.logId,
-		(err: IError, result) => {
+		(err: IError, result: Array<any>) => {
 			if (err) {
 				logger.error('[rest_api::downloadSubmittedHomework::search] : ');
 				logger.error(util.inspect(err, {showHidden: false}));
@@ -180,4 +181,39 @@ export function downloadSubmittedHomework(req: Request, res: Response) {
 				res.sendStatus(401);
 			}
 		});
+}
+
+export function downloadAll(req: Request, res: Response) {
+	if (!req.session.admin) return res.sendStatus(401);
+
+	dbClient.query(
+		'SELECT student_id, file_name, name ' +
+		'FROM homework_config JOIN homework_board ON homework_config.id = homework_board.attachment_id ' +
+		`WHERE homework_id = ${req.params.homeworkId}` +
+		('studentId' in req.query ?
+			` student_id = ${req.query.studentId};` :
+			''),
+		(err: IError, result: Array<any>) => {
+			if (err) {
+				logger.error('[rest_api::downloadAll::search] : ');
+				logger.error(util.inspect(err, {showHidden: false}));
+				res.sendStatus(500);
+				return;
+			}
+
+			type Entry = {
+				student_id: string,
+				file_name: string,
+				name: string
+			};
+
+			const entries = result.reduce((prev: ZipEntry, cur: Entry) => {
+				if (!(cur.student_id in prev)) prev[cur.student_id] = {};
+				prev[cur.student_id][cur.name] = fs.createReadStream(path.join(submittedHomeworkPath, cur.file_name));
+				return prev;
+			}, {});
+
+			sendZip(res, entries);
+		}
+	);
 }
