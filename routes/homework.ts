@@ -219,9 +219,17 @@ export class HWRoute extends BaseRoute {
 				res.locals.userList = result[0][0];
 				res.locals.homeworkList = result[1][0];
 
+				res.locals.userMap = result[0][0].reduce(
+					(prev: { [studentId: string]: string }, curr: { student_id: string, name: string }) => {
+						prev[curr.student_id] = decodeURIComponent(curr.name);
+						return prev;
+					}, {});
+
 				res.locals.boardMap = result[2][0].reduce(
 					(prev: { [studentId: string]: Array<{ logId: number, attachId: number, submitted: string }> },
 					 curr: { student_id: string, log_id: number, attachment_id: number, submitted: Date }) => {
+						if (!(curr.student_id in res.locals.userMap)) return prev;
+
 						let elem = prev[curr.student_id];
 
 						const item = {
@@ -247,12 +255,6 @@ export class HWRoute extends BaseRoute {
 							name: decodeURIComponent(curr.name),
 							extension: curr.extension
 						};
-						return prev;
-					}, {});
-
-				res.locals.userMap = result[0][0].reduce(
-					(prev: { [studentId: string]: string }, curr: { student_id: string, name: string }) => {
-						prev[curr.student_id] = decodeURIComponent(curr.name);
 						return prev;
 					}, {});
 

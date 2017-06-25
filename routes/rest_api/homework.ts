@@ -194,7 +194,8 @@ export function downloadAll(req: Request, res: Response) {
 					'SELECT student_id, file_name, name ' +
 					'FROM homework_config JOIN homework_board ON homework_config.id = homework_board.attachment_id ' +
 					`WHERE homework_id = ${req.params.homeworkId}` +
-					('studentId' in req.query ? ` AND student_id = \'${req.query.studentId}\';` : ''), callback)
+					('studentId' in req.query ? ` AND student_id = \'${req.query.studentId}\';` : ''), callback),
+			(callback) => dbClient.query('SELECT student_id FROM user WHERE NOT is_dropped;', callback)
 		],
 		(err: IError, result: Array<[Array<any>, Array<IFieldInfo>]>) => {
 			if (err) {
@@ -210,7 +211,14 @@ export function downloadAll(req: Request, res: Response) {
 				name: string
 			};
 
+			const userSet: Set<string> = result[2][0].reduce(
+				(prev: Set<string>, curr: { student_id: string }) => {
+					return prev.add(curr.student_id);
+				}, new Set<string>());
+
 			const entries = result[1][0].reduce((prev: ZipEntry, cur: Entry) => {
+				if (!userSet.has(cur.student_id)) return prev;
+
 				if (!(cur.student_id in prev)) prev[cur.student_id] = {};
 				prev[cur.student_id][cur.name] = fs.createReadStream(path.join(submittedHomeworkPath, cur.file_name));
 				return prev;

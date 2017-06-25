@@ -103,7 +103,13 @@ class HWRoute extends route_1.BaseRoute {
             }
             res.locals.userList = result[0][0];
             res.locals.homeworkList = result[1][0];
+            res.locals.userMap = result[0][0].reduce((prev, curr) => {
+                prev[curr.student_id] = decodeURIComponent(curr.name);
+                return prev;
+            }, {});
             res.locals.boardMap = result[2][0].reduce((prev, curr) => {
+                if (!(curr.student_id in res.locals.userMap))
+                    return prev;
                 let elem = prev[curr.student_id];
                 const item = {
                     logId: curr.log_id,
@@ -123,10 +129,6 @@ class HWRoute extends route_1.BaseRoute {
                     name: decodeURIComponent(curr.name),
                     extension: curr.extension
                 };
-                return prev;
-            }, {});
-            res.locals.userMap = result[0][0].reduce((prev, curr) => {
-                prev[curr.student_id] = decodeURIComponent(curr.name);
                 return prev;
             }, {});
             res.locals.currentId = req.params.homeworkId;
