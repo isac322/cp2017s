@@ -67,7 +67,7 @@ function upload(req, res) {
             extension: searchResult[0].extension,
             testSetSize: searchResult[0].test_set_size,
             inputThroughArg: searchResult[0].input_through_arg
-        }), { mode: 0o400 });
+        }), { mode: 0o400 }, null);
         fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, { mode: 0o600 });
         if (searchResult[0].no_compile) {
             dbClient.query('INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);', [studentId, attachId, req.session.email, hashedName, hashedOriginal], (err, insertResult) => {
@@ -259,7 +259,7 @@ function resolveUnhandled(req, res) {
                     extension: exerciseSetting[0].extension,
                     testSetSize: exerciseSetting[0].test_set_size,
                     inputThroughArg: exerciseSetting[0].input_through_arg
-                }), { mode: 0o400 });
+                }), { mode: 0o400 }, null);
                 fs_ext.copySync(path.join(app_1.submittedExercisePath, log.fileName), path.join(sourcePath, exerciseSetting[0].name));
                 const inputPath = path.join(app_1.exerciseSetPath, log.attachId.toString(), 'input');
                 const answerPath = path.join(app_1.exerciseSetPath, log.attachId.toString(), 'output');

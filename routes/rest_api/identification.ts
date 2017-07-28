@@ -1,8 +1,8 @@
-import {logger} from "../../app";
 import {Request, Response} from "express";
-import {createConnection, IConnection, IError} from "mysql";
 import * as fs from "fs";
+import {createConnection, IConnection, IError} from "mysql";
 import * as util from "util";
+import {logger} from "../../app";
 
 const webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
 const CLIENT_ID = webConfig.google.clientId;

@@ -25,4 +25,4 @@ class BaseRoute {
         return res.render(view, renderOption);
     }
 }
-exports.BaseRoute = BaseRoute;
+exports.default = BaseRoute;

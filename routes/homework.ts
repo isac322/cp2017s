@@ -1,10 +1,10 @@
+import * as async from "async";
 import {Request, Response, Router} from "express";
-import * as util from "util";
-import {logger} from "../app";
-import {BaseRoute} from "./route";
 import * as fs from "fs";
 import {createConnection, IConnection, IError, IFieldInfo} from "mysql";
-import * as async from "async";
+import * as util from "util";
+import {logger} from "../app";
+import BaseRoute from "./route";
 
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
@@ -55,6 +55,17 @@ export class HWRoute extends BaseRoute {
 	private static rowInPage = 30;
 
 	/**
+	 * Constructor
+	 *
+	 * @class HWRoute
+	 * @constructor
+	 */
+	constructor() {
+		super();
+		this.navPos = 2;
+	}
+
+	/**
 	 * Create /homework routes.
 	 *
 	 * @class HWRoute
@@ -79,17 +90,6 @@ export class HWRoute extends BaseRoute {
 		router.get('/homework/judge/:homeworkId([0-9]+)', (req: Request, res: Response) => {
 			hwRouter.judge(req, res);
 		});
-	}
-
-	/**
-	 * Constructor
-	 *
-	 * @class HWRoute
-	 * @constructor
-	 */
-	constructor() {
-		super();
-		this.navPos = 2;
 	}
 
 	/**

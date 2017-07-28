@@ -1,8 +1,8 @@
+import * as fs from "fs";
 import * as fs_ext from "fs-extra";
+import * as path from "path";
 import * as util from "util";
 import {docker, logger} from "../../app";
-import * as path from "path";
-import * as fs from "fs";
 
 export interface JudgeResult {
 	isMatched: boolean,

@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const app_1 = require("../../app");
-const mysql_1 = require("mysql");
 const fs = require("fs");
+const mysql_1 = require("mysql");
 const util = require("util");
+const app_1 = require("../../app");
 const webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
 const CLIENT_ID = webConfig.google.clientId;
 const GoogleAuth = require('google-auth-library');

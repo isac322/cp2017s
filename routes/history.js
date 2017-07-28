@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const route_1 = require("./route");
-const app_1 = require("../app");
-const util = require("util");
 const async = require("async");
 const fs = require("fs");
 const mysql_1 = require("mysql");
+const util = require("util");
+const app_1 = require("../app");
+const route_1 = require("./route");
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
 const dbClient = mysql_1.createConnection({
     host: dbConfig.host,
@@ -13,14 +13,14 @@ const dbClient = mysql_1.createConnection({
     password: dbConfig.password,
     database: dbConfig.database
 });
-class HistoryRoute extends route_1.BaseRoute {
-    static create(router) {
-        app_1.logger.debug('[HistoryRoute::create] Creating history route.');
-        router.get('/history', (req, res, next) => new HistoryRoute().history(req, res, next));
-    }
+class HistoryRoute extends route_1.default {
     constructor() {
         super();
         this.navPos = 5;
+    }
+    static create(router) {
+        app_1.logger.debug('[HistoryRoute::create] Creating history route.');
+        router.get('/history', (req, res, next) => new HistoryRoute().history(req, res, next));
     }
     history(req, res, next) {
         if (!req.session.signIn)

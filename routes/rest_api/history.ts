@@ -1,9 +1,9 @@
+import * as async from "async";
 import {Request, Response} from "express";
 import * as fs from "fs";
 import {createConnection, escape, IConnection, IError} from "mysql";
 import * as util from "util";
 import {logger} from "../../app";
-import * as async from "async";
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
 const dbClient: IConnection = createConnection({

@@ -1,6 +1,6 @@
 import {NextFunction, Request, Response, Router} from "express";
-import {BaseRoute} from "./route";
 import {logger} from "../app";
+import BaseRoute from "./route";
 
 
 /**
@@ -9,6 +9,17 @@ import {logger} from "../app";
  * @class ProfileRoute
  */
 export class ProfileRoute extends BaseRoute {
+
+	/**
+	 * Constructor
+	 *
+	 * @class ProfileRoute
+	 * @constructor
+	 */
+	constructor() {
+		super();
+		this.navPos = 99;
+	}
 
 	/**
 	 * Create the routes.
@@ -25,17 +36,6 @@ export class ProfileRoute extends BaseRoute {
 		router.get('/profile', (req: Request, res: Response, next: NextFunction) => {
 			new ProfileRoute().profile(req, res, next);
 		});
-	}
-
-	/**
-	 * Constructor
-	 *
-	 * @class ProfileRoute
-	 * @constructor
-	 */
-	constructor() {
-		super();
-		this.navPos = 99;
 	}
 
 	/**

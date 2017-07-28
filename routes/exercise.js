@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const fs = require("fs");
 const mysql_1 = require("mysql");
 const util = require("util");
 const app_1 = require("../app");
 const homework_1 = require("./homework");
 const route_1 = require("./route");
-const fs = require("fs");
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
 const dbClient = mysql_1.createConnection({
     host: dbConfig.host,
@@ -13,16 +13,16 @@ const dbClient = mysql_1.createConnection({
     password: dbConfig.password,
     database: dbConfig.database
 });
-class ExerciseRoute extends route_1.BaseRoute {
+class ExerciseRoute extends route_1.default {
+    constructor() {
+        super();
+        this.navPos = 3;
+    }
     static create(router) {
         app_1.logger.debug('[ExerciseRoute::create] Creating exercise route.');
         router.get('/exercise', (req, res, next) => {
             new ExerciseRoute().exercise(req, res, next);
         });
-    }
-    constructor() {
-        super();
-        this.navPos = 3;
     }
     exercise(req, res, next) {
         this.title = 'Exercise';

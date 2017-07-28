@@ -1,10 +1,10 @@
 import {NextFunction, Request, Response, Router} from "express";
+import * as fs from "fs";
 import {createConnection, IConnection, IError} from "mysql";
 import * as util from "util";
 import {logger} from "../app";
 import {monthNames} from "./homework";
-import {BaseRoute} from "./route";
-import * as fs from "fs";
+import BaseRoute from "./route";
 
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
@@ -24,6 +24,17 @@ const dbClient: IConnection = createConnection({
 export class ExerciseRoute extends BaseRoute {
 
 	/**
+	 * Constructor
+	 *
+	 * @class ExerciseRoute
+	 * @constructor
+	 */
+	constructor() {
+		super();
+		this.navPos = 3;
+	}
+
+	/**
 	 * Create the routes.
 	 *
 	 * @class ExerciseRoute
@@ -38,17 +49,6 @@ export class ExerciseRoute extends BaseRoute {
 		router.get('/exercise', (req: Request, res: Response, next: NextFunction) => {
 			new ExerciseRoute().exercise(req, res, next);
 		});
-	}
-
-	/**
-	 * Constructor
-	 *
-	 * @class ExerciseRoute
-	 * @constructor
-	 */
-	constructor() {
-		super();
-		this.navPos = 3;
 	}
 
 	/**

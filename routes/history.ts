@@ -1,10 +1,10 @@
-import {NextFunction, Request, Response, Router} from "express";
-import {BaseRoute} from "./route";
-import {logger} from "../app";
-import * as util from "util";
 import * as async from "async";
+import {NextFunction, Request, Response, Router} from "express";
 import * as fs from "fs";
-import {createConnection, IConnection, IError, IFieldInfo, IQuery} from "mysql";
+import {createConnection, IConnection, IError, IFieldInfo} from "mysql";
+import * as util from "util";
+import {logger} from "../app";
+import BaseRoute from "./route";
 
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
@@ -24,6 +24,17 @@ const dbClient: IConnection = createConnection({
 export class HistoryRoute extends BaseRoute {
 
 	/**
+	 * Constructor
+	 *
+	 * @class HistoryRoute
+	 * @constructor
+	 */
+	constructor() {
+		super();
+		this.navPos = 5;
+	}
+
+	/**
 	 * Create the routes.
 	 *
 	 * @class HistoryRoute
@@ -38,17 +49,6 @@ export class HistoryRoute extends BaseRoute {
 		router.get('/history', (req: Request, res: Response, next: NextFunction) =>
 			new HistoryRoute().history(req, res, next)
 		);
-	}
-
-	/**
-	 * Constructor
-	 *
-	 * @class HistoryRoute
-	 * @constructor
-	 */
-	constructor() {
-		super();
-		this.navPos = 5;
 	}
 
 	/**
@@ -67,32 +67,32 @@ export class HistoryRoute extends BaseRoute {
 
 		const tasks = [];
 
-		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => IQuery) => dbClient.query(
+		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => void) => dbClient.query(
 			'SELECT email FROM email WHERE student_id = ?;',
 			req.session.studentId,
 			callback)
 		);
 
-		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => IQuery) => dbClient.query(
+		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => void) => dbClient.query(
 			'SELECT homework.name AS `homeworkName`, homework_config.name AS `fileName`, homework_config.id ' +
 			'FROM homework JOIN homework_config ON homework.homework_id = homework_config.homework_id;',
 			callback)
 		);
 
-		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => IQuery) => dbClient.query(
+		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => void) => dbClient.query(
 			'SELECT exercise.name  AS `exerciseName`, exercise_config.name AS `fileName`, exercise_config.id ' +
 			'FROM exercise JOIN exercise_config ON exercise.id = exercise_config.exercise_id',
 			callback)
 		);
 
-		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => IQuery) => dbClient.query(
+		tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => void) => dbClient.query(
 			'SELECT project.name  AS `projectName`, project_config.name AS `fileName`, project_config.id ' +
 			'FROM project JOIN project_config ON project.id = project_config.project_id',
 			callback)
 		);
 
 		if (req.session.admin) {
-			tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => IQuery) =>
+			tasks.push((callback: (err: IError, results?: any, fields?: IFieldInfo[]) => void) =>
 				dbClient.query('SELECT name, student_id FROM user ORDER BY name;', callback))
 		}
 

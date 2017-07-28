@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const fs = require("fs");
 const fs_ext = require("fs-extra");
+const path = require("path");
 const util = require("util");
 const app_1 = require("../../app");
-const path = require("path");
-const fs = require("fs");
 var ResultEnum;
 (function (ResultEnum) {
     ResultEnum[ResultEnum["correct"] = 0] = "correct";

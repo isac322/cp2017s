@@ -17,7 +17,7 @@ const renderOption = {
  *
  * @class BaseRoute
  */
-export class BaseRoute {
+export default class BaseRoute {
 	protected title: string;
 	protected navPos: number;
 

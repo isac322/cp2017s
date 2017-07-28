@@ -5,7 +5,7 @@ import {createConnection, IConnection, IError, IFieldInfo} from "mysql";
 import * as util from "util";
 import {logger} from "../app";
 import {monthNames} from "./homework";
-import {BaseRoute} from "./route";
+import BaseRoute from "./route";
 
 
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
@@ -47,6 +47,17 @@ export class ProjectRoute extends BaseRoute {
 		'            ON project.id = project_config.project_id;';
 
 	/**
+	 * Constructor
+	 *
+	 * @class ProjectRoute
+	 * @constructor
+	 */
+	constructor() {
+		super();
+		this.navPos = 4;
+	}
+
+	/**
 	 * Create /project routes.
 	 *
 	 * @class ProjectRoute
@@ -71,17 +82,6 @@ export class ProjectRoute extends BaseRoute {
 		router.get('/project/judge/:projectId([0-9]+)', (req: Request, res: Response) => {
 			projectRoute.judge(req, res);
 		});
-	}
-
-	/**
-	 * Constructor
-	 *
-	 * @class ProjectRoute
-	 * @constructor
-	 */
-	constructor() {
-		super();
-		this.navPos = 4;
 	}
 
 	/**

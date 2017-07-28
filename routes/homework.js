@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const async = require("async");
+const fs = require("fs");
+const mysql_1 = require("mysql");
 const util = require("util");
 const app_1 = require("../app");
 const route_1 = require("./route");
-const fs = require("fs");
-const mysql_1 = require("mysql");
-const async = require("async");
 const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
 const dbClient = mysql_1.createConnection({
     host: dbConfig.host,
@@ -19,7 +19,7 @@ exports.monthNames = [
     "August", "September", "October",
     "November", "December"
 ];
-class HWRoute extends route_1.BaseRoute {
+class HWRoute extends route_1.default {
     constructor() {
         super();
         this.navPos = 2;

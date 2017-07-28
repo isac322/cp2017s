@@ -1,6 +1,6 @@
 import {NextFunction, Request, Response, Router} from "express";
-import {BaseRoute} from "./route";
 import {logger} from "../app";
+import BaseRoute from "./route";
 
 
 /**
@@ -9,6 +9,17 @@ import {logger} from "../app";
  * @class BoardRoute
  */
 export class BoardRoute extends BaseRoute {
+
+	/**
+	 * Constructor
+	 *
+	 * @class BoardRoute
+	 * @constructor
+	 */
+	constructor() {
+		super();
+		this.navPos = 6;
+	}
 
 	/**
 	 * Create the routes.
@@ -25,17 +36,6 @@ export class BoardRoute extends BaseRoute {
 		router.get('/board', (req: Request, res: Response, next: NextFunction) => {
 			new BoardRoute().board(req, res, next);
 		});
-	}
-
-	/**
-	 * Constructor
-	 *
-	 * @class BoardRoute
-	 * @constructor
-	 */
-	constructor() {
-		super();
-		this.navPos = 6;
 	}
 
 	/**

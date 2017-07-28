@@ -105,7 +105,7 @@ export function upload(req: Request, res: Response) {
 					testSetSize: searchResult[0].test_set_size,
 					inputThroughArg: searchResult[0].input_through_arg
 				}),
-				{mode: 0o400}
+				{mode: 0o400}, null
 			);
 
 			// copy given source code to shared folder
@@ -382,7 +382,7 @@ export function resolveUnhandled(req: Request, res: Response) {
 								testSetSize: exerciseSetting[0].test_set_size,
 								inputThroughArg: exerciseSetting[0].input_through_arg
 							}),
-							{mode: 0o400}
+							{mode: 0o400}, null
 						);
 
 						// copy given source code to shared folder

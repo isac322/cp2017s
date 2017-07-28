@@ -14,7 +14,7 @@ const dbClient = mysql_1.createConnection({
     password: dbConfig.password,
     database: dbConfig.database
 });
-class ProjectRoute extends route_1.BaseRoute {
+class ProjectRoute extends route_1.default {
     constructor() {
         super();
         this.navPos = 4;

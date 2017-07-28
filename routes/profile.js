@@ -1,17 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const route_1 = require("./route");
 const app_1 = require("../app");
-class ProfileRoute extends route_1.BaseRoute {
+const route_1 = require("./route");
+class ProfileRoute extends route_1.default {
+    constructor() {
+        super();
+        this.navPos = 99;
+    }
     static create(router) {
         app_1.logger.debug('[ProfileRoute::create] Creating profile route.');
         router.get('/profile', (req, res, next) => {
             new ProfileRoute().profile(req, res, next);
         });
-    }
-    constructor() {
-        super();
-        this.navPos = 99;
     }
     profile(req, res, next) {
         this.title = 'Profile';
