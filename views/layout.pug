@@ -28,7 +28,7 @@ html
 		// Latest compiled and minified JavaScript
 		script(src="/js/bootstrap.min.js")
 
-		script(src='https://apis.google.com/js/platform.js')
+		script(src='https://apis.google.com/js/api:client.js')
 		link(rel='stylesheet', href='/css/bootstrap-social.css')
 		link(rel='stylesheet', href='/css/font-awesome.min.css')
 
@@ -52,6 +52,8 @@ html
 		block header
 
 	body
+		script(type='text/javascript').
+			_wait_for_gapi_attached = []
 		nav.navbar.navbar-default.navbar-fixed-top
 			.container
 				.navbar-header
@@ -93,9 +95,7 @@ html
 							li
 								a#login-anchor(href='#') #[i.fa.fa-google(aria-hidden="true")] Sign In
 								script(type='text/javascript').
-									next2 = function () {
-										auth2.attachClickHandler(document.getElementById('login-anchor'), {}, onSignIn);
-									};
+									_wait_for_gapi_attached.push(document.getElementById('login-anchor'))
 
 		.container
 			block content

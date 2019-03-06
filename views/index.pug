@@ -14,17 +14,15 @@ block content
 					| Sign in with Google
 
 				script(type='text/javascript').
-					next = function () {
-						auth2.attachClickHandler(document.getElementById('login-btn'), {}, onSignIn);
-					};
+					_wait_for_gapi_attached.push(document.getElementById('login-btn'))
 
 			.col-sm-7.col-md-8.col-lg-9
 				blockquote
 					p You have to sign in to Google to verify your identity.
 
 		block header
-			script(src='/js/jquery.form.min.js')
-			script(src='/js/validator.min.js')
+			script(src='/js/jquery.form.min.js', async)
+			script(src='/js/validator.min.js', async)
 
 		.modal.fade#register-modal(tabindex='-1', role='dialog', aria-labelledby="register-modal-title")
 			.modal-dialog(role='document')

@@ -1,13 +1,25 @@
 let auth2: any;
 
-var gapi: any;
-gapi.load('auth2', () => {
-	auth2 = gapi.auth2.init();
-	if ('next' in window)
-		next();
-	if ('next2' in window)
-		next2();
-});
+function startApp() {
+	// @ts-ignore
+	gapi.load('auth2', () => {
+		// Retrieve the singleton for the GoogleAuth library and set up the client.
+		// @ts-ignore
+		auth2 = gapi.auth2.init();
+		// @ts-ignore
+		_wait_for_gapi_attached.forEach(attachSignIn);
+	});
+}
+
+startApp();
+
+function attachSignIn(element: HTMLElement) {
+	auth2.attachClickHandler(element, {},
+		onSignIn, (error: Error) => {
+			alert(JSON.stringify(error, undefined, 2));
+		}
+	);
+}
 
 function onSignIn(googleUser: any) {
 	const name = googleUser.getBasicProfile().getName();
