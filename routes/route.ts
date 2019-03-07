@@ -1,5 +1,5 @@
-import {Request, Response} from "express";
-import * as fs from "fs";
+import {Request, Response} from 'express'
+import * as fs from 'fs'
 
 const webConfig = JSON.parse(fs.readFileSync('config/web.json', 'utf-8'));
 
@@ -27,7 +27,7 @@ export default class BaseRoute {
 	 * @class BaseRoute
 	 * @constructor
 	 */
-	constructor() {
+	protected constructor() {
 		//initialize variables
 		this.title = 'SNU Computer Programming';
 	}
@@ -52,7 +52,7 @@ export default class BaseRoute {
 		res.locals.navPos = this.navPos;
 		res.locals.signIn = req.session.signIn;
 		res.locals.admin = req.session.admin;
-		res.locals.name = req.session.name;
+		res.locals.name = decodeURIComponent(req.session.name);
 
 		//render view
 		return res.render(view, renderOption);

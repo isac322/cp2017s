@@ -1,22 +1,81 @@
-import * as async from "async";
-import * as crypto from "crypto";
-import {Request, Response} from "express";
-import * as fs from "fs";
-import {createConnection, escape, IConnection, IError, IFieldInfo} from "mysql";
-import * as path from "path";
-import * as util from "util";
-import {logger, submittedHomeworkPath} from "../../app";
-import {sendSingleZip, sendZip, ZipEntry} from "./zip";
+import * as crypto from 'crypto'
+import {Request, Response} from 'express'
+import {UploadedFile} from 'express-fileupload'
+import * as fs from 'fs'
+import {ReadStream} from 'fs'
+import * as fs_ext from 'fs-extra'
+import * as multiparty from 'multiparty'
+import * as path from 'path'
+import {parse as qsParse} from 'qs'
+import {QueryTypes, Transaction} from 'sequelize'
+import * as typeIs from 'type-is'
+
+import {logger, submittedHomeworkPath, TEMP_PATH} from '../../app'
+import {homeworkGroupInstance, homeworkLatestEntryInstance} from '../../models/db'
+import db, {sequelize} from '../../models/index'
+import {sendResult} from './exercise'
+import * as judge from './judge'
+import {sendZip, ZipEntry} from './zip'
 
 
-const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
-const dbClient: IConnection = createConnection({
-	host: dbConfig.host,
-	user: dbConfig.user,
-	password: dbConfig.password,
-	database: dbConfig.database
-});
+function onData(name: string, val: any, data: any): void {
+	if (Array.isArray(data[name])) {
+		data[name].push(val);
+	}
+	else if (data[name]) {
+		data[name] = [data[name], val];
+	}
+	else {
+		data[name] = val;
+	}
+}
 
+interface EntryInfo {
+	name: string
+	extension: string
+}
+
+interface GroupInfo {
+	subtitle: string
+	type: string
+	timeLimit: string
+	entryPoint?: string
+	compileOnly?: 'on'
+	throughStdin?: 'on'
+	throughArg?: 'on'
+	entries: EntryInfo[]
+}
+
+interface GroupFile {
+	stdInput?: any[]
+	stdOutput?: any[]
+	argInput?: any[]
+	argOutput?: any[]
+}
+
+
+async function insertGroupAndEntries(homeworkId: number, groupInfo: GroupInfo,
+									 testSetLength: number, transaction: Transaction): Promise<void> {
+	const insertedGroup = await db.homeworkGroup.create({
+		homeworkId: homeworkId,
+		id: undefined,
+		compileType: groupInfo.type,
+		inputThroughArg: !!groupInfo.throughArg,
+		inputThroughStdin: !!groupInfo.throughStdin,
+		compileOnly: !!groupInfo.compileOnly,
+		subtitle: groupInfo.subtitle,
+		testSetSize: testSetLength,
+		timeLimit: parseInt(groupInfo.timeLimit),
+		entryPoint: groupInfo.entryPoint
+	}, {transaction: transaction});
+
+	await db.homeworkEntry.bulkCreate(groupInfo.entries.map(value => ({
+		id: undefined,
+		groupId: insertedGroup.id,
+		name: value.name,
+		extension: value.extension
+	})), {transaction: transaction});
+}
 
 /**
  * creating a new homework request api.
@@ -25,57 +84,101 @@ const dbClient: IConnection = createConnection({
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function create(req: Request, res: Response) {
-	if (!req.session.admin) return res.sendStatus(401);
+export async function create(req: Request, res: Response) {
+	if (!req.session.admin || !typeIs(req, 'multipart/form-data')) return res.sendStatus(401);
 
-	const name = encodeURIComponent(req.body.name);
-	const start_date = req.body.start;
-	const end_date = req.body.due;
-	const description = req.body.description;
+	const form = new multiparty.Form();
+	const data: any = {};
+	const files: any = {};
 
-	dbClient.query(
-		'INSERT INTO homework(name, start_date, end_date, author_id, author_email, description) VALUES(?,?,?,?,?,?);',
-		[name, start_date, end_date, req.session.studentId, req.session.email, description],
-		(err: IError, insertResult) => {
-			if (err) {
-				logger.error('[rest_api::createHomework::outer_insert] : ');
-				logger.error(util.inspect(err, {showHidden: false}));
-				res.sendStatus(500);
-				return;
-			}
+	form.on('field', (name, val) => onData(name, val, data));
+	form.on('file', (name, val) => onData(name, val, files));
 
-			logger.debug('[rest_api::createHomework:insert into homework]');
-			logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
+	form.on('error', err => {
+		err.status = 400;
 
-			const homeworkId = insertResult.insertId;
+		// TODO: error handling
 
-			const values = [];
+		console.error(err);
 
-			for (let attachment of req.body.attachment) {
-				const fileName = encodeURIComponent(attachment.name);
-				const extension = attachment.extension;
+		req.resume();
+	});
 
-				values.push([homeworkId, fileName, extension]);
-			}
+	form.on('close', async () => {
+		try {
+			const body: {
+				name: string
+				start: Date
+				due: Date
+				onlyForAdmin?: 'on'
+				groups: GroupInfo[]
+				descriptions?: string[]
+			} = qsParse(data);
 
-			dbClient.query(
-				'INSERT INTO homework_config(homework_id, name, extension) VALUES ' + escape(values) + ';',
-				(err: IError, result) => {
-					if (err) {
-						logger.error('[rest_api::createHomework::inner_insert] : ');
-						logger.error(util.inspect(err, {showHidden: false}));
-						res.sendStatus(500);
-						return;
-					}
+			const file: {
+				groups?: { [groupdId: string]: GroupFile }
+			} = qsParse(files, {parseArrays: false});
 
-					logger.debug('[rest_api::createHomework:insert into homework_config]');
-					logger.debug(util.inspect(result, {showHidden: false, depth: 1}));
+			const insertedHomework = await db.homework.create({
+				name: body.name,
+				startDate: new Date(body.start),
+				endDate: new Date(body.due),
+				authorId: req.session.studentId,
+				authorEmail: req.session.email,
+				id: undefined,
+				isAdminOnly: !!body.onlyForAdmin,
+				created: undefined
+			});
+
+			await sequelize.transaction(async t => {
+				body.descriptions = body.descriptions || [];
+				const descPromise = db.homeworkDescription.bulkCreate(body.descriptions.map(value => ({
+					url: value,
+					homeworkId: insertedHomework.id
+				})), {transaction: t});
+
+
+				let differentSetLength = false;
+				file.groups = file.groups || {};
+				const testSetLength = Object.keys(file.groups).reduce((prev, curKey) => {
+					const value = file.groups[curKey];
+
+					const lengthSet = Object.keys(value)
+						.reduce((prev, cur: keyof GroupFile) => prev.add(value[cur].length), new Set<number>());
+
+					if (lengthSet.size != 1) differentSetLength = true;
+
+					return prev.set(curKey, lengthSet.size);
+				}, new Map<string, number>());
+
+				if (differentSetLength) {
+					logger.error('[homework::create::transaction] : test set size is not same');
+					return t.rollback();
 				}
-			);
+
+				// TODO: more specific type hint
+				const promises: any[] = body.groups.map((group, idx) =>
+					insertGroupAndEntries(insertedHomework.id, group, testSetLength.get(idx.toString()), t));
+
+				promises.push(descPromise);
+
+				return Promise.all(promises);
+			});
 
 			res.redirect('/homework');
+
 		}
-	);
+		catch (err) {
+			err.status = 400;
+
+			// TODO: error handling
+			console.error(err);
+
+			res.sendStatus(500);
+		}
+	});
+
+	form.parse(req);
 }
 
 
@@ -86,40 +189,105 @@ export function create(req: Request, res: Response) {
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function upload(req: Request, res: Response) {
+export async function upload(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
 	const hash = crypto.createHash('sha512');
-	const file = (<any>req).files.attachment;
+	const file = req.files.attachment as UploadedFile;
 	const hashedName = hash.update(file.data).digest('hex');
-	const attachmentId = req.params.attachId;
+	const entryId = req.params.entryId;
 
-	dbClient.query(
-		'INSERT INTO homework_log(student_id, attachment_id, email, file_name) VALUES (?,?,?,?);',
-		[req.session.studentId, attachmentId, req.session.email, hashedName],
-		(err: IError, insertResult) => {
-			if (err) {
-				logger.error('[rest_api::uploadHomework::insert] : ');
-				logger.error(util.inspect(err, {showHidden: false}));
-				res.sendStatus(500);
-				return;
-			}
+	try {
+		await db.homeworkLog.create({
+			studentId: req.session.studentId,
+			entryId: entryId,
+			email: req.session.email,
+			fileName: hashedName,
+			id: undefined,
+			submitted: undefined
+		});
 
-			logger.debug('[uploadHomework:insert into homework_log]');
-			logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
+		await file.mv(path.join(submittedHomeworkPath, hashedName));
 
-			file.mv(path.join(submittedHomeworkPath, hashedName), (err: any) => {
-				if (err) {
-					logger.error('[rest_api::uploadHomework::file_move] : ');
-					logger.error(util.inspect(err, {showHidden: false}));
-					res.sendStatus(500);
-					return;
-				}
-			});
+		res.sendStatus(202);
+	}
+	catch (err) {
+		logger.error('[homework::upload::insert] : ', err.stack);
+		res.sendStatus(500);
+	}
+}
 
-			res.sendStatus(202)
-		}
-	);
+
+interface CompileEntryInfo {
+	name: string,
+	extension: number,
+	fileName: string,
+	logId: number
+}
+
+export async function compileTest(req: Request, res: Response) {
+	if (!req.session.signIn) return res.sendStatus(401);
+
+	const studentId = req.session.studentId;
+	const groupId = req.params.groupId;
+
+	try {
+		const [
+			sourcePath,
+			outputPath,
+			entries,
+			groupInfo
+		]: [string, string, CompileEntryInfo[], homeworkGroupInstance]
+			= await Promise.all([
+			fs_ext.mkdtemp(path.join(TEMP_PATH, studentId + '_')),
+			fs_ext.mkdtemp(path.join(TEMP_PATH, studentId + '_')),
+			sequelize.query(
+				// language=MySQL
+					`
+                    SELECT homework_entry.name, CAST(extension AS UNSIGNED) AS \`extension\`,
+                        homework_log.file_name AS \`fileName\`, homework_latest_entry.log_id AS \'logId\'
+                    FROM homework_latest_entry
+                             JOIN homework_log ON homework_latest_entry.log_id = homework_log.id
+                             JOIN homework_entry ON homework_log.entry_id = homework_entry.id
+                    WHERE homework_latest_entry.student_id = ? AND homework_latest_entry.group_id = ?`,
+				{
+					replacements: [studentId, groupId],
+					raw: true,
+					type: QueryTypes.SELECT
+				}),
+			db.homeworkGroup.findById(groupId, {raw: true})
+		]);
+
+
+		// move all related files to docker linked directory
+		await Promise.all(
+			entries.map(entry => fs_ext.copy(
+				path.join(submittedHomeworkPath, entry.fileName),
+				path.join(sourcePath, entry.name))
+			));
+
+		// generate config file
+		await fs_ext.writeFile(
+			path.join(sourcePath, 'config.json'),
+			JSON.stringify({
+				compile: entries
+					.filter(entry => entry.extension == 1 || entry.extension == 3)
+					.map(entry => entry.name),
+				dependents: entries
+					.filter(entry => entry.extension == 2 || entry.extension == 4)
+					.map(entry => entry.name),
+				language: groupInfo.compileType,
+				entryPoint: groupInfo.entryPoint
+			}));
+
+		// start compile
+		const result = await judge.compileTest(outputPath, sourcePath);
+		return await sendResult(res, result);
+	}
+	catch (err) {
+		logger.error('[homework::compileTest] : ', err.stack);
+		return res.sendStatus(500);
+	}
 }
 
 
@@ -130,22 +298,21 @@ export function upload(req: Request, res: Response) {
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function checkName(req: Request, res: Response) {
+export async function checkName(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
-	dbClient.query(
-		'SELECT * FROM homework WHERE name = ?;', encodeURIComponent(req.query.name),
-		(err: IError, searchResult) => {
-			if (err) {
-				logger.error('[rest_api::checkHomeworkName::select] : ');
-				logger.error(util.inspect(err, {showHidden: false}));
-				res.sendStatus(500);
-				return;
-			}
+	try {
+		const homework = await db.homework.findOne({
+			where: {name: encodeURIComponent(req.query.name)},
+			attributes: ['id']
+		});
 
-			res.sendStatus(searchResult.length == 0 ? 200 : 409);
-		}
-	);
+		return res.sendStatus(homework == null ? 200 : 409);
+	}
+	catch (err) {
+		logger.error('[homework::checkName::select] : ', err.stack);
+		res.sendStatus(500);
+	}
 }
 
 
@@ -156,76 +323,89 @@ export function checkName(req: Request, res: Response) {
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function downloadSingle(req: Request, res: Response) {
+export async function downloadEntry(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
-	dbClient.query(
-		'SELECT student_id AS `studentId`, file_name AS `fileName`, name ' +
-		'FROM homework_log JOIN homework_config ON homework_log.attachment_id = homework_config.id ' +
-		'WHERE homework_log.id = ?',
-		req.params.logId,
-		(err: IError, result: Array<any>) => {
-			if (err) {
-				logger.error('[rest_api::downloadSubmittedHomework::search] : ');
-				logger.error(util.inspect(err, {showHidden: false}));
-				res.sendStatus(500);
-				return;
-			}
+	const uploadId = req.params.logId;
 
-			const row = result[0];
-
-			if (req.session.admin || row.studentId == req.session.studentId) {
-				res.download(path.join(submittedHomeworkPath, row.fileName), row.name);
-			}
-			else {
-				logger.error('[rest_api::downloadSubmittedHomework::student_id-mismatch]');
-				res.sendStatus(401);
-			}
+	try {
+		const row: {
+			studentId: number
+			fileName: string
+			'entry.name': string
+		} = await db.homeworkLog.findById(uploadId, {
+			include: [{model: db.homeworkEntry, as: 'entry', attributes: ['name']}],
+			attributes: ['studentId', 'fileName'],
+			raw: true
 		});
+
+		if (req.session.admin || row.studentId == req.session.studentId) {
+			res.download(path.join(submittedHomeworkPath, row.fileName), row['entry.name']);
+		}
+		else {
+			logger.error('[homework::downloadEntry::student_id-mismatch]');
+			return res.sendStatus(401);
+		}
+	}
+	catch (err) {
+		logger.error('[homework::downloadEntry::search] : ', err.stack);
+		return res.sendStatus(500);
+	}
 }
 
-export function downloadAll(req: Request, res: Response) {
+
+export async function downloadAll(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
-	async.parallel([
-			(callback) => dbClient.query(`SELECT name FROM homework WHERE homework_id = ${req.params.homeworkId}`, callback),
-			(callback) =>
-				dbClient.query(
-					'SELECT student_id, file_name, name ' +
-					'FROM homework_config JOIN homework_board ON homework_config.id = homework_board.attachment_id ' +
-					`WHERE homework_id = ${req.params.homeworkId}` +
-					('studentId' in req.query ? ` AND student_id = \'${req.query.studentId}\';` : ''), callback),
-			(callback) => dbClient.query('SELECT student_id FROM user WHERE NOT is_dropped;', callback)
-		],
-		(err: IError, result: Array<[Array<any>, Array<IFieldInfo>]>) => {
-			if (err) {
-				logger.error('[rest_api::downloadAll::search] : ');
-				logger.error(util.inspect(err, {showHidden: false}));
-				res.sendStatus(500);
-				return;
+	const homeworkId = req.params.homeworkId;
+	const studentId = req.query.studentId;
+
+	try {
+		const [homeworkInfo, entries]: [ZipEntry, homeworkLatestEntryInstance[]] = await Promise.all([
+			db.homework.findById(homeworkId, {
+				attributes: ['name'],
+				include: [{
+					model: db.homeworkGroup,
+					as: 'groups',
+					attributes: ['subtitle'],
+
+					include: [{
+						model: db.homeworkEntry,
+						as: 'entries',
+						attributes: ['name', 'id']
+					}]
+				}]
+			}),
+			db.homeworkLatestEntry.findAll({
+				where: {homeworkId: homeworkId},
+				attributes: ['studentId', 'entryId'],
+				include: [{
+					model: db.homeworkLog,
+					as: 'log',
+					attributes: ['fileName']
+				}]
+			})
+		]);
+
+		const entryMap = entries.reduce((prev: Map<number, Map<string, ReadStream>>, curr: any) => {
+			if (!prev.has(curr.entryId)) prev.set(curr.entryId, new Map());
+			if (studentId && curr.studentId != studentId) return prev;
+
+			prev.get(curr.entryId)
+				.set(curr.studentId, fs.createReadStream(path.join(submittedHomeworkPath, curr.log.fileName)));
+			return prev;
+		}, new Map<number, Map<string, ReadStream>>());
+
+		for (const group of homeworkInfo.groups) {
+			for (const entry of group.entries) {
+				entry.students = entryMap.get(entry.id) || new Map();
 			}
-
-			type Entry = {
-				student_id: string,
-				file_name: string,
-				name: string
-			};
-
-			const userSet: Set<string> = result[2][0].reduce(
-				(prev: Set<string>, curr: { student_id: string }) => {
-					return prev.add(curr.student_id);
-				}, new Set<string>());
-
-			const entries = result[1][0].reduce((prev: ZipEntry, cur: Entry) => {
-				if (!userSet.has(cur.student_id)) return prev;
-
-				if (!(cur.student_id in prev)) prev[cur.student_id] = {};
-				prev[cur.student_id][cur.name] = fs.createReadStream(path.join(submittedHomeworkPath, cur.file_name));
-				return prev;
-			}, {});
-
-			if (Object.keys(entries).length == 1) sendSingleZip(res, entries, result[1][0][0].student_id);
-			else sendZip(res, entries, result[0][0][0].name);
 		}
-	);
+
+		sendZip(res, homeworkInfo);
+	}
+	catch (err) {
+		logger.error('[homework::downloadAll] : ', err.stack);
+		return res.sendStatus(500);
+	}
 }

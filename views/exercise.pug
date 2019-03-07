@@ -1,8 +1,10 @@
 extends layout
 
 block header
-	script(src='/js/validator.min.js')
-	script(src='/js/jquery.form.min.js')
+	script(src='/js/validator.min.js', defer)
+	script(src='/js/jquery.form.min.js', defer)
+	script(src='/js/upload_entry.js', defer)
+	script(src='/js/card-run.js', defer)
 
 	link(rel='stylesheet', href='/css/card-style.css')
 
@@ -19,89 +21,14 @@ block content
 				h4#btn-add
 					| #[span.glyphicon.glyphicon-plus]
 					| Add
-	- var millis = 24 * 60 * 60 * 1000
+
+	include problem-card
 	each exercise in exerciseList
-		.col-xs-12.col-md-6.homework-card
-			.panel.panel-default
-				.panel-body
-					.col-xs-12
-						h2.wrapped-text.card-header
-							b=exercise.name
-
-						.row
-							.col-xs-12.col-sm-4.col-md-12
-								h4
-									b Description
-								p
-									each desc in exercise.description
-										a.wrapped-text(target='_blank', href=desc)=desc
-										br
-
-							.col-xs-6.col-sm-4
-								h4
-									b Start Date
-								p=exercise.startDate
-
-							.col-xs-6.col-sm-4
-								h4
-									b Deadline
-								p=exercise.dueDate
-
-					.col-xs-12
-						h4
-							if signIn
-								- var query = '/history?t=2&'
-								each attachment in exercise.attachments
-									- query += 'ex=' + attachment.id + '&'
-								a(href=query) #[i.fa.fa-history(aria-hidden='true')] View history
-							a.pull-right.appender(role='button', data-toggle='collapse', href='#collapseExample' + exercise.id, aria-expanded='false', aria-controls='collapseExample' + exercise.id)
-								| #[i.fa.fa-upload(aria-hidden="true")]
-								| Submit
-								| #[span.glyphicon.glyphicon-menu-down]
-
-				ul.list-group.collapse(id='collapseExample' + exercise.id)
-					each attachment in exercise.attachments
-						form.upload-form(action='/exercise/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
-							li.list-group-item(class=attachment.result ? 'list-group-item-success' : undefined)
-								.row
-									if signIn && exercise.leftMillis >= 0
-										.col-xs-12.col-sm-5.vcenter
-											h4.wrapped-text
-												| #[span.glyphicon.glyphicon-file]
-												| &nbsp;
-												| #{attachment.name}
-
-										.col-xs-12.col-sm-7.vcenter
-											.form-group
-												.pull-right.input-group
-													input.form-control(type='text', data-validate='false', readonly)
-													.input-group-btn
-														span.btn.btn-default.btn-file Select
-															input(type='file' name='attachment', hidden, required)
-														button.btn.btn-primary(type='submit', role='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Judging...') Submit
-									else
-										.col-xs-12.vcenter
-											h4.wrapped-text
-												| #[span.glyphicon.glyphicon-file]
-												| &nbsp;
-												| #{attachment.name}
-
-
-				.panel-footer.text-center
-					if exercise.leftMillis < 0
-						| Overpast
-					else if exercise.leftMillis < millis
-						| Less than 24 hours
-					else if exercise.leftMillis < 2 * millis
-						| 1 day left
-					else
-						| #{exercise.leftMillis / millis >> 0} days left
+		+card(exercise, 'exercise')
 
 	// Result Modal
 	include modal-result
+	script(src='/js/submit_exercise.js', defer)
 
 	// confirm modal
 	include modal-confirm
-
-	script(src='/js/card-run.js')
-	script(src='/js/submit_exercise.js')

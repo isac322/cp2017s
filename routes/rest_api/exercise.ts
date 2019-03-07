@@ -1,25 +1,194 @@
-import * as async from "async";
-import * as crypto from "crypto";
-import {Request, Response} from "express";
-import * as fs from "fs";
-import * as fs_ext from "fs-extra";
-import * as iconv from "iconv-lite";
-import {createConnection, IConnection, IError} from "mysql";
-import * as path from "path";
-import * as util from "util";
-import {exerciseSetPath, logger, submittedExerciseOriginalPath, submittedExercisePath, tempPath} from "../../app";
-import {JudgeResult, ResultEnum, runJudge} from "./judge";
+import * as archiver from 'archiver'
+import * as crypto from 'crypto'
+import {Request, Response} from 'express'
+import {UploadedFile} from 'express-fileupload'
+import * as fs_ext from 'fs-extra'
+import * as fs from 'fs'
+import * as iconv from 'iconv-lite'
+import * as multiparty from 'multiparty'
+import * as path from 'path'
+import {parse as qsParse} from 'qs'
+import {QueryTypes, Transaction} from 'sequelize'
+import * as typeIs from 'type-is'
 
-const charsetDetector = require('detect-character-encoding');
+import {
+	exerciseSetPath,
+	logger,
+	submittedExerciseOriginalPath,
+	submittedExercisePath,
+	submittedHomeworkPath,
+	TEMP_PATH
+} from '../../app'
+import {exerciseEntryInstance, exerciseGroupInstance} from '../../models/db'
+import db, {sequelize} from '../../models/index'
+import {compileTest, JudgeResult, ResultEnum, runJudge} from './judge'
 
-const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
-const dbClient: IConnection = createConnection({
-	host: dbConfig.host,
-	user: dbConfig.user,
-	password: dbConfig.password,
-	database: dbConfig.database
-});
+const charsetDetector = require('jschardet');
 
+
+function onData(name: string, val: any, data: any): void {
+	if (Array.isArray(data[name])) {
+		data[name].push(val);
+	}
+	else if (data[name]) {
+		data[name] = [data[name], val];
+	}
+	else {
+		data[name] = val;
+	}
+}
+
+interface EntryInfo {
+	name: string
+	extension: string
+}
+
+interface GroupInfo {
+	subtitle: string
+	type: string
+	timeLimit: string
+	entryPoint?: string
+	compileOnly?: 'on'
+	throughStdin?: 'on'
+	throughArg?: 'on'
+	entries: EntryInfo[]
+}
+
+interface GroupFile {
+	stdInput?: any[]
+	stdOutput?: any[]
+	argInput?: any[]
+	argOutput?: any[]
+}
+
+
+async function insertGroupAndEntries(exerciseId: number, groupInfo: GroupInfo,
+									 testSetLength: number, transaction: Transaction): Promise<void> {
+	const insertedGroup = await db.exerciseGroup.create({
+		exerciseId: exerciseId,
+		id: undefined,
+		compileType: groupInfo.type,
+		inputThroughArg: !!groupInfo.throughArg,
+		inputThroughStdin: !!groupInfo.throughStdin,
+		compileOnly: !!groupInfo.compileOnly,
+		subtitle: groupInfo.subtitle,
+		testSetSize: testSetLength,
+		timeLimit: parseInt(groupInfo.timeLimit),
+		entryPoint: groupInfo.entryPoint
+	}, {transaction: transaction});
+
+	await db.exerciseEntry.bulkCreate(groupInfo.entries.map(value => ({
+		id: undefined,
+		groupId: insertedGroup.id,
+		name: value.name,
+		extension: value.extension
+	})), {transaction: transaction});
+}
+
+
+/**
+ * creating a new project request api.
+ *
+ * @method create
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+export async function create(req: Request, res: Response) {
+	if (!req.session.admin || !typeIs(req, 'multipart/form-data')) return res.sendStatus(401);
+
+	const form = new multiparty.Form();
+	const data: any = {};
+	const files: any = {};
+
+	form.on('field', (name, val) => onData(name, val, data));
+	form.on('file', (name, val) => onData(name, val, files));
+
+	form.on('error', err => {
+		err.status = 400;
+
+		// TODO: error handling
+
+		console.error(err);
+
+		req.resume();
+	});
+
+	form.on('close', async () => {
+		try {
+			const body: {
+				name: string
+				start: Date
+				due: Date
+				onlyForAdmin?: 'on'
+				groups: GroupInfo[]
+				descriptions?: string[]
+			} = qsParse(data);
+
+			const file: {
+				groups?: { [groupdId: string]: GroupFile }
+			} = qsParse(files, {parseArrays: false});
+
+			const insertedExercise = await db.exercise.create({
+				name: body.name,
+				startDate: new Date(body.start),
+				endDate: new Date(body.due),
+				authorId: req.session.studentId,
+				authorEmail: req.session.email,
+				id: undefined,
+				isAdminOnly: !!body.onlyForAdmin,
+				created: undefined
+			});
+
+			await sequelize.transaction(async t => {
+				body.descriptions = body.descriptions || [];
+				const descPromise = db.exerciseDescription.bulkCreate(body.descriptions.map(value => ({
+					url: value,
+					exerciseId: insertedExercise.id
+				})), {transaction: t});
+
+
+				let differentSetLength = false;
+				file.groups = file.groups || {};
+				const testSetLength = Object.keys(file.groups).reduce((prev, curKey) => {
+					const value = file.groups[curKey];
+
+					const lengthSet = Object.keys(value)
+						.reduce((prev, cur: keyof GroupFile) => prev.add(value[cur].length), new Set<number>());
+
+					if (lengthSet.size != 1) differentSetLength = true;
+
+					return prev.set(curKey, lengthSet.size);
+				}, new Map<string, number>());
+
+				if (differentSetLength) {
+					logger.error('[exercise_api::create::transaction] : test set size is not same');
+					return t.rollback();
+				}
+
+				// TODO: more specific type hint
+				const promises: any[] = body.groups.map((group, idx) =>
+					insertGroupAndEntries(insertedExercise.id, group, testSetLength.get(idx.toString()), t));
+
+				promises.push(descPromise);
+
+				return Promise.all(promises);
+			});
+
+			res.redirect('/exercise');
+
+		}
+		catch (err) {
+			err.status = 400;
+
+			// TODO: error handling
+			console.error(err);
+
+			res.sendStatus(500);
+		}
+	});
+
+	form.parse(req);
+}
 
 /**
  * Run and return result uploaded exercise
@@ -28,16 +197,16 @@ const dbClient: IConnection = createConnection({
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function upload(req: Request, res: Response) {
+export async function upload(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
 	const hash = crypto.createHash('sha512');
-	const file = (<any>req).files.attachment;
-	const attachId = req.params.attachId;
+	const file = req.files.attachment as UploadedFile;
+	const entryId = req.params.entryId;
 	const studentId = req.session.studentId;
 
-	const encodingInfo: { encoding: string, confidence: number } = charsetDetector(file.data);
-	logger.debug(util.inspect(encodingInfo, {showHidden: false, depth: 1}));
+	const encodingInfo: { encoding: string, confidence: number } = charsetDetector.detect(file.data);
+	logger.debug('[exercise::upload::insert] : ', encodingInfo);
 
 
 	let hashedOriginal: string = crypto.createHash('sha512').update(file.data).digest('hex');
@@ -53,282 +222,223 @@ export function upload(req: Request, res: Response) {
 
 	const hashedName = hash.update(fileContent).digest('hex');
 
-
-	if (hashedName == hashedOriginal) {
-		hashedOriginal = undefined;
-	}
-	else {
-		// backup original file
-		fs.writeFile(path.join(submittedExerciseOriginalPath, hashedOriginal), file.data, {mode: 0o600},
-			(err: NodeJS.ErrnoException) => {
-				if (err) {
-					logger.error('[rest_api::uploadExercise::writeOriginalFile] : ');
-					logger.error(util.inspect(err, {showHidden: false}));
-				}
-			});
-	}
-
-
-	fs.writeFile(path.join(submittedExercisePath, hashedName), fileContent, {mode: 0o600}, (err: NodeJS.ErrnoException) => {
-		if (err) {
-			logger.error('[rest_api::uploadExercise::writeFile] : ');
-			logger.error(util.inspect(err, {showHidden: false}));
+	try {
+		if (hashedName == hashedOriginal) {
+			hashedOriginal = undefined;
 		}
-	});
+		else {
+			// backup original file
+			await fs_ext.writeFile(
+				path.join(submittedExerciseOriginalPath, hashedOriginal),
+				file.data,
+				{mode: 0o600});
+		}
 
 
-	// get information of this exercise by given id (attachId)
-	dbClient.query(
-		'SELECT name, extension, test_set_size, input_through_arg, no_compile FROM exercise_config WHERE id = ?;',
-		attachId,
-		(err: IError, searchResult) => {
-			if (err) {
-				logger.error('[rest_api::uploadExercise::select] : ');
-				logger.error(util.inspect(err, {showHidden: false}));
-				res.sendStatus(500);
-				return;
-			}
+		await Promise.all([
+			fs_ext.writeFile(
+				path.join(submittedExercisePath, hashedName),
+				fileContent,
+				{mode: 0o600}
+			),
+
+			db.exerciseUploadLog.create({
+				studentId: studentId,
+				entryId: entryId,
+				email: req.session.email,
+				fileName: hashedName,
+				originalFile: hashedOriginal,
+				id: undefined,
+				submitted: undefined
+			})
+		]);
+
+		return res.sendStatus(202);
+	}
+	catch (err) {
+		logger.error('[exercise::upload::insert] : ', err.stack);
+		return res.sendStatus(500);
+	}
+}
 
 
-			// a temporarily created shared path that contains source code to judge
-			const sourcePath = fs.mkdtempSync(path.join(tempPath, studentId + '_'));
-			// a temporarily created shared path that will contain output
-			const outputPath = fs.mkdtempSync(path.join(tempPath, studentId + '_'));
+interface CompileEntryInfo {
+	name: string,
+	extension: number,
+	fileName: string,
+	logId: number
+}
 
+export async function judge(req: Request, res: Response) {
+	if (!req.session.signIn) return res.sendStatus(401);
 
-			// write config file of this judge to shared folder
-			fs.writeFile(
-				path.join(sourcePath, 'config.json'),
-				JSON.stringify({
-					sourceName: searchResult[0].name,
-					extension: searchResult[0].extension,
-					testSetSize: searchResult[0].test_set_size,
-					inputThroughArg: searchResult[0].input_through_arg
+	const studentId = req.session.studentId;
+	const groupId = req.params.groupId;
+
+	try {
+		const [srcPath, outputPath, entryList, groupInfo]: [string, string, CompileEntryInfo[], exerciseGroupInstance]
+			= await Promise.all([
+			fs_ext.mkdtemp(path.join(TEMP_PATH, studentId + '_')),
+			fs_ext.mkdtemp(path.join(TEMP_PATH, studentId + '_')),
+			// language=MySQL
+			sequelize.query(`
+                    SELECT name, CAST(extension AS UNSIGNED) AS \`extension\`, C.file_name AS \`fileName\`,
+                        C.id AS \'logId\'
+                    FROM exercise_entry
+                             JOIN (SELECT A.id, A.file_name, A.entry_id
+                                   FROM exercise_upload_log AS A
+                                            LEFT JOIN exercise_upload_log AS B
+                                   ON A.entry_id = B.entry_id AND A.submitted < B.submitted
+                                   WHERE B.submitted IS NULL AND A.student_id = ?) AS C ON C.entry_id = exercise_entry.id
+                    WHERE group_id = ?`,
+				{
+					replacements: [studentId, groupId],
+					raw: true,
+					type: QueryTypes.SELECT
 				}),
-				{mode: 0o400}, null
-			);
+			db.exerciseGroup.findById(groupId, {raw: true})
+		]);
 
-			// copy given source code to shared folder
-			fs.writeFileSync(path.join(sourcePath, searchResult[0].name), fileContent, {mode: 0o600});
+		// move all related files to docker linked directory
+		await Promise.all(
+			entryList.map(entry => fs_ext.copy(
+				path.join(submittedExercisePath, entry.fileName),
+				path.join(srcPath, entry.name))
+			));
 
-			if (searchResult[0].no_compile) {
-				dbClient.query(
-					'INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);',
-					[studentId, attachId, req.session.email, hashedName, hashedOriginal],
-					(err: IError, insertResult) => {
-						if (err) {
-							logger.error('[rest_api::uploadExercise::insert] : ');
-							logger.error(util.inspect(err, {showHidden: false}));
-							res.sendStatus(500);
-							return;
-						}
+		const [_, judgeLog] = await Promise.all([
+			// generate config file
+			fs_ext.writeFile(
+				path.join(srcPath, 'config.json'),
+				JSON.stringify({
+					compile: entryList
+						.filter(entry => entry.extension == 1 || entry.extension == 3)
+						.map(entry => entry.name),
+					dependents: entryList
+						.filter(entry => entry.extension == 2 || entry.extension == 4)
+						.map(entry => entry.name),
+					language: groupInfo.compileType,
+					entryPoint: groupInfo.entryPoint,
+					testSetSize: groupInfo.testSetSize,
+					timeout: groupInfo.timeLimit
+				})),
 
-						logger.debug('[uploadExercise:insert into exercise_log]');
-						logger.debug(util.inspect(insertResult, {showHidden: false, depth: 1}));
+			// insert judge log
+			db.exerciseJudgeLog.create({
+				studentId: studentId,
+				groupId: groupId,
+				email: req.session.email,
+				id: undefined,
+				created: undefined
+			})
+		]);
 
-						const inputPath = path.join(exerciseSetPath, attachId.toString(), 'input');
-						const answerPath = path.join(exerciseSetPath, attachId.toString(), 'output');
+		await Promise.all(
+			entryList.map(entry => db.exerciseJudgeEntryLog.create({
+				judgeId: judgeLog.id,
+				uploadId: entry.logId
+			}))
+		);
 
-						runJudge(outputPath, sourcePath, inputPath, answerPath,
-							(err: Error, code: ResultEnum, result: JudgeResult) => {
-								async.parallel([
-									() => sendResult(res, code, result, inputPath, answerPath, insertResult.insertId),
-									() => storeResult(code, result, insertResult.insertId)
-								]);
-							});
-					}
-				);
-			}
-			else {
-				dbClient.query(
-					'INSERT INTO exercise_log (student_id, attachment_id, email, file_name, original_file) VALUE (?, ?, ?, ?, ?);',
-					[studentId, attachId, req.session.email, hashedName, hashedOriginal],
-					(err: IError, insertResult) => {
-						if (err) {
-							logger.error('[rest_api::uploadExercise::insert] : ');
-							logger.error(util.inspect(err, {showHidden: false}));
-							res.sendStatus(500);
-							return;
-						}
+		const inputPath = path.join(exerciseSetPath, groupId.toString(), 'input');
+		const answerPath = path.join(exerciseSetPath, groupId.toString(), 'output');
 
-						res.sendStatus(200);
+		if (groupInfo.compileOnly) {
+			const result = await compileTest(outputPath, srcPath);
 
-						dbClient.query(
-							'INSERT INTO exercise_result (log_id, type) VALUE (?, ?);',
-							[insertResult.insertId, ResultEnum.correct],
-							(err) => {
-								if (err) {
-									logger.error('[rest_api::uploadExercise::insert_judge_correct] : ');
-									logger.error(util.inspect(err, {showHidden: false}));
-								}
-							});
-					}
-				);
-			}
+			await storeResult(result, judgeLog.id);
+			return await sendResult(res, result, inputPath, answerPath, judgeLog.id);
 		}
-	);
+		else {
+			const result = await runJudge(outputPath, srcPath, inputPath, answerPath);
+
+			logger.debug('[exercise::judge] : ', result);
+
+			await storeResult(result, judgeLog.id);
+			return await sendResult(res, result, inputPath, answerPath, judgeLog.id);
+		}
+	}
+	catch (err) {
+		logger.error('[exercise::judge] : ', err.stack);
+		return res.sendStatus(500);
+	}
 }
 
 
-function sendResult(res: Response, code: ResultEnum, result: JudgeResult,
-					inputPath: string, answerPath: string, logId: number) {
-	switch (code) {
+// FIXME: nullity check
+export async function sendResult(res: Response, result: JudgeResult,
+								 inputPath?: string, answerPath?: string, logId?: number) {
+	switch (result.type) {
 		case ResultEnum.serverError:
-			res.status(500).json({id: logId});
-			break;
+			return res.status(500).json({id: logId});
 
 		case ResultEnum.scriptError:
-			res.status(417).json({errorMsg: result.errorStr});
-			break;
+			return res.status(417).json({errorMsg: result.scriptError});
 
 		case ResultEnum.compileError:
-			res.status(400).json({errorMsg: result.errorStr});
-			break;
+			return res.status(400).json({errorMsg: result.compileError});
 
 		case ResultEnum.incorrect:
-			let tasks = [
-				(callback: (err: NodeJS.ErrnoException, data: string) => void) => {
-					fs.readFile(path.join(answerPath, result.inputIndex + '.out'), 'UTF-8', callback)
-				},
-				(callback: (err: NodeJS.ErrnoException, data: string) => void) => {
-					fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8', callback)
-				}
-			];
+			try {
+				// FIXME: consider stdin
+				const answer = await fs_ext.readFile(path.join(answerPath, `${result.failedIndex}.out`), 'UTF-8');
+				const input = await fs_ext.readFile(path.join(inputPath, `${result.failedIndex}.in`), 'UTF-8');
 
-			async.parallel(tasks, (err: NodeJS.ErrnoException, data: Array<string>) => {
-				if (err) {
-					logger.error('[rest_api::sendResult::incorrect::read_file] : ');
-					logger.error(util.inspect(err, {showHidden: false}));
-					res.status(500).json({id: logId});
-				}
-				else {
-					res.status(406).json({
-						userOutput: result.userOutput,
-						answerOutput: data[0],
-						input: data[1]
-					})
-				}
-			});
-			break;
-
-		case ResultEnum.runtimeError:
-			fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8',
-				(err: NodeJS.ErrnoException, data: string) => {
-					if (err) {
-						logger.error('[rest_api::uploadExercise::read_file:runtimeError] : ');
-						logger.error(util.inspect(err, {showHidden: false}));
-						res.status(500).json({id: logId});
-					}
-					else {
-						res.status(412).json({
-							input: data,
-							errorLog: result.errorLog,
-							returnCode: result.returnCode
-						})
-					}
+				return res.status(406).json({
+					userOutput: result.userOutput,
+					answerOutput: answer,
+					input: input
 				});
-			break;
-
-		case ResultEnum.timeout:
-			fs.readFile(path.join(inputPath, result.inputIndex + '.in'), 'UTF-8',
-				(err: NodeJS.ErrnoException, data: string) => {
-					if (err) {
-						logger.error('[rest_api::uploadExercise::read_file:timeout] : ');
-						logger.error(util.inspect(err, {showHidden: false}));
-						res.status(500).json({id: logId});
-					}
-					else
-						res.status(410).json({input: data});
-				});
-			break;
-
-		case ResultEnum.correct:
-			res.sendStatus(200);
-			break;
-	}
-}
-
-
-function storeResult(code: ResultEnum, result: JudgeResult, logId: number) {
-	switch (code) {
-		case ResultEnum.compileError:
-			dbClient.query(
-				'INSERT INTO exercise_result(log_id, type, compile_error) VALUE(?,?,?);',
-				[logId, code, result.errorStr],
-				(err) => {
-					if (err) {
-						logger.error('[rest_api::handleResult::insert_compile_error] : ');
-						logger.error(util.inspect(err, {showHidden: false}));
-					}
-				});
-			break;
-
-		case ResultEnum.correct:
-			dbClient.query(
-				'INSERT INTO exercise_result (log_id, type, runtime_error) VALUE (?, ?, ?);',
-				[logId, code, result.errorLog],
-				(err) => {
-					if (err) {
-						logger.error('[rest_api::handleResult::insert_judge_correct] : ');
-						logger.error(util.inspect(err, {showHidden: false}));
-					}
-				});
-
-			if (result.errorLog) {
-				logger.error('[rest_api::handleResult::insert_judge_correct-found_error] ' + logId);
 			}
-			break;
-
-		case ResultEnum.timeout:
-			dbClient.query(
-				'INSERT INTO exercise_result (log_id, type, return_code, failed_index) VALUE (?, ?, ?, ?);',
-				[logId, code, result.returnCode, result.inputIndex],
-				(err) => {
-					if (err) {
-						logger.error('[rest_api::handleResult::insert_judge_timeout] : ');
-						logger.error(util.inspect(err, {showHidden: false}));
-					}
-				});
-			break;
+			catch (err) {
+				logger.error('[exercise::sendResult::incorrect::read_file] : ', err.stack);
+				return res.status(500).json({id: logId});
+			}
 
 		case ResultEnum.runtimeError:
-			dbClient.query(
-				'INSERT INTO exercise_result (log_id, type, return_code, runtime_error, failed_index) VALUE (?, ?, ?, ?, ?);',
-				[logId, code, result.returnCode, result.errorLog, result.inputIndex],
-				(err) => {
-					if (err) {
-						logger.error('[rest_api::handleResult::insert_judge_runtime_error] : ');
-						logger.error(util.inspect(err, {showHidden: false}));
-					}
-				});
-			break;
+			try {
+				const input = await fs_ext.readFile(path.join(inputPath, `${result.failedIndex}.in`), 'UTF-8');
 
-		case ResultEnum.incorrect:
-			dbClient.query(
-				'INSERT INTO exercise_result (log_id, type, failed_index, user_output, runtime_error) VALUE (?, ?, ?, ?, ?);',
-				[logId, code, result.inputIndex, result.userOutput, result.errorLog],
-				(err) => {
-					if (err) {
-						logger.error('[rest_api::handleResult::insert_judge_incorrect] : ');
-						logger.error(util.inspect(err, {showHidden: false}));
-					}
-				});
-			break;
+				return res.status(412).json({
+					input: input,
+					errorLog: result.runtimeError,
+					returnCode: result.returnCode
+				})
+			}
+			catch (err) {
+				logger.error('[exercise::sendResult::runtimeError::read_file] : ', err.stack);
+				return res.status(500).json({id: logId});
+			}
 
-		case ResultEnum.scriptError:
-			dbClient.query(
-				'INSERT INTO exercise_result(log_id, type, script_error) VALUE(?, ?, ?);',
-				[logId, code, result.errorStr],
-				(err) => {
-					if (err) {
-						logger.error('[rest_api::handleResult::insert_script_error] : ');
-						logger.error(util.inspect(err, {showHidden: false}));
-					}
-				});
-			break;
+		case ResultEnum.timeout:
+			try {
+				const input = await fs_ext.readFile(path.join(inputPath, `${result.failedIndex}.in`), 'UTF-8');
+
+				return res.status(410).json({input: input});
+			}
+			catch (err) {
+				logger.error('[exercise::upload::timeout::read_file] : ', err.stack);
+				return res.status(500).json({id: logId});
+			}
+
+		case ResultEnum.correct:
+			return res.sendStatus(200);
 	}
 }
 
+
+function storeResult(result: JudgeResult, logId: number) {
+	return db.exerciseJudgeResult.create(
+		Object.assign({logId: logId, id: undefined, created: undefined}, result));
+}
+
+
+interface MissingJudge {
+	studentId: string,
+	groupId: number,
+	id: number,
+	uploadLogs: { entryId: number, fileName: string }[]
+}
 
 /**
  * Rejudge unresolved exercise
@@ -337,70 +447,102 @@ function storeResult(code: ResultEnum, result: JudgeResult, logId: number) {
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function resolveUnhandled(req: Request, res: Response) {
+export async function resolveUnhandled(req: Request, res: Response) {
 	if (!req.session.admin) return res.sendStatus(401);
 
-	dbClient.query(
-		'SELECT exercise_log.id, exercise_log.attachment_id AS `attachId`, exercise_log.student_id AS `studentId`, file_name AS `fileName` ' +
-		'FROM exercise_log ' +
-		'    LEFT JOIN exercise_result ON exercise_result.log_id = exercise_log.id ' +
-		'WHERE exercise_result.id IS NULL;',
-		(err: IError, searchList) => {
-			if (err) {
-				logger.error('[rest_api::resolveUnhandled::search] : ');
-				logger.error(util.inspect(err, {showHidden: false}));
-				res.sendStatus(500);
-				return;
-			}
-
-			for (const log of searchList) {
-				// get information of this exercise by given id (attachId)
-				// TODO: adjust async pattern
-				dbClient.query(
-					'SELECT name, extension, test_set_size, input_through_arg FROM exercise_config WHERE id = ?;', log.attachId,
-					(err: IError, exerciseSetting) => {
-						if (err) {
-							logger.error('[rest_api::resolveUnhandled::select] : ');
-							logger.error(util.inspect(err, {showHidden: false, depth: 1}));
-							res.sendStatus(500);
-							return;
-						}
-
-
-						// a temporarily created shared path that contains source code to judge
-						const sourcePath = fs.mkdtempSync(path.join(tempPath, log.studentId + '_'));
-						// a temporarily created shared path that will contain output
-						const outputPath = fs.mkdtempSync(path.join(tempPath, log.studentId + '_'));
-
-
-						// write config file of this judge to shared folder
-						fs.writeFile(
-							path.join(sourcePath, 'config.json'),
-							JSON.stringify({
-								sourceName: exerciseSetting[0].name,
-								extension: exerciseSetting[0].extension,
-								testSetSize: exerciseSetting[0].test_set_size,
-								inputThroughArg: exerciseSetting[0].input_through_arg
-							}),
-							{mode: 0o400}, null
-						);
-
-						// copy given source code to shared folder
-						fs_ext.copySync(
-							path.join(submittedExercisePath, log.fileName),
-							path.join(sourcePath, exerciseSetting[0].name));
-
-						const inputPath = path.join(exerciseSetPath, log.attachId.toString(), 'input');
-						const answerPath = path.join(exerciseSetPath, log.attachId.toString(), 'output');
-
-						runJudge(outputPath, sourcePath, inputPath, answerPath, (err: Error, code: ResultEnum, result: JudgeResult) => {
-							storeResult(code, result, log.id);
-						});
-					});
-			}
+	try {
+		// TODO: rename to unhandledList
+		// @ts-ignore
+		const missingJudges: MissingJudge[] = await db.exerciseJudgeLog.findAll({
+			include: [{
+				model: db.exerciseJudgeResult,
+				as: 'result',
+				attributes: []
+			}, {
+				model: db.exerciseUploadLog,
+				attributes: ['entryId', 'fileName'],
+				as: 'uploadLogs'
+			}],
+			where: {'$result.id$': null},
+			attributes: ['id', 'groupId', 'studentId']
 		});
 
-	return res.sendStatus(200);
+		logger.debug('resolveUnhandled', missingJudges);
+
+		for (const judge of missingJudges) {
+			const studentId = judge.studentId;
+			const groupId = judge.groupId;
+			const judgeLogId = judge.id;
+			const uploadLogMap: { [key: number]: string } = judge.uploadLogs.reduce(
+				(prev: { [key: number]: string }, curr) => {
+					prev[curr.entryId] = curr.fileName;
+					return prev;
+				}, {});
+
+			const [srcPath, outputPath, entryList, groupInfo]:
+				[string, string, exerciseEntryInstance[], exerciseGroupInstance]
+				= await Promise.all(
+				[
+					// make source directory
+					fs_ext.mkdtemp(path.join(TEMP_PATH, studentId + '_')),
+
+					// make output directory
+					fs_ext.mkdtemp(path.join(TEMP_PATH, studentId + '_')),
+
+
+					db.exerciseEntry.findAll({
+						attributes: [['id', 'entryId'], 'name', 'extension'],
+						where: {groupId: {[sequelize.Op.eq]: groupId}},
+						raw: true
+					}),
+
+					db.exerciseGroup.findById(groupId, {raw: true})
+				]);
+
+			// move all related files to docker linked directory
+			await Promise.all(
+				entryList.map(entry => fs_ext.copy(
+					path.join(submittedExercisePath, uploadLogMap[entry.id]),
+					path.join(srcPath, entry.name))
+				));
+
+			// generate config file
+			await fs_ext.writeFile(
+				path.join(srcPath, 'config.json'),
+				JSON.stringify({
+					compile: entryList
+						.filter(entry => entry.extension == 1 || entry.extension == 3)
+						.map(entry => entry.name),
+					dependents: entryList
+						.filter(entry => entry.extension == 2 || entry.extension == 4)
+						.map(entry => entry.name),
+					language: groupInfo.compileType,
+					entryPoint: groupInfo.entryPoint,
+					testSetSize: groupInfo.testSetSize,
+					timeout: groupInfo.timeLimit
+				}));
+
+			const inputPath = path.join(exerciseSetPath, groupId.toString(), 'input');
+			const answerPath = path.join(exerciseSetPath, groupId.toString(), 'output');
+
+			if (groupInfo.compileOnly) {
+				const result = await compileTest(outputPath, srcPath);
+
+				await storeResult(result, judgeLogId);
+				await sendResult(res, result, inputPath, answerPath, judgeLogId);
+			}
+			else {
+				const result = await runJudge(outputPath, srcPath, inputPath, answerPath);
+
+				await storeResult(result, judgeLogId);
+				await sendResult(res, result, inputPath, answerPath, judgeLogId);
+			}
+		}
+	}
+	catch (err) {
+		logger.error('[exercise::resolveUnhandled::search] : ', err.stack);
+		return res.sendStatus(500);
+	}
 }
 
 
@@ -411,146 +553,170 @@ export function resolveUnhandled(req: Request, res: Response) {
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function fetchJudgeResult(req: Request, res: Response) {
+export async function judgeResult(req: Request, res: Response) {
 	if (!req.session.signIn) return 401;
 
-	dbClient.query(
-		'SELECT student_id, attachment_id, type, compile_error, failed_index, user_output, return_code, runtime_error, script_error ' +
-		'FROM exercise_log JOIN exercise_result ON exercise_log.id = exercise_result.log_id ' +
-		'WHERE log_id = ?',
-		req.params.logId,
-		(err: IError, searchResult) => {
-			if (err) {
-				logger.error('[rest_api::fetchJudgeResult::search] : ');
-				logger.error(util.inspect(err, {showHidden: false}));
-				res.sendStatus(500);
-				return;
-			}
+	const logId = req.params.logId;
 
-			const result: {
-				student_id: string, attachment_id: number, type: number, compile_error: string, failed_index: number,
-				user_output: string, return_code: number, runtime_error: string, script_error: string
-			} = searchResult[0];
+	try {
+		const [judgeLog, judgeResult] = await Promise.all([
+			db.exerciseJudgeLog.findByPk(logId, {
+				raw: true,
+				attributes: ['studentId', 'groupId']
+			}),
+			db.exerciseJudgeResult.findOne({
+				where: {logId: logId},
+				attributes: [[sequelize.cast(sequelize.col('type'), 'UNSIGNED'), 'type'], 'failedIndex',
+					'returnCode', 'userOutput', 'runtimeError', 'scriptError', 'compileError'],
+				raw: true
+			})
+		]);
 
-			// if non-admin user requested another one's result
-			if (!req.session.admin && req.session.studentId != result.student_id) {
-				res.sendStatus(401);
-				return;
-			}
+		// if non-admin user requested another one's result
+		if (!req.session.admin && req.session.studentId != judgeLog.studentId) {
+			return res.sendStatus(401);
+		}
 
-			const testSetPath = path.join(exerciseSetPath, result.attachment_id.toString());
+		const inputPath = path.join(exerciseSetPath, judgeLog.groupId.toString(), 'input');
+		const answerPath = path.join(exerciseSetPath, judgeLog.groupId.toString(), 'output');
 
-			switch (result.type) {
-				case ResultEnum.correct:
-					res.sendStatus(200);
-					break;
+		return sendResult(res, judgeResult, inputPath, answerPath, logId);
+	}
+	catch (err) {
+		logger.error('[exercise::fetchJudgeResult::search] : ', err.stack);
+		return res.sendStatus(500);
+	}
+}
 
-				case ResultEnum.incorrect:
-					let tasks = [
-						(callback: (err: NodeJS.ErrnoException, data: string) => void) => {
-							fs.readFile(path.join(testSetPath, 'input', result.failed_index + '.in'), 'UTF-8', callback)
-						},
-						(callback: (err: NodeJS.ErrnoException, data: string) => void) => {
-							fs.readFile(path.join(testSetPath, 'output', result.failed_index + '.out'), 'UTF-8', callback)
-						}
-					];
 
-					async.parallel(tasks, (err: NodeJS.ErrnoException, data: Array<string>) => {
-						if (err) {
-							logger.error('[rest_api::handleResult::fetchJudgeResult::incorrect::read_file] : ');
-							logger.error(util.inspect(err, {showHidden: false}));
-							res.sendStatus(500);
-							return;
-						}
+/**
+ * Check uploaded name is already exist.
+ *
+ * @method checkName
+ * @param req {Request} The express Request object.
+ * @param res {Response} The express Response object.
+ */
+export async function checkName(req: Request, res: Response) {
+	if (!req.session.admin) return res.sendStatus(401);
 
-						res.status(406).json({
-							userOutput: result.user_output,
-							answerOutput: data[1],
-							input: data[0]
-						});
-					});
-					break;
-
-				case ResultEnum.compileError:
-					res.status(400).json({errorMsg: result.compile_error});
-					break;
-
-				case ResultEnum.timeout:
-					fs.readFile(path.join(testSetPath, 'input', result.failed_index + '.in'), 'UTF-8',
-						(err: NodeJS.ErrnoException, data: string) => {
-							if (err) {
-								logger.error('[rest_api::handleResult::fetchJudgeResult::timeout::read_file] : ');
-								logger.error(util.inspect(err, {showHidden: false}));
-								res.sendStatus(500);
-								return;
-							}
-
-							res.status(410).json({input: data});
-						});
-					break;
-
-				case ResultEnum.runtimeError:
-					fs.readFile(path.join(testSetPath, 'input', result.failed_index + '.in'), 'UTF-8',
-						(err: NodeJS.ErrnoException, data: string) => {
-							if (err) {
-								logger.error('[rest_api::handleResult::fetchJudgeResult::runtimeError::read_file] : ');
-								logger.error(util.inspect(err, {showHidden: false}));
-								res.sendStatus(500);
-								return;
-							}
-
-							res.status(412).json({
-								input: data,
-								errorLog: result.runtime_error,
-								returnCode: result.return_code
-							});
-						});
-					break;
-
-				case ResultEnum.scriptError:
-					res.status(417).json({errorMsg: result.script_error});
-					break;
-			}
+	try {
+		const exercise = await db.exercise.findOne({
+			where: {name: encodeURIComponent(req.query.name)},
+			attributes: ['id']
 		});
+
+		return res.sendStatus(exercise == null ? 200 : 409);
+	}
+	catch (err) {
+		logger.error('[exercise_api::checkName::select] : ', err.stack);
+		res.sendStatus(500);
+	}
 }
 
 
 /**
  * Send exercise file.
  *
- * @method downloadSingle
+ * @method downloadEntry
  * @param req {Request} The express Request object.
  * @param res {Response} The express Response object.
  */
-export function downloadSingle(req: Request, res: Response) {
+export async function downloadEntry(req: Request, res: Response) {
 	if (!req.session.signIn) return res.sendStatus(401);
 
-	dbClient.query(
-		'SELECT student_id AS `studentId`, file_name AS `fileName`, original_file AS `originalFile`, name ' +
-		'FROM exercise_log JOIN exercise_config ON exercise_log.attachment_id = exercise_config.id ' +
-		'WHERE exercise_log.id = ?',
-		req.params.logId,
-		(err: IError, result) => {
-			if (err) {
-				logger.error('[rest_api::downloadSubmittedExercise::search] : ');
-				logger.error(util.inspect(err, {showHidden: false}));
-				res.sendStatus(500);
-				return;
-			}
+	const uploadId = req.params.logId;
 
-			const row = result[0];
+	try {
+		// @ts-ignore
+		const row: {
+			studentId: number
+			fileName: string
+			originalFile: string
+			'entry.name': string
+		} = await db.exerciseUploadLog.findById(uploadId, {
+			include: [{model: db.exerciseEntry, as: 'entry', attributes: ['name']}],
+			attributes: ['studentId', 'fileName', 'originalFile'],
+			raw: true
+		});
 
-			if (req.session.admin || row.studentId == req.session.studentId) {
-				if (!('encoded' in req.query) && row.originalFile) {
-					res.download(path.join(submittedExerciseOriginalPath, row.originalFile), row.name);
-				}
-				else {
-					res.download(path.join(submittedExercisePath, row.fileName), row.name);
-				}
+		if (req.session.admin || row.studentId == req.session.studentId) {
+			if (!('encoded' in req.query) && row.originalFile) {
+				return res.download(path.join(submittedExerciseOriginalPath, row.originalFile), row['entry.name']);
 			}
 			else {
-				logger.error('[rest_api::downloadSubmittedExercise::student_id-mismatch]');
-				res.sendStatus(401);
+				return res.download(path.join(submittedExercisePath, row.fileName), row['entry.name']);
 			}
+		}
+		else {
+			logger.error('[exercise::downloadEntry::student_id-mismatch]');
+			return res.sendStatus(401);
+		}
+	}
+	catch (err) {
+		logger.error('[exercise::downloadEntry::search] : ', err.stack);
+		return res.sendStatus(500);
+	}
+}
+
+
+export async function downloadGroup(req: Request, res: Response) {
+	if (!req.session.signIn) return res.sendStatus(401);
+
+	const judgeId = req.params.logId;
+
+	try {
+		const judgeLog = await db.exerciseJudgeLog.findByPk(judgeId, {
+			include: [{
+				model: db.exerciseUploadLog,
+				as: 'uploadLogs',
+				attributes: ['fileName', 'originalFile'],
+				include: [{
+					model: db.exerciseEntry,
+					as: 'entry',
+					attributes: ['name', 'extension']
+				}]
+			}, {
+				model: db.exerciseGroup,
+				as: 'group',
+				attributes: ['subtitle']
+			}],
+			attributes: ['studentId']
 		});
+
+		const file = archiver('zip', {gzipOptions: {level: 9}});
+
+		const name = decodeURIComponent(judgeLog.group.subtitle);
+
+		res.setHeader('Content-disposition', `attachment; filename=${name}.zip`);
+		res.type('zip');
+
+		file.pipe(res);
+
+		file.on('error', reason => {
+			logger.error('[zip::sendZip] : ', reason.stack);
+			res.sendStatus(500);
+		});
+
+		file.on('warning', reason => {
+			logger.warn('[zip::sendZip] : ', reason.stack);
+		});
+
+		for (const logs of judgeLog.uploadLogs) {
+			let stream;
+			if (logs.originalFile != null) {
+				stream = fs.createReadStream(path.join(submittedExerciseOriginalPath, logs.originalFile))
+			}
+			else {
+				stream = fs.createReadStream(path.join(submittedExercisePath, logs.fileName))
+			}
+
+			file.append(stream, {name: `${name}/${logs.entry.name}`})
+		}
+
+		file.finalize()
+	}
+	catch (err) {
+		logger.error('[exercise::downloadGroup] : ', err.stack);
+		return res.sendStatus(500);
+	}
 }

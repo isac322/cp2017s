@@ -1,0 +1,193 @@
+extends layout
+
+block header
+	script(src='/js/bootstrap-datepicker.min.js', defer)
+	link(rel='stylesheet', href='/css/bootstrap-datepicker3.min.css')
+
+	script(src='/js/validator.min.js', defer)
+	script(src='/js/date_picker_init.js', defer)
+	script(src='/js/create_problem.js', defer)
+
+	style.
+		.validator-hidden {
+			display: none;
+		}
+
+		.panel-body {
+			padding-bottom: 0;
+		}
+
+		.btn-file {
+			position: relative;
+			overflow: hidden;
+		}
+
+		.btn-file input[type=file] {
+			position: absolute;
+			top: 0;
+			right: 0;
+			min-width: 100%;
+			min-height: 100%;
+			font-size: 100px;
+			text-align: right;
+			filter: alpha(opacity=0);
+			opacity: 0;
+			outline: none;
+			background: white;
+			cursor: inherit;
+			display: block;
+		}
+
+block content
+	.page-header
+		h2.text-info
+			b=`Create ${problemType}`
+
+	form#create-form(action=`/${problemType.toLowerCase()}`, method='POST', role='form', enctype='multipart/form-data')
+		.form-horizontal
+			// name
+			.form-group.has-feedback
+				label.control-label.col-md-2(for='problem_name')=`${problemType} Name`
+				.col-md-10
+					input.form-control#problem_name(type='text', placeholder='Name', name='name', data-remote='name', required)
+					span.glyphicon.form-control-feedback(aria-hidden='true')
+
+			.form-group
+				label.control-label.col-md-2(for='only_for_admin') Only for admin
+				.col-md-10
+					input#only_for_admin(type='checkbox', name='onlyForAdmin')
+
+			// start and due dates
+			.form-group.has-feedback
+				label.control-label.col-md-2(for='date_picker') Start and Due dates
+				.col-md-10
+					.input-daterange.input-group#date_picker
+						input.date-input.form-control#start-date(type='text', placeholder='Start date', name='start', required)
+						span.input-group-addon to
+						input.date-input.form-control#due-date(type='text', placeholder='Due date', name='due', required)
+					span.glyphicon.form-control-feedback(aria-hidden='true')
+					.help-block#diff-date
+
+
+			.form-group
+				label.control-label.col-md-2(for='description-container') Descriptions
+				.col-md-10#description-container
+					.form-group.has-feedback
+						.col-xs-12
+							.input-group
+								input.form-control(type='url', placeholder='URL', name='descriptions[]', required)
+								span.input-group-btn
+									button.btn.btn-danger.btn-del-desc(type='button') Delete
+
+				.col-md-offset-2.col-md-10
+					button.btn-link#btn-add-desc #[i.fa.fa-plus(aria-hidden='true')] add description
+
+			label.control-label(for='group-container') Groups
+			.row#group-container
+				.col-md-6.col-lg-4
+					.panel.panel-default
+						.panel-body
+							label.control-label Subtitle
+							input.form-control.subtitle(type='text', placeholder='subtitle', name='groups[][subtitle]', required)
+
+							label.control-label Compile type
+							select.form-control.compile_type(name='groups[][type]')
+								option cpp
+								option java
+								option make
+
+							.java-only.validator-hidden
+								label.control-label Entry point
+								input.form-control.entry_point(type='text', placeholder='entry point', name='groups[][entryPoint]', required)
+
+							.checkbox
+								label
+									input.compile_only(type='checkbox', name='groups[][compileOnly]')
+									| Compile test only
+
+							.exec-only
+								label.control-label Execution time limit
+								.input-group
+									input.form-control.time_limit(type='number', name='groups[][timeLimit]', value='1', min='0', required)
+									span.input-group-addon sec
+
+								.checkbox
+									label
+										input.chbox-arg(type='checkbox', name='groups[][throughArg]')
+										| Input through argument
+
+								.arg-only.col-xs-12.validator-hidden
+									.form-group.has-feedback
+										label.control-label Input files
+										.input-group
+											input.form-control(type='text', data-toggle='tooltip', data-validate='false', readonly)
+											.input-group-btn
+												span.btn.btn-primary.btn-file Browse
+													input.upload-entry.input-file(type='file', name='groups[][argInput][]', data-input, multiple, hidden, required)
+
+										label.control-label Output files
+										.input-group
+											input.form-control(type='text', data-toggle='tooltip', data-validate='false', readonly)
+											.input-group-btn
+												span.btn.btn-primary.btn-file Browse
+													input.upload-entry.output-file(type='file', name='groups[][argOutput][]', data-output, multiple, hidden, required)
+
+										.help-block.with-errors
+
+								.checkbox
+									label
+										input.chbox-stdin(type='checkbox', name='groups[][throughStdin]', checked)
+										| Input through stdin
+
+								.stdin-only.col-xs-12
+									.form-group.has-feedback
+										label.control-label Input files
+										.input-group
+											input.form-control(type='text', data-toggle='tooltip', data-validate='false', readonly)
+											.input-group-btn
+												span.btn.btn-primary.btn-file Browse
+													input.upload-entry.input-file(type='file', name='groups[][stdInput][]', data-input, multiple, hidden, required)
+
+										label.control-label Output files
+										.input-group
+											input.form-control(type='text', data-toggle='tooltip', data-validate='false', readonly)
+											.input-group-btn
+												span.btn.btn-primary.btn-file Browse
+													input.upload-entry.output-file(type='file', name='groups[][stdOutput][]', data-output, multiple, hidden, required)
+
+										.help-block.with-errors
+
+							label.control-label Entries
+						ul.list-group#attach-list
+
+						.panel-footer.text-center
+							a.btn.btn-link#btn-append-item(role='button')
+								span.glyphicon.glyphicon-plus(aria-hidden="true")
+
+				.col-md-6.col-lg-4
+					button.btn-link#btn-add-group #[i.fa.fa-plus(aria-hidden='true')] add group
+
+		.form-group
+			button.btn.btn-success.form-control(type='submit') Create
+
+	li.list-group-item#list-item_template
+		.row
+			.col-xs-12
+				.col-xs-10.col-sm-6
+					.form-group.has-feedback
+						input.form-control.file-name(type='text', placeholder='File Name', aria-label='File Name', name='groups[][entries][][name]', required)
+						span.glyphicon.form-control-feedback(aria-hidden='true')
+				.col-xs-10.col-sm-5
+					.form-group.has-feedback
+						select.form-control.extension(aria-label='File Type', name='groups[][entries][][extension]', required)
+							option(value='cpp') C++
+							option(value='hpp') C++ Header
+							option(value='java') Java
+							option(value='makefile') Makefile
+							option(value='report') Report
+							option(value='zip') Zip
+				.pull-right.text-center.wrapper-btn-remove
+					a.btn.btn-link.btn-remove-item(role='button')
+						span.glyphicon.glyphicon-trash(aria-hidden="true")
+
+	script(src='/js/non_judging_add.js', defer)

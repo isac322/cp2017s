@@ -145,4 +145,59 @@ class ResultModal {
 
 		this.$modal.modal();
 	}
+
+	/**
+	 * TODO: error handling
+	 * @param {string} url URL to fetch result of the judge
+	 */
+	public fetchAndShow(url: string) {
+		$.ajax(url, {
+			complete: (jqXHR: JQueryXHR) => {
+				const res = jqXHR.responseJSON;
+
+				switch (jqXHR.status) {
+					// dose not sign in yet
+					case 401:
+						document.location.href = '/';
+						break;
+
+					// correct
+					case 200:
+						this.setCorrect();
+						break;
+
+					// incorrect
+					case 406:
+						this.setIncorrect(res.input, res.answerOutput, res.userOutput);
+						break;
+
+					// timeout
+					case 410:
+						this.setTimeout(res.input);
+						break;
+
+					// runtime error
+					case 412:
+						this.setRuntimeError(res.returnCode, res.errorLog, res.input);
+						break;
+
+					// compile error
+					case 400:
+						this.setCompileError(res.errorMsg);
+						break;
+
+					// fail to run
+					case 417:
+						this.setFailToRun(res.errorMsg.replace('/\n/g', '<br>'));
+						break;
+
+					// server error
+					case 500:
+						this.setServerError(`Some error occurs on the judging server. Please contact to web administrator with your error ID : <code>${res.id}</code>.`);
+						break;
+				}
+			}
+		})
+	}
+
 }

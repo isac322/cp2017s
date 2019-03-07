@@ -1,8 +1,10 @@
 extends layout
 
 block header
-	script(src='/js/validator.min.js')
-	script(src='/js/jquery.form.min.js')
+	script(src='/js/validator.min.js', defer)
+	script(src='/js/jquery.form.min.js', defer)
+	script(src='/js/upload_entry.js', defer)
+	script(src='/js/card-run.js', defer)
 
 	link(rel='stylesheet', href='/css/card-style.css')
 
@@ -19,89 +21,13 @@ block content
 					| #[span.glyphicon.glyphicon-plus]
 					| Add
 
-	- var millis = 24 * 60 * 60 * 1000
+	include problem-card
 	each project in projectList
-		.col-xs-12.col-md-6.homework-card
-			.panel.panel-default
-				.panel-body
-					.col-xs-12
-						h2.wrapped-text.card-header
-							b=project.name
-							if admin
-								small
-									a(href='/project/judge/' + project.id).pull-right #[i.fa.fa-gavel(aria-hidden='true')] Judge
+		+card(project, 'project', 2)
 
-						.row
-							.col-xs-12.col-sm-4.col-md-12
-								h4
-									b Description
-								p
-									each desc in project.description
-										a.wrapped-text(target='_blank', href=desc)=desc
-										br
-
-							.col-xs-6.col-sm-4
-								h4
-									b Start Date
-								p=project.startDate
-
-							.col-xs-6.col-sm-4
-								h4
-									b Deadline
-								p=project.dueDate
-
-					.col-xs-12
-						h4
-							if signIn
-								- var query = '/history?t=3&'
-								each attachment in project.attachments
-									- query += 'pj=' + attachment.id + '&'
-								a(href=query) #[i.fa.fa-history(aria-hidden='true')] View history
-							a.pull-right.appender(role='button', data-toggle='collapse', href='#collapseExample' + project.id, aria-expanded='false', aria-controls='collapseExample' + project.id)
-								| #[i.fa.fa-upload(aria-hidden="true")]
-								| Submit
-								| #[span.glyphicon.glyphicon-menu-down]
-
-				ul.list-group.collapse(id='collapseExample' + project.id)
-					each attachment in project.attachments
-						form.upload-form(action='/project/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
-							li.list-group-item(class=attachment.submitted ? 'list-group-item-success' : undefined)
-								.row
-									if signIn && project.leftMillis >= -2 * 24 * 60 * 60 * 1000
-										.col-xs-12.col-sm-5.vcenter
-											h4.wrapped-text
-												| #[span.glyphicon.glyphicon-file]
-												| &nbsp;
-												| #{attachment.name}
-
-										.col-xs-12.col-sm-7.vcenter
-											.form-group
-												.pull-right.input-group
-													input.form-control(type='text', data-validate='false', readonly)
-													.input-group-btn
-														span.btn.btn-default.btn-file Select
-															input(type='file' name='attachment', hidden, required)
-														button.btn.btn-primary(type='submit', role='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Sending...') Submit
-									else
-										.col-xs-12.vcenter
-											h4.wrapped-text
-												| #[span.glyphicon.glyphicon-file]
-												| &nbsp;
-												| #{attachment.name}
-
-
-				.panel-footer.text-center
-					if project.leftMillis < 0
-						| Overpast
-					else if project.leftMillis < millis
-						| Less than 24 hours
-					else if project.leftMillis < 2 * millis
-						| 1 day left
-					else
-						| #{project.leftMillis / millis >> 0} days left
+	// confirm modal
+	include modal-result
+	script(src='/js/compile_test.js', defer)
 
 	// confirm modal
 	include modal-confirm
-
-	script(src='/js/card-run.js')
-	script(src='/js/submit_non_judging_file.js')

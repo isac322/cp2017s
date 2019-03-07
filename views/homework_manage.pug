@@ -3,11 +3,6 @@ extends layout
 block header
 	script(src='/js/bootstrap-select.min.js')
 	link(rel='stylesheet', href='/css/bootstrap-select.min.css')
-	style.
-		.tdLinkBtn {
-			padding: 0;
-			border: 0;
-		}
 
 block content
 	.col-xs-12.page-header
@@ -20,46 +15,48 @@ block content
 				| User
 				| #[small.text-muted (Multiple selection)]
 			select.form-control.selectpicker#selectUser(multiple, title='All', data-actions-box='true', data-live-search='true')
-				each user in userList
-					option(value=user.student_id, data-subtext=user.student_id)=decodeURIComponent(user.name)
+				each student in userList
+					option(value=student.studentId, data-subtext=student.studentId)=decodeURIComponent(student.name)
 
 		.col-xs-6.form-group
 			label(for='selHomework') Homework
 			select.form-control.selectpicker#selHomework
-				each homework in homeworkList
-					option(value=homework.homework_id, selected=currentId == homework.homework_id ? "" : undefined)=decodeURIComponent(homework.name)
+				each problem in problemList
+					option(value=problem.id, selected=currentId == problem.id ? "" : undefined)=decodeURIComponent(problem.name)
 
-	a(href='/homework/zip/' + currentId)
+	a(href='/homework/' + currentId, download)
 		h2 #[i.fa.fa-download] Download all as zip
 
-	each fileArray, student in boardMap
-		.col-xs-12.col-sm-6.col-md-4.homework-table
-			h3
-				strong=userMap[student]
-				| &nbsp
-				small=student
-				a.pull-right(href='/homework/zip/' + currentId + '?studentId=' + student) #[i.fa.fa-download] zip
+	each student in userList
+		if perStudentEntry.hasOwnProperty(student.studentId)
+			.col-xs-12.col-sm-6.col-md-4.homework-table
+				h3
+					strong=decodeURIComponent(student.name)
+					| &nbsp
+					small=student.studentId
+					a.pull-right(href=`/homework/${currentId}?studentId=${student.studentId}`, download)
+						| #[i.fa.fa-download] zip
 
-			.table-responsive
-				table.table.table-bordered.table-striped.table-hover
-					thead
-						tr
-							th File name
-							th Submitted time
-					tbody
-						each file in fileArray
+				.table-responsive
+					table.table.table-bordered.table-striped.table-hover
+						thead
 							tr
-								td
-									- const extension = homeworkConfig[file.attachId].extension;
-									- const name = homeworkConfig[file.attachId].name;
-										if extension.valueOf() !== 'zip' && extension.valueOf() !== 'report'
-											button.btn-link.tdLinkBtn(onclick='codeModal("/homework/' + file.logId + '", "' + extension + '", "' + name + '")')=name
-										else
-											| #{name}
+								th File name
+								th Submitted time
+						tbody
+							each entry in perStudentEntry[student.studentId]
+								tr
+									td
+										- const extension = entryInfo[entry.entryId].extension;
+										- const name = entryInfo[entry.entryId].name;
+											if extension.valueOf() !== 'zip' && extension.valueOf() !== 'report'
+												a.btn-link(role='button' onclick=`codeModal("/homework/entry/${entry.logId}", "${extension}", "${name}")`)=name
+											else
+												| #{name}
 
-										a.btn-link.pull-right(href='/homework/' + file.logId)
-											i.fa.fa-download
-								td=file.submitted
+											a.btn-link.pull-right(href='/homework/entry/' + entry.logId)
+												i.fa.fa-download
+									td=new Date(entry.submitted).toLocaleString()
 
 	script(type='text/javascript').
 		const col = document.documentElement.clientWidth >= 992 ? 3 : 2;

@@ -16,7 +16,7 @@ const startInput = $('#start-date');
 const dueInput = $('#due-date');
 const diffLabel = $('#diff-date');
 
-$('.date-input').change(function () {
+$('.date-input').on('change', function () {
 	const fromDate = new Date(startInput.val());
 	const toDate = new Date(dueInput.val());
 

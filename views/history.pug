@@ -1,14 +1,9 @@
 extends layout
 
 block header
-	script(src='/js/bootstrap-select.min.js')
+	script(src='/js/bootstrap-select.min.js', defer)
 	link(rel='stylesheet', href='/css/bootstrap-select.min.css')
 	style.
-		.tdLinkBtn {
-			padding: 0;
-			border: 0;
-		}
-
 		#page-ul li:not(.disabled) a:hover {
 			cursor: pointer;
 		}
@@ -53,7 +48,7 @@ block content
 				each result, index in results
 					option(value=index)=result
 
-		.col-xs-12.col-sm-6.col-md-3.form-group
+		.col-xs-12.col-sm-6.col-md-3.form-group#emailBox
 			label(for='selectEmail')
 				| Email
 				| #[small.text-muted (Multiple selection)]
@@ -67,7 +62,7 @@ block content
 				label(for='selectUser') User
 				select.form-control.selectpicker#selectUser(multiple, data-actions-box='true', data-live-search='true')
 					each user in userList
-						option(value=user.student_id, data-subtext=user.student_id)=decodeURIComponent(user.name)
+						option(value=user.studentId, data-subtext=user.studentId)=decodeURIComponent(user.name)
 
 	.row
 		.col-xs-12
@@ -80,9 +75,7 @@ block content
 							th File name #[small.text-muted (Click to see)]
 							th.col-xs-2.resultCol Result #[small.text-muted (Click to see)]
 							th Timestamp
-							th.emailCol Email
-							if admin
-								th User
+							th.emailCol=admin ? 'User' : 'Email'
 					tbody#resultTable
 
 	nav.text-center#page-nav(aria-label='Page navigation')
@@ -98,7 +91,7 @@ block content
 
 	include modal-result
 
-	if admin
-		script(src='/js/submission_history_admin.js')
-	else
-		script(src='/js/submission_history.js')
+	script(src='/js/historyRow.js', defer)
+	script(src='/js/unjudgeableRow.js', defer)
+	script(src='/js/judgeableRow.js', defer)
+	script(src='/js/submission_history.js', defer)

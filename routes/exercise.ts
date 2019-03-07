@@ -1,19 +1,8 @@
-import {NextFunction, Request, Response, Router} from "express";
-import * as fs from "fs";
-import {createConnection, IConnection, IError} from "mysql";
-import * as util from "util";
-import {logger} from "../app";
-import {monthNames} from "./homework";
-import BaseRoute from "./route";
+import {Request, Response, Router} from 'express'
 
-
-const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
-const dbClient: IConnection = createConnection({
-	host: dbConfig.host,
-	user: dbConfig.user,
-	password: dbConfig.password,
-	database: dbConfig.database
-});
+import {logger, ProblemType} from '../app'
+import db from '../models/index'
+import BaseRoute from './route'
 
 
 /**
@@ -21,13 +10,14 @@ const dbClient: IConnection = createConnection({
  *
  * @class ExerciseRoute
  */
-export class ExerciseRoute extends BaseRoute {
+export default class ExerciseRoute extends BaseRoute {
 
 	/**
 	 * Constructor
 	 *
 	 * @class ExerciseRoute
 	 * @constructor
+	 * @override
 	 */
 	constructor() {
 		super();
@@ -45,10 +35,35 @@ export class ExerciseRoute extends BaseRoute {
 		//log
 		logger.debug('[ExerciseRoute::create] Creating exercise route.');
 
+		const exerciseRoute = new ExerciseRoute();
+
 		//add exercise page route
-		router.get('/exercise', (req: Request, res: Response, next: NextFunction) => {
-			new ExerciseRoute().exercise(req, res, next);
-		});
+		router.get('/exercise', (req, res) => exerciseRoute.exercise(req, res));
+
+		router.get('/exercise/add', (req, res) => exerciseRoute.add(req, res));
+	}
+
+
+	/**
+	 * The exercise issuing page route.
+	 *
+	 * @class ExerciseRoute
+	 * @method add
+	 * @param req {Request} The express Request object.
+	 * @param res {Response} The express Response object.
+	 */
+	public add(req: Request, res: Response) {
+		this.title = 'Create Exercise';
+
+		if (!req.session.admin) {
+			return res.redirect('/exercise');
+		}
+		else {
+			//render template
+			res.locals.problemType = ProblemType.EXERCISE;
+
+			return this.render(req, res, 'problem_add');
+		}
 	}
 
 	/**
@@ -58,73 +73,50 @@ export class ExerciseRoute extends BaseRoute {
 	 * @method exercise
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
-	 * @param next {NextFunction} Execute the next method.
 	 */
-	public exercise(req: Request, res: Response, next: NextFunction) {
+	public async exercise(req: Request, res: Response) {
 		this.title = 'Exercise';
 
 		if (!req.session.signIn) return res.redirect('/');
 
-		dbClient.query(
-			'SELECT exercise.id, exercise.name, exercise.start_date, exercise.end_date, exercise.description, ' +
-			'       exercise_config.id AS `attach_id`, exercise_config.name AS `file_name`, ' +
-			'       (result_table.student_id IS NOT NULL) as result ' +
-			'FROM exercise ' +
-			'    JOIN exercise_config ' +
-			'        ON exercise.id = exercise_config.exercise_id ' +
-			'    LEFT JOIN view_exercise_quick_result AS result_table ' +
-			'        ON exercise_config.id = result_table.attachment_id AND result_table.student_id = ?;',
-			req.session.studentId,
-			(err: IError, searchResult) => {
-				if (err) {
-					logger.error('[exercise::first_select]');
-					logger.error(util.inspect(err, {showHidden: false}));
-					res.sendStatus(500);
-					return;
-				}
+		try {
+			const [exerciseList, submitHistoryList] = await Promise.all([
+				db.exercise.findAll({
+					attributes: ['id', 'startDate', 'endDate', 'name'],
+					include: [{
+						model: db.exerciseGroup,
+						as: 'groups',
+						attributes: ['id', 'subtitle'],
 
-				let currentId = -1;
-				let currentObject: {
-					id: number,
-					name: string,
-					startDate: string,
-					dueDate: string,
-					description: Array<string>,
-					leftMillis: number,
-					attachments: Array<{ id: number, name: string, result: boolean }>
-				};
-				let exerciseList = [];
+						include: [{
+							model: db.exerciseEntry,
+							as: 'entries',
+							attributes: ['id', 'name']
+						}]
+					}, {
+						model: db.exerciseDescription,
+						as: 'descriptions'
+					}]
+				}),
+				db.exerciseUploadLog.findAll({
+					where: {studentId: req.session.studentId},
+					attributes: ['entryId'],
+					group: 'entryId',
+					raw: true
+				})
+			]);
 
-				for (let record of searchResult) {
-					if (record.id != currentId) {
-						currentObject = {
-							id: record.id,
-							name: decodeURIComponent(record.name),
-							startDate: monthNames[record.start_date.getMonth()] + ' ' + record.start_date.getDate(),
-							dueDate: monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
-							description: record.description.split('|'),
-							leftMillis: record.end_date - Date.now() + 24 * 60 * 60 * 1000,
-							attachments: []
-						};
-						exerciseList.push(currentObject);
+			res.locals.exerciseList = exerciseList.reverse();
+			res.locals.submitHistory = submitHistoryList.reduce(
+				(prev, curr) => prev.add(curr.entryId),
+				new Set<number>());
 
-						currentId = record.id;
-					}
-
-					currentObject.attachments.push({
-						id: record.attach_id,
-						name: decodeURIComponent(record.file_name),
-						result: record.result
-					});
-				}
-
-				logger.debug(util.inspect(exerciseList, {showHidden: false, depth: 1}));
-
-				res.locals.exerciseList = exerciseList.reverse();
-
-				//render template
-				return this.render(req, res, 'exercise');
-			}
-		);
+			//render template
+			this.render(req, res, 'exercise');
+		}
+		catch (err) {
+			logger.error('[ExerciseRoute::exercise]', err.stack);
+			return res.sendStatus(500);
+		}
 	}
 }

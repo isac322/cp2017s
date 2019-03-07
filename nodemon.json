@@ -3,9 +3,9 @@
 	"ignore": [
 		"res/*",
 		"*.ts",
-		"*.log",
 		"sql/*",
 		"views/*",
-		"media/*"
+		"media/*",
+		"logs"
 	]
 }

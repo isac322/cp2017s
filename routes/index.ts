@@ -1,6 +1,7 @@
-import {NextFunction, Request, Response, Router} from "express";
-import {logger} from "../app";
-import BaseRoute from "./route";
+import {Request, Response, Router} from 'express'
+
+import {logger} from '../app'
+import BaseRoute from './route'
 
 
 /**
@@ -8,13 +9,14 @@ import BaseRoute from "./route";
  *
  * @class IndexRoute
  */
-export class IndexRoute extends BaseRoute {
+export default class IndexRoute extends BaseRoute {
 
 	/**
 	 * Constructor
 	 *
 	 * @class IndexRoute
 	 * @constructor
+	 * @override
 	 */
 	constructor() {
 		super();
@@ -32,10 +34,10 @@ export class IndexRoute extends BaseRoute {
 		//log
 		logger.debug('[IndexRoute::create] Creating index route.');
 
+		const indexRoute = new IndexRoute();
+
 		//add home page route
-		router.get('/', (req: Request, res: Response, next: NextFunction) => {
-			new IndexRoute().index(req, res, next);
-		});
+		router.get('/', (req, res) => indexRoute.index(req, res));
 	}
 
 	/**
@@ -45,9 +47,8 @@ export class IndexRoute extends BaseRoute {
 	 * @method index
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
-	 * @param next {NextFunction} Execute the next method.
 	 */
-	public index(req: Request, res: Response, next: NextFunction) {
+	public index(req: Request, res: Response) {
 		this.title = 'SNU Computer Programming';
 
 		//render template

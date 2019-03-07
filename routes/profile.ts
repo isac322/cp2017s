@@ -1,6 +1,7 @@
-import {NextFunction, Request, Response, Router} from "express";
-import {logger} from "../app";
-import BaseRoute from "./route";
+import {Request, Response, Router} from 'express'
+
+import {logger} from '../app'
+import BaseRoute from './route'
 
 
 /**
@@ -8,13 +9,14 @@ import BaseRoute from "./route";
  *
  * @class ProfileRoute
  */
-export class ProfileRoute extends BaseRoute {
+export default class ProfileRoute extends BaseRoute {
 
 	/**
 	 * Constructor
 	 *
 	 * @class ProfileRoute
 	 * @constructor
+	 * @override
 	 */
 	constructor() {
 		super();
@@ -32,10 +34,10 @@ export class ProfileRoute extends BaseRoute {
 		//log
 		logger.debug('[ProfileRoute::create] Creating profile route.');
 
+		const profileRoute = new ProfileRoute();
+
 		//add home page route
-		router.get('/profile', (req: Request, res: Response, next: NextFunction) => {
-			new ProfileRoute().profile(req, res, next);
-		});
+		router.get('/profile', (req, res) => profileRoute.profile(req, res));
 	}
 
 	/**
@@ -45,9 +47,8 @@ export class ProfileRoute extends BaseRoute {
 	 * @method profile
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
-	 * @param next {NextFunction} Execute the next method.
 	 */
-	public profile(req: Request, res: Response, next: NextFunction) {
+	public profile(req: Request, res: Response) {
 		this.title = 'Profile';
 
 		if (!req.session.signIn) {

@@ -29,11 +29,12 @@ block modal-code
 					button.close(type='button', data-dismiss='modal', aria-label='Close')
 						span(aria-hidden='true') ×
 					h2#codeModalLabel.modal-title.text-info
-				.modal-body.row
-					pre.codeViewer
-						code#codeBody
+				.modal-body
+					.row
+						pre.codeViewer
+							code#codeBody
 
-	script(type='text/javascript').
+	script(type='text/javascript', defer).
 		const $codeBody = $('#codeBody');
 		const $codeModal = $('#codeModal');
 		const $codeModalLabel = $('#codeModalLabel');

@@ -7,6 +7,8 @@
 		"target": "ES6",
 		"moduleResolution": "node",
 		"noImplicitThis": true,
-		"alwaysStrict": true
+		"alwaysStrict": true,
+		"importHelpers": true,
+		"sourceMap": true
 	}
 }

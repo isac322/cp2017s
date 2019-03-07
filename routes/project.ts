@@ -1,56 +1,34 @@
-import * as async from "async";
-import {Request, Response, Router} from "express";
-import * as fs from "fs";
-import {createConnection, IConnection, IError, IFieldInfo} from "mysql";
-import * as util from "util";
-import {logger} from "../app";
-import {monthNames} from "./homework";
-import BaseRoute from "./route";
+import {Request, Response, Router} from 'express'
+import {QueryTypes} from 'sequelize'
+
+import {logger, ProblemType} from '../app'
+import {projectEntryInstance, projectInstance, userInstance} from '../models/db'
+import db, {sequelize} from '../models/index'
+import BaseRoute from './route'
 
 
-const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
-const dbClient: IConnection = createConnection({
-	host: dbConfig.host,
-	user: dbConfig.user,
-	password: dbConfig.password,
-	database: dbConfig.database
-});
+interface Log {
+	logId: number
+	studentId: string
+	projectId: number
+	groupId: number
+	entryId: number
+	submitted: Date
+}
+
 
 /**
  * /project route
  *
  * @class ProjectRoute
  */
-export class ProjectRoute extends BaseRoute {
-	private static pjQuery = (studentId: string) => {
-		return '' +
-			'SELECT project.id, project.name, start_date, end_date, description, ' +
-			'		project_config.id AS `file_id`, project_config.name AS `file_name`, extension AS `file_extension`, ' +
-			'		(reduced_submit.attachment_id IS NOT NULL) AS submitted ' +
-			'FROM project ' +
-			'	LEFT JOIN project_config ' +
-			'		ON project.id = project_config.project_id ' +
-			'	LEFT JOIN ( ' +
-			'				SELECT attachment_id ' +
-			'				FROM project_log ' +
-			'				WHERE student_id = "' + studentId + '" ' +
-			'				GROUP BY attachment_id ' +
-			'			) AS reduced_submit ' +
-			'		ON project_config.id = reduced_submit.attachment_id;';
-	};
-
-	private static guestPjQuery =
-		'SELECT project.id, project.name, project.start_date, project.end_date, project.description,' +
-		'       project_config.name AS `file_name`, project_config.extension AS `file_extension` ' +
-		'FROM project ' +
-		'        LEFT JOIN project_config ' +
-		'            ON project.id = project_config.project_id;';
-
+export default class ProjectRoute extends BaseRoute {
 	/**
 	 * Constructor
 	 *
 	 * @class ProjectRoute
 	 * @constructor
+	 * @override
 	 */
 	constructor() {
 		super();
@@ -71,17 +49,11 @@ export class ProjectRoute extends BaseRoute {
 		const projectRoute = new ProjectRoute();
 
 		//add project page route
-		router.get('/project', (req: Request, res: Response) => {
-			projectRoute.project(req, res);
-		});
+		router.get('/project', (req, res) => projectRoute.project(req, res));
 
-		router.get('/project/add', (req: Request, res: Response) => {
-			projectRoute.add(req, res);
-		});
+		router.get('/project/add', (req, res) => projectRoute.add(req, res));
 
-		router.get('/project/judge/:projectId([0-9]+)', (req: Request, res: Response) => {
-			projectRoute.judge(req, res);
-		});
+		router.get('/project/judge/:projectId([0-9]+)', (req, res) => projectRoute.judge(req, res));
 	}
 
 	/**
@@ -92,64 +64,48 @@ export class ProjectRoute extends BaseRoute {
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
 	 */
-	public project(req: Request, res: Response) {
+	public async project(req: Request, res: Response) {
 		this.title = 'Project List';
 
 		if (!req.session.signIn) return res.redirect('/');
 
-		dbClient.query(
-			req.session.signIn ? ProjectRoute.pjQuery(req.session.studentId) : ProjectRoute.guestPjQuery,
-			(err, searchResult) => {
-				if (err) {
-					logger.error('[ProjectRoute::project]');
-					logger.error(util.inspect(err, {showHidden: false}));
-					res.sendStatus(500);
-					return;
-				}
+		try {
+			const [projectList, logList] = await Promise.all([
+				db.project.findAll({
+					attributes: ['id', 'startDate', 'endDate', 'name'],
+					include: [{
+						model: db.projectGroup,
+						as: 'groups',
+						attributes: ['id', 'subtitle'],
 
-				let currentId = -1;
-				let currentObject: {
-					id: number,
-					name: string,
-					startDate: string,
-					dueDate: string,
-					description: Array<string>,
-					leftMillis: number,
-					attachments: Array<{ id: number, name: string, submitted: boolean }>
-				};
-				let project = [];
+						include: [{
+							model: db.projectEntry,
+							as: 'entries',
+							attributes: ['id', 'name']
+						}]
+					}, {
+						model: db.projectDescription,
+						as: 'descriptions'
+					}]
+				}),
+				db.projectLog.findAll({
+					where: {studentId: req.session.studentId},
+					attributes: ['entryId'],
+					group: 'entryId',
+					raw: true
+				})
+			]);
 
-				for (let record of searchResult) {
-					if (record.id != currentId) {
-						currentObject = {
-							id: record.id,
-							name: decodeURIComponent(record.name),
-							startDate: monthNames[record.start_date.getMonth()] + ' ' + record.start_date.getDate(),
-							dueDate: monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
-							description: record.description.split('|'),
-							leftMillis: record.end_date - Date.now() + 24 * 60 * 60 * 1000,
-							attachments: []
-						};
-						project.push(currentObject);
+			res.locals.projectList = projectList.reverse();
+			res.locals.submitHistory = logList.reduce((prev, curr) => prev.add(curr.entryId), new Set<number>());
 
-						currentId = record.id;
-					}
-
-					currentObject.attachments.push({
-						id: record.file_id,
-						name: decodeURIComponent(record.file_name),
-						submitted: record.submitted
-					});
-				}
-
-				logger.debug(util.inspect(project, {showHidden: false, depth: 1}));
-
-				res.locals.projectList = project.reverse();
-
-				//render template
-				this.render(req, res, 'project');
-			}
-		);
+			//render template
+			return this.render(req, res, 'project');
+		}
+		catch (err) {
+			logger.error('[ProjectRoute::project]', err.stack);
+			return res.sendStatus(500);
+		}
 	}
 
 	/**
@@ -168,7 +124,9 @@ export class ProjectRoute extends BaseRoute {
 		}
 		else {
 			//render template
-			return this.render(req, res, 'project_add');
+			res.locals.problemType = ProblemType.PROJECT;
+
+			return this.render(req, res, 'problem_add');
 		}
 	}
 
@@ -181,80 +139,58 @@ export class ProjectRoute extends BaseRoute {
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
 	 */
-	public judge(req: Request, res: Response) {
+	public async judge(req: Request, res: Response) {
 		this.title = 'Judging Project';
 
 		if (!req.session.admin) return res.redirect('/project');
 
-		async.parallel(
-			[
-				(callback) => dbClient.query('SELECT name, student_id FROM user WHERE NOT is_dropped ORDER BY name;', callback),
-				(callback) => dbClient.query('SELECT id, name FROM project', callback),
-				(callback) => dbClient.query(
-					'SELECT project_board.* ' +
-					'FROM project_config JOIN project_board ON project_config.id = project_board.attachment_id ' +
-					'WHERE project_id = ?;',
-					req.params.projectId,
-					callback),
-				(callback) => dbClient.query(
-					'SELECT id, name, extension FROM project_config WHERE project_id = ?;',
-					req.params.projectId,
-					callback)
-			],
-			(err: IError, result: Array<[Array<any>, Array<IFieldInfo>]>) => {
-				if (err) {
-					logger.error('[ProjectRoute::judge]');
-					logger.error(util.inspect(err, {showHidden: false}));
-					res.sendStatus(500);
-					return;
-				}
+		const projectId = req.params.projectId;
 
-				res.locals.userList = result[0][0];
-				res.locals.projectList = result[1][0];
+		try {
+			const [userList, projectList, projectEntryList, logList]:
+				[userInstance[], projectInstance[], projectEntryInstance[], Log[]] = await Promise.all([
+				db.user.findAll({
+					attributes: ['studentId', 'name'],
+					where: {isAdmin: 1, isDropped: 0},
+					order: ['name'],
+					raw: true
+				}),
+				db.project.findAll({attributes: ['id', 'name'], raw: true}),
+				db.projectEntry.findAll({raw: true}),
+				// language=MySQL
+				sequelize.query(`
+                    SELECT
+                        log_id                 AS \`logId\`,
+                        project_log.student_id AS \`studentId\`,
+                        project_id             AS \`projectId\`,
+                        group_id               AS \`groupId\`,
+                        project_log.entry_id   AS \`entryId\`,
+                        submitted
+                    FROM project_latest_entry JOIN project_log ON project_latest_entry.log_id = project_log.id
+                    WHERE project_id = ?`, {replacements: [projectId], type: QueryTypes.SELECT, raw: true})
+			]);
 
-				res.locals.userMap = result[0][0].reduce(
-					(prev: { [studentId: string]: string }, curr: { student_id: string, name: string }) => {
-						prev[curr.student_id] = decodeURIComponent(curr.name);
-						return prev;
-					}, {});
+			res.locals.userList = userList;
+			res.locals.problemList = projectList;
+			res.locals.entryInfo = projectEntryList.reduce(
+				(prev: { [key: number]: projectEntryInstance }, curr) => {
+					prev[curr.id] = curr;
+					return prev;
+				}, {});
+			res.locals.perStudentEntry = logList.reduce((groups: { [sdutendId: string]: Log[] }, item) => {
+				const val = item.studentId;
+				groups[val] = groups[val] || [];
+				groups[val].push(item);
+				return groups;
+			}, {});
+			res.locals.currentId = projectId;
 
-				res.locals.boardMap = result[2][0].reduce(
-					(prev: { [studentId: string]: Array<{ logId: number, attachId: number, submitted: string }> },
-					 curr: { student_id: string, log_id: number, attachment_id: number, submitted: Date }) => {
-						if (!(curr.student_id in res.locals.userMap)) return prev;
-
-						let elem = prev[curr.student_id];
-
-						const item = {
-							logId: curr.log_id,
-							attachId: curr.attachment_id,
-							submitted: curr.submitted.toLocaleString()
-						};
-
-						if (elem) {
-							elem.push(item);
-						}
-						else {
-							prev[curr.student_id] = [item];
-						}
-
-						return prev;
-					}, {});
-
-				res.locals.projectConfig = result[3][0].reduce(
-					(prev: { [id: number]: { name: string, extension: string } },
-					 curr: { id: number, name: string, extension: string }) => {
-						prev[curr.id] = {
-							name: decodeURIComponent(curr.name),
-							extension: curr.extension
-						};
-						return prev;
-					}, {});
-
-				res.locals.currentId = req.params.projectId;
-
-				//render template
-				this.render(req, res, 'project_manage');
-			});
+			//render template
+			return this.render(req, res, 'project_manage');
+		}
+		catch (err) {
+			logger.error('[ProjectRoute::judge]', err.stack);
+			return res.sendStatus(500);
+		}
 	}
 }

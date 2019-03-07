@@ -1,0 +1,136 @@
+style.
+	.panel-group {
+		margin: 0;
+	}
+
+	.panel-group .panel {
+		margin: 0 !important;
+		border-width: 1px 0 0 0 !important;
+	}
+
+	ul.list-group form.upload-form li.list-group-item {
+		border-bottom: 1px solid rgb(221, 221, 221) !important;
+	}
+
+	.panel-group .panel-heading {
+		padding-top: 2px;
+		padding-bottom: 2px;
+	}
+
+	.panel-group .panel-heading h4 {
+		margin-top: 2px;
+		margin-bottom: 2px;
+	}
+
+
+mixin entryItem(entry, canSubmit, problemType)
+	li.list-group-item(class=submitHistory.has(entry.id) ? 'list-group-item-success': undefined)
+		.row
+			.col-xs-12.vcenter(class=canSubmit ? 'col-sm-6' : undefined)
+				h4.wrapped-text
+					i.fa.fa-file-text-o(aria-hidden='true')
+					=' ' + entry.name
+
+			if canSubmit
+				.col-xs-12.col-sm-6.vcenter
+					form.upload-form(action=`/${problemType}/entry/${entry.id}`, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
+						.pull-right.input-group
+							input.form-control(type='text', data-validate='false', readonly)
+							.input-group-btn
+								span.btn.btn-primary.btn-file Submit
+									input.upload-entry(type='file' name='attachment', hidden, required)
+
+
+mixin groupPanel(groupObj, idx, submitPanelId, canSubmit, problemType)
+	- const headId = 'group-heading' + groupObj.id;
+	- const bodyId = 'group-body' + groupObj.id;
+		.panel.panel-info
+			.panel-heading(id=headId, role='tab')
+				.row
+					a.panel-title.vcenter(class=canSubmit ? 'col-xs-9' : 'col-xs-12', role='button', data-toggle='collapse', data-parent=`#${submitPanelId}`, href=`#${bodyId}`, aria-expanded='true', aria-controls=bodyId)
+						h4: strong
+							i.fa.fa-code(aria-hidden='true')
+							=' ' + groupObj.subtitle
+					if canSubmit
+						.col-xs-3.vcenter
+							form.pull-right(action=`/${problemType}/judge/${groupObj.id}`, method='POST', role='form')
+								// FIXME: disable when unable to judge
+								button.btn.btn-default.btn-judge(type='button', role='submit')=problemType === 'exercise' ? 'Judge' : 'Compile Test'
+
+			.panel-collapse.collapse(id=bodyId, role='tabpanel', aria-labelledby=headId, class=idx === 0 ? 'in' : undefined)
+				ul.list-group
+					each entry in groupObj.entries
+						+entryItem(entry, canSubmit, problemType)
+
+
+mixin card(problem, problemType, graceDay)
+	- const dayInMillis = 24 * 60 * 60 * 1000
+	- const startDate = new Date(problem.startDate);
+	- const endDate = new Date(problem.endDate);
+	- const leftMillis = endDate - Date.now() + dayInMillis;
+	- const submitPanelId = 'submit-panel' + problem.id;
+	- const canSubmit = signIn && leftMillis >= (graceDay ? -graceDay : 0) * dayInMillis;
+
+		.col-xs-12.col-md-6.problem-card
+			.panel.panel-default
+				.panel-body
+					.col-xs-12
+						h2.wrapped-text.card-header
+							b=decodeURIComponent(problem.name)
+							if admin
+								small
+									a(href=`/${problemType}/judge/${problem.id}`).pull-right #[i.fa.fa-gavel(aria-hidden='true')] Judge
+
+						.row
+							.col-xs-12.col-sm-6.col-md-12
+								h4
+									b Description
+								each desc in problem.descriptions
+									p
+										a.wrapped-text(target='_blank', href=desc.url)=desc.url
+
+							.col-xs-6.col-sm-3.col-md-6
+								h4
+									b Start Date
+								p=startDate.toDateString()
+
+							.col-xs-6.col-sm-3.col-md-6
+								h4
+									b Deadline
+								p=endDate.toDateString()
+
+					.col-xs-12
+						h4
+							if signIn
+								if problemType === 'homework'
+									- var query = '/history?t=1&'
+									each group in problem.groups
+										each entry in group.entries
+											- query += `hw=${entry.id}&`
+								else if problemType === 'exercise'
+									- var query = '/history?t=2&'
+									each group in problem.groups
+										each entry in group.entries
+											- query += `ex=${entry.id}&`
+								else if problemType === 'project'
+									- var query = '/history?t=3&'
+									each group in problem.groups
+										each entry in group.entries
+											- query += `pj=${entry.id}&`
+								a(href=query) #[i.fa.fa-history(aria-hidden='true')] View history
+							a.pull-right.appender(role='button', data-toggle='collapse', href=`#${submitPanelId}`, aria-expanded='false', aria-controls=submitPanelId)
+								strong Submit #[span.glyphicon.glyphicon-menu-down]
+
+				.panel-group.collapse(role='tablist', aria-multiselectable='true', id=submitPanelId)
+					each groupObj, idx in problem.groups
+						+groupPanel(groupObj, idx, submitPanelId, canSubmit, problemType)
+
+				.panel-footer.text-center
+					if leftMillis < 0
+						| Overpast
+					else if leftMillis < dayInMillis
+						| Less than 24 hours
+					else if leftMillis < 2 * dayInMillis
+						| 1 day left
+					else
+						| #{leftMillis / dayInMillis >> 0} days left

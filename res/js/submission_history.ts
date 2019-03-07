@@ -1,147 +1,47 @@
 ///<reference path="modal-result.ts"/>
+///<reference path="historyRow.ts"/>
+///<reference path="judgeableRow.ts"/>
+///<reference path="unjudgeableRow.ts"/>
+
+
 
 namespace SubmissionHistory {
+	interface ReceivedData {
+		data: HistoryEntry[],
+		exerciseInfoMap: { [key: number]: { [key: number]: number } },
+		exerciseEntryMap: { [key: number]: { name: string, extension: string } },
+		total: number,
+		p: number
+	}
+
 	const MAX_PAGE = document.documentElement.clientWidth >= 768 ? 10 : 5;
-
-	interface RowData {
-		id: number;
-		result: number;
-		email: string;
-		fileName: string;
-		timestamp: string;
-		extension: string;
-		studentId: string;
-		category: string;
-	}
-
-	class Row {
-		private static RESULTS = ['Correct', 'Incorrect', 'Compile Error', 'Timeout', 'Runtime Error', 'Fail to run'];
-		id: number;
-		category: string;
-		result: number;
-		email: string;
-		fileName: string;
-		timestamp: string;
-		extension: string;
-		studentId: string;
-
-		public row: HTMLTableRowElement;
-		private idTd: HTMLTableHeaderCellElement;
-		private categoryTd: HTMLTableDataCellElement;
-		private fileTd: HTMLTableDataCellElement;
-		private resultTd: HTMLTableDataCellElement;
-		private timestampTd: HTMLTableDataCellElement;
-		private emailTd: HTMLTableDataCellElement;
-
-		public constructor(value: RowData) {
-			this.idTd = document.createElement('th');
-			this.idTd.setAttribute('scope', 'row');
-			this.categoryTd = document.createElement('td');
-			this.fileTd = document.createElement('td');
-			this.resultTd = document.createElement('td');
-			this.timestampTd = document.createElement('td');
-			this.emailTd = document.createElement('td');
-
-			this.categoryTd.setAttribute('class', 'categoryCol');
-			this.resultTd.setAttribute('class', 'resultCol');
-			this.emailTd.setAttribute('class', 'emailCol');
-
-
-			this.row = document.createElement('tr');
-
-			this.row.appendChild(this.idTd);
-			this.row.appendChild(this.categoryTd);
-			this.row.appendChild(this.fileTd);
-			this.row.appendChild(this.resultTd);
-			this.row.appendChild(this.timestampTd);
-			this.row.appendChild(this.emailTd);
-
-
-			this.setData(value);
-		}
-
-		public setData(value: RowData) {
-			this.id = value.id;
-			this.category = value.category;
-			this.result = value.result;
-			this.email = value.email;
-			this.fileName = value.fileName;
-			this.timestamp = value.timestamp;
-			this.extension = value.extension;
-			this.studentId = value.studentId;
-
-			this.idTd.textContent = String(this.id);
-			this.categoryTd.textContent = this.category;
-
-
-			const href = '"/' + this.category.toLowerCase() + '/' + this.id + '"';
-
-			let content: string;
-
-			if (this.extension.valueOf() !== 'report' && this.extension.valueOf() !== 'zip') {
-				content = '<button class="btn-link tdLinkBtn" onclick=\'codeModal(' + href + ', "' + this.extension + '", "' + this.fileName + '");\'>' + this.fileName + '</button>'
-			}
-			else {
-				content = this.fileName
-			}
-
-			this.fileTd.innerHTML =
-				content + '<a class="btn-link pull-right" href=' + href + '><i class="fa fa-download"></i></a>';
-
-
-			if (this.result != null) {
-				if (this.result == 0)
-					this.resultTd.innerHTML = '<strong class="text-success">' + Row.RESULTS[this.result] + '</strong>';
-				else
-					this.resultTd.innerHTML = '<button class="btn-link tdLinkBtn" onclick="SubmissionHistory.onResult(' + this.id + ');">' +
-						'<strong class="text-danger">' + Row.RESULTS[this.result] + '</strong></button>';
-			}
-			else if (this.category != 'Exercise') {
-				this.resultTd.textContent = '';
-			}
-			else {
-				this.resultTd.textContent = 'Pending...';
-			}
-			this.timestampTd.textContent = new Date(this.timestamp).toLocaleString(undefined, {
-				month: 'numeric',
-				day: 'numeric',
-				hour: 'numeric',
-				minute: 'numeric',
-				second: 'numeric'
-			});
-			this.emailTd.textContent = this.email;
-		}
-	}
 
 	const $resultTable: JQuery = $('#resultTable');
 	const $result: JQuery = $('#selectResult');
 	const $email: JQuery = $('#selectEmail');
 	const $user: JQuery = $('#selectUser');
-
-	let rows: Array<Row> = [];
+	const $emailBox: JQuery = $('#emailBox');
+	const resultModal = new ResultModal($('#resultModal'));
 
 	let currPage = 0;
 	let currQuery: string;
 
-	function queryHandler(res: { data: Array<RowData>, total: number, p: number }, force?: boolean): void {
+	function queryHandler(res: ReceivedData, force?: boolean): void {
 		updateTable(res);
 
 		if (force) history.replaceState(res, '', currQuery);
 		else history.pushState(res, '', currQuery);
 	}
 
-	function updateTable(res: { data: Array<RowData>, total: number, p: number }): void {
-		$resultTable.children().detach();
+	function updateTable(res: ReceivedData): void {
+		$resultTable.children().empty();
 
-		for (let i = 0; i < res.data.length; i++) {
-			if (i >= rows.length) {
-				rows.push(new Row(res.data[i]));
-			}
-			else {
-				rows[i].setData(res.data[i]);
-			}
+		for (const data of res.data) {
+			const row = data.category == 'Exercise' ?
+				new JudgeableRow(data, resultModal, res.exerciseInfoMap[Number(data.logId)], res.exerciseEntryMap) :
+				new UnjudgeableRow(data);
 
-			$resultTable.append(rows[i].row);
+			$resultTable.append(row.row);
 		}
 
 		const $categoryCol = $('.categoryCol');
@@ -163,7 +63,9 @@ namespace SubmissionHistory {
 		}
 
 		if ($email.children().length == 1) {
-			$emailCol.hide();
+			$emailBox.hide();
+
+			if ($user.length == 0) $emailCol.hide();
 		}
 
 
@@ -197,7 +99,6 @@ namespace SubmissionHistory {
 		currQuery = location.search == '' ? '?t=0&' : location.search;
 
 		interface ParsedQuery {
-			[key: string]: string[];
 			t: string[];
 			hw: string[];
 			ex: string[];
@@ -205,21 +106,23 @@ namespace SubmissionHistory {
 			r: string[];
 			e: string[];
 			u: string[];
+
+			[key: string]: string[];
 		}
 
 		const ret: ParsedQuery = currQuery.substr(1).split('&')
-			.filter((e: string) => e != '')
-			.map((e: string) => e.split('='))
-			.reduce((prev: ParsedQuery, curr: string[]) => {
+			.filter(e => e != '')
+			.map(e => e.split('='))
+			.reduce((prev: ParsedQuery, curr: [string, string]) => {
 				if (curr[0] == 'p') return prev;
 
 				prev[curr[0]].push(curr[1]);
 				return prev;
 			}, {t: [], hw: [], ex: [], pj: [], r: [], e: [], u: []});
 
-		ret.hw = ret.hw.map(((value: string) => 'h' + value));
-		ret.ex = ret.ex.map(((value: string) => 'e' + value));
-		ret.pj = ret.pj.map(((value: string) => 'p' + value));
+		ret.hw = ret.hw.map(value => 'h' + value);
+		ret.ex = ret.ex.map(value => 'e' + value);
+		ret.pj = ret.pj.map(value => 'p' + value);
 
 		$category.val(ret.t).change();
 		$('#selectId').selectpicker('val', ret.hw.concat(ret.ex, ret.pj));
@@ -228,15 +131,15 @@ namespace SubmissionHistory {
 		$user.selectpicker('val', ret.u);
 	}
 
-	function send(pageNum: number, force?: boolean): void {
+	function fetchData(pageNum: number, force = false): void {
 		$selects.prop('disabled', true);
 		$selects.selectpicker('refresh');
 
 		const newQuery = genQuery() + 'p=' + pageNum;
 
 		if (force || currQuery !== newQuery) {
-			$.ajax('/history/list' + newQuery, {
-				success: (data) => queryHandler(data, force),
+			$.ajax(`/history/list${newQuery}`, {
+				success: data => queryHandler(data, force),
 				error: (jqXHR: JQueryXHR) => {
 					switch (jqXHR.status) {
 						case 401:
@@ -283,60 +186,13 @@ namespace SubmissionHistory {
 			emailQuery += 'e=' + elem.value + '&';
 		});
 
-		return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + projectQuery + resultQuery + emailQuery;
-	}
+		// user
+		let userQuery = '';
+		$user.children(':selected').each((index: number, elem: HTMLOptionElement) => {
+			userQuery += 'u=' + elem.value + '&';
+		});
 
-	export function onResult(id: number) {
-		const resultModal = new ResultModal($('#resultModal'));
-
-		$.ajax('/exercise/result/' + id, {
-			complete: (jqXHR: JQueryXHR) => {
-				const res = jqXHR.responseJSON;
-
-				switch (jqXHR.status) {
-					// dose not sign in yet
-					case 401:
-						document.location.href = '/';
-						break;
-
-					// correct
-					case 200:
-						resultModal.setCorrect();
-						break;
-
-					// incorrect
-					case 406:
-						resultModal.setIncorrect(res.input, res.answerOutput, res.userOutput);
-						break;
-
-					// timeout
-					case 410:
-						resultModal.setTimeout(res.input);
-						break;
-
-					// runtime error
-					case 412:
-						resultModal.setRuntimeError(res.returnCode, res.errorLog, res.input);
-						break;
-
-					// compile error
-					case 400:
-						resultModal.setCompileError(res.errorMsg);
-						break;
-
-					// fail to run
-					case 417:
-						resultModal.setFailToRun(res.errorMsg.replace('/\n/g', '<br>'));
-						break;
-
-					// server error
-					case 500:
-						resultModal.setServerError('Some error occurs on the judging server. Please contact to web administrator with your error ID : <code>' + res.id + '</code>.');
-						break;
-
-				}
-			}
-		})
+		return '?t=' + $category.val() + '&' + homeworkQuery + exerciseQuery + projectQuery + resultQuery + emailQuery + userQuery;
 	}
 
 	/*
@@ -346,21 +202,21 @@ namespace SubmissionHistory {
 	const $prevPage: JQuery = $('#page-prev');
 	const $nextPage: JQuery = $('#page-next');
 
-	$prevPage.click((e: JQueryEventObject) => {
+	$prevPage.click((e: JQuery.ClickEvent<HTMLLIElement>) => {
 		if ($prevPage.hasClass('disabled')) {
 			e.preventDefault();
 		}
 		else {
-			send($pageUL.children(':nth-child(2)').data('val') - 1);
+			fetchData($pageUL.children(':nth-child(2)').data('val') - 1);
 		}
 	});
 
-	$nextPage.click((e: JQueryEventObject) => {
+	$nextPage.click((e: JQuery.ClickEvent<HTMLLIElement>) => {
 		if ($nextPage.hasClass('disabled')) {
 			e.preventDefault();
 		}
 		else {
-			send($pageUL.children(':nth-last-child(2)').data('val') + 1);
+			fetchData($pageUL.children(':nth-last-child(2)').data('val') + 1);
 		}
 	});
 
@@ -370,7 +226,7 @@ namespace SubmissionHistory {
 	for (let i = 0; i < MAX_PAGE; i++) {
 		const li = document.createElement('li');
 		const a = document.createElement('a');
-		a.addEventListener('click', (e: Event) => send($(e.target).parent().data('val')));
+		a.addEventListener('click', (e: Event) => fetchData($(e.target).parent().data('val')));
 		li.appendChild(a);
 		pageLink.push({li: $(li), a: $(a)});
 
@@ -383,7 +239,7 @@ namespace SubmissionHistory {
 	const $category: JQuery = $('#selectCategory');
 
 
-	$selects.on('hide.bs.select', () => send(currPage));
+	$selects.on('hide.bs.select', () => fetchData(currPage));
 
 	const $homeworkGroup: JQuery = $('#homeworkGroup');
 	const $exerciseGroup: JQuery = $('#exerciseGroup');
@@ -426,7 +282,7 @@ namespace SubmissionHistory {
 	if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
 		$('.selectpicker:not(#selectUser)').selectpicker('mobile');
 
-		$selects.focusout(() => send(currPage));
+		$selects.focusout(() => fetchData(currPage));
 	}
 
 	window.onpopstate = (e: PopStateEvent) => {
@@ -435,5 +291,5 @@ namespace SubmissionHistory {
 	};
 
 	updateSelect();
-	send(currPage, true);
+	fetchData(currPage, true);
 }

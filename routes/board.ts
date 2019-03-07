@@ -1,6 +1,6 @@
-import {NextFunction, Request, Response, Router} from "express";
-import {logger} from "../app";
-import BaseRoute from "./route";
+import {Request, Response, Router} from 'express'
+import {logger} from '../app'
+import BaseRoute from './route'
 
 
 /**
@@ -8,7 +8,7 @@ import BaseRoute from "./route";
  *
  * @class BoardRoute
  */
-export class BoardRoute extends BaseRoute {
+export default class BoardRoute extends BaseRoute {
 
 	/**
 	 * Constructor
@@ -33,9 +33,7 @@ export class BoardRoute extends BaseRoute {
 		logger.debug('[BoardRoute::create] Creating board route.');
 
 		//add home page route
-		router.get('/board', (req: Request, res: Response, next: NextFunction) => {
-			new BoardRoute().board(req, res, next);
-		});
+		router.get('/board', (req: Request, res: Response) => new BoardRoute().board(req, res));
 	}
 
 	/**
@@ -45,9 +43,8 @@ export class BoardRoute extends BaseRoute {
 	 * @method board
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
-	 * @param next {NextFunction} Execute the next method.
 	 */
-	public board(req: Request, res: Response, next: NextFunction) {
+	public board(req: Request, res: Response) {
 		this.title = 'Web board';
 
 		if (!req.session.signIn) {

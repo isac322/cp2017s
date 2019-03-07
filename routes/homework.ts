@@ -1,66 +1,35 @@
-import * as async from "async";
-import {Request, Response, Router} from "express";
-import * as fs from "fs";
-import {createConnection, IConnection, IError, IFieldInfo} from "mysql";
-import * as util from "util";
-import {logger} from "../app";
-import BaseRoute from "./route";
+import {Request, Response, Router} from 'express'
+import {QueryTypes} from 'sequelize'
+
+import {logger, ProblemType} from '../app'
+import {homeworkEntryInstance, homeworkInstance, userInstance} from '../models/db'
+import db, {sequelize} from '../models/index'
+import BaseRoute from './route'
 
 
-const dbConfig = JSON.parse(fs.readFileSync('config/database.json', 'utf-8'));
-const dbClient: IConnection = createConnection({
-	host: dbConfig.host,
-	user: dbConfig.user,
-	password: dbConfig.password,
-	database: dbConfig.database
-});
-
-export const monthNames = [
-	"January", "February", "March",
-	"April", "May", "June", "July",
-	"August", "September", "October",
-	"November", "December"
-];
+interface Log {
+	logId: number
+	studentId: string
+	homeworkId: number
+	groupId: number
+	entryId: number
+	submitted: Date
+}
 
 /**
  * /homework route
  *
  * @class HWRoute
  */
-export class HWRoute extends BaseRoute {
-	private static hwQuery = (studentId: string) => {
-		return '' +
-			'SELECT homework.homework_id, homework.name, start_date, end_date, description, ' +
-			'		homework_config.id AS `file_id`, homework_config.name AS `file_name`, extension AS `file_extension`, ' +
-			'		(reduced_submit.attachment_id IS NOT NULL) AS submitted ' +
-			'FROM homework ' +
-			'	LEFT JOIN homework_config ' +
-			'		ON homework.homework_id = homework_config.homework_id ' +
-			'	LEFT JOIN ( ' +
-			'				SELECT attachment_id ' +
-			'				FROM homework_log ' +
-			'				WHERE student_id = "' + studentId + '" ' +
-			'				GROUP BY attachment_id ' +
-			'			) AS reduced_submit ' +
-			'		ON homework_config.id = reduced_submit.attachment_id;';
-	};
-
-	private static guestHwQuery =
-		'SELECT homework.homework_id, homework.name, homework.start_date, homework.end_date, homework.description,' +
-		'		homework_config.name AS `file_name`, homework_config.extension AS `file_extension` ' +
-		'FROM homework ' +
-		'	LEFT JOIN homework_config ' +
-		'		ON homework.homework_id = homework_config.homework_id;';
-
-	private static rowInPage = 30;
-
+export default class HWRoute extends BaseRoute {
 	/**
 	 * Constructor
 	 *
 	 * @class HWRoute
 	 * @constructor
+	 * @override
 	 */
-	constructor() {
+	protected constructor() {
 		super();
 		this.navPos = 2;
 	}
@@ -79,17 +48,11 @@ export class HWRoute extends BaseRoute {
 		const hwRouter = new HWRoute();
 
 		//add homework page route
-		router.get('/homework', (req: Request, res: Response) => {
-			hwRouter.homework(req, res);
-		});
+		router.get('/homework', (req, res) => hwRouter.homework(req, res));
 
-		router.get('/homework/add', (req: Request, res: Response) => {
-			hwRouter.add(req, res);
-		});
+		router.get('/homework/add', (req, res) => hwRouter.add(req, res));
 
-		router.get('/homework/judge/:homeworkId([0-9]+)', (req: Request, res: Response) => {
-			hwRouter.judge(req, res);
-		});
+		router.get('/homework/judge/:homeworkId([0-9]+)', (req, res) => hwRouter.judge(req, res));
 	}
 
 	/**
@@ -100,62 +63,46 @@ export class HWRoute extends BaseRoute {
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
 	 */
-	public homework(req: Request, res: Response) {
+	public async homework(req: Request, res: Response) {
 		this.title = 'Homework List';
 
-		dbClient.query(
-			req.session.signIn ? HWRoute.hwQuery(req.session.studentId) : HWRoute.guestHwQuery,
-			(err, searchResult) => {
-				if (err) {
-					logger.error('[HWRoute::homework]');
-					logger.error(util.inspect(err, {showHidden: false}));
-					res.sendStatus(500);
-					return;
-				}
+		try {
+			const [homeworkList, logList] = await Promise.all([
+				db.homework.findAll({
+					attributes: ['id', 'startDate', 'endDate', 'name'],
+					include: [{
+						model: db.homeworkGroup,
+						as: 'groups',
+						attributes: ['id', 'subtitle'],
 
-				let currentId = -1;
-				let currentObject: {
-					id: number,
-					name: string,
-					startDate: string,
-					dueDate: string,
-					description: Array<string>,
-					leftMillis: number,
-					attachments: Array<{ id: number, name: string, submitted?: boolean }>
-				};
-				let homework = [];
+						include: [{
+							model: db.homeworkEntry,
+							as: 'entries',
+							attributes: ['id', 'name']
+						}]
+					}, {
+						model: db.homeworkDescription,
+						as: 'descriptions'
+					}]
+				}),
+				db.homeworkLog.findAll({
+					where: {studentId: req.session.studentId},
+					attributes: ['entryId'],
+					group: 'entryId',
+					raw: true
+				})
+			]);
 
-				for (let record of searchResult) {
-					if (record.homework_id != currentId) {
-						currentObject = {
-							id: record.homework_id,
-							name: decodeURIComponent(record.name),
-							startDate: monthNames[record.start_date.getMonth()] + ' ' + record.start_date.getDate(),
-							dueDate: monthNames[record.end_date.getMonth()] + ' ' + record.end_date.getDate(),
-							description: record.description.split('|'),
-							leftMillis: record.end_date - Date.now() + 24 * 60 * 60 * 1000,
-							attachments: []
-						};
-						homework.push(currentObject);
+			res.locals.homeworkList = homeworkList.reverse();
+			res.locals.submitHistory = logList.reduce((prev, curr) => prev.add(curr.entryId), new Set<number>());
 
-						currentId = record.homework_id;
-					}
-
-					currentObject.attachments.push({
-						id: record.file_id,
-						name: decodeURIComponent(record.file_name),
-						submitted: record.submitted
-					});
-				}
-
-				logger.debug(util.inspect(homework, {showHidden: false, depth: 1}));
-
-				res.locals.homeworkList = homework.reverse();
-
-				//render template
-				this.render(req, res, 'homework');
-			}
-		);
+			//render template
+			return this.render(req, res, 'homework');
+		}
+		catch (err) {
+			logger.error('[HWRoute::homework]', err.stack);
+			return res.sendStatus(500);
+		}
 	}
 
 
@@ -175,7 +122,9 @@ export class HWRoute extends BaseRoute {
 		}
 		else {
 			//render template
-			return this.render(req, res, 'homework_add');
+			res.locals.problemType = ProblemType.HOMEWORK;
+
+			return this.render(req, res, 'problem_add');
 		}
 	}
 
@@ -188,80 +137,59 @@ export class HWRoute extends BaseRoute {
 	 * @param req {Request} The express Request object.
 	 * @param res {Response} The express Response object.
 	 */
-	public judge(req: Request, res: Response) {
-		this.title = 'Judging Homework';
-
+	public async judge(req: Request, res: Response) {
 		if (!req.session.admin) return res.redirect('/homework');
 
-		async.parallel(
-			[
-				(callback) => dbClient.query('SELECT name, student_id FROM user WHERE NOT is_dropped ORDER BY name;', callback),
-				(callback) => dbClient.query('SELECT homework_id, name FROM homework', callback),
-				(callback) => dbClient.query(
-					'SELECT homework_board.* ' +
-					'FROM homework_config JOIN homework_board ON homework_config.id = homework_board.attachment_id ' +
-					'WHERE homework_id = ?;',
-					req.params.homeworkId,
-					callback),
-				(callback) => dbClient.query(
-					'SELECT id, name, extension FROM homework_config WHERE homework_id = ?;',
-					req.params.homeworkId,
-					callback)
-			],
-			(err: IError, result: Array<[Array<any>, Array<IFieldInfo>]>) => {
-				if (err) {
-					logger.error('[HWRoute::judge]');
-					logger.error(util.inspect(err, {showHidden: false}));
-					res.sendStatus(500);
-					return;
-				}
+		this.title = 'Judging Homework';
 
-				res.locals.userList = result[0][0];
-				res.locals.homeworkList = result[1][0];
+		const homeworkId = req.params.homeworkId;
 
-				res.locals.userMap = result[0][0].reduce(
-					(prev: { [studentId: string]: string }, curr: { student_id: string, name: string }) => {
-						prev[curr.student_id] = decodeURIComponent(curr.name);
-						return prev;
-					}, {});
+		try {
+			const [userList, homeworkList, homeworkEntryList, logList]:
+				[userInstance[], homeworkInstance[], homeworkEntryInstance[], Log[]] = await Promise.all([
+				db.user.findAll({
+					attributes: ['studentId', 'name'],
+					where: {isAdmin: 1, isDropped: 0},
+					order: ['name'],
+					raw: true
+				}),
+				db.homework.findAll({attributes: ['id', 'name'], raw: true}),
+				db.homeworkEntry.findAll({raw: true}),
+				// language=MySQL
+				sequelize.query(`
+                    SELECT
+                        log_id                  AS \`logId\`,
+                        homework_log.student_id AS \`studentId\`,
+                        homework_id             AS \`homeworkId\`,
+                        group_id                AS \`groupId\`,
+                        homework_log.entry_id   AS \`entryId\`,
+                        submitted
+                    FROM homework_latest_entry
+                        JOIN homework_log ON homework_latest_entry.log_id = homework_log.id
+                    WHERE homework_id = ?`, {replacements: [homeworkId], type: QueryTypes.SELECT, raw: true})
+			]);
 
-				res.locals.boardMap = result[2][0].reduce(
-					(prev: { [studentId: string]: Array<{ logId: number, attachId: number, submitted: string }> },
-					 curr: { student_id: string, log_id: number, attachment_id: number, submitted: Date }) => {
-						if (!(curr.student_id in res.locals.userMap)) return prev;
+			res.locals.userList = userList;
+			res.locals.problemList = homeworkList;
+			res.locals.entryInfo = homeworkEntryList.reduce(
+				(prev: { [key: number]: homeworkEntryInstance }, curr) => {
+					prev[curr.id] = curr;
+					return prev;
+				}, {});
+			res.locals.perStudentEntry = logList.reduce((groups: { [sdutendId: string]: Log[] }, item) => {
+				const val = item.studentId;
+				groups[val] = groups[val] || [];
+				groups[val].push(item);
+				return groups;
+			}, {});
+			res.locals.currentId = homeworkId;
 
-						let elem = prev[curr.student_id];
-
-						const item = {
-							logId: curr.log_id,
-							attachId: curr.attachment_id,
-							submitted: curr.submitted.toLocaleString()
-						};
-
-						if (elem) {
-							elem.push(item);
-						}
-						else {
-							prev[curr.student_id] = [item];
-						}
-
-						return prev;
-					}, {});
-
-				res.locals.homeworkConfig = result[3][0].reduce(
-					(prev: { [id: number]: { name: string, extension: string } },
-					 curr: { id: number, name: string, extension: string }) => {
-						prev[curr.id] = {
-							name: decodeURIComponent(curr.name),
-							extension: curr.extension
-						};
-						return prev;
-					}, {});
-
-				res.locals.currentId = req.params.homeworkId;
-
-				//render template
-				this.render(req, res, 'homework_manage');
-			});
+			//render template
+			return this.render(req, res, 'homework_manage');
+		}
+		catch (err) {
+			logger.error('[HWRoute::judge]', err.stack);
+			return res.sendStatus(500);
+		}
 	}
 }

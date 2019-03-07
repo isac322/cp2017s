@@ -1,39 +1,43 @@
-import * as archiver from "archiver";
-import * as express from "express";
-import {ReadStream} from "fs";
+import * as archiver from 'archiver'
+import * as express from 'express'
+import {ReadStream} from 'fs'
+import {logger} from '../../app'
 
 export interface ZipEntry {
-	[student_id: string]: { [fileName: string]: ReadStream }
+	name: string,
+	groups: Array<{
+		subtitle: string,
+		entries: Array<{
+			id: number,
+			name: string,
+			students: Map<string, ReadStream>
+		}>
+	}>
 }
 
-export function sendZip(res: express.Response, entries: ZipEntry, fileName: string) {
+export function sendZip(res: express.Response, zipInfo: ZipEntry) {
 	const file = archiver('zip', {gzipOptions: {level: 9}});
 
-	res.setHeader('Content-disposition', `attachment; filename=${fileName}.zip`);
+	const name = decodeURIComponent(zipInfo.name);
+
+	res.setHeader('Content-disposition', `attachment; filename=${name}.zip`);
+	res.type('zip');
 
 	file.pipe(res);
 
-	for (const studentId in entries) {
-		for (const name in entries[studentId]) {
-			file.append(entries[studentId][name], {name: `${studentId}/${name}`})
-		}
-	}
+	file.on('error', reason => {
+		logger.error('[zip::sendZip] : ', reason.stack);
+		res.sendStatus(500);
+	});
 
-	file.finalize();
-}
+	file.on('warning', reason => {
+		logger.warn('[zip::sendZip] : ', reason.stack);
+	});
 
-export function sendSingleZip(res: express.Response, entry: ZipEntry, fileName: string) {
-	const file = archiver('zip', {gzipOptions: {level: 9}});
+	for (const group of zipInfo.groups)
+		for (const entry of group.entries)
+			entry.students.forEach((stream, studentId) =>
+				file.append(stream, {name: `${name}/${studentId}/${group.subtitle}/${entry.name}`}));
 
-	res.setHeader('Content-disposition', `attachment; filename=${fileName}.zip`);
-
-	file.pipe(res);
-
-	for (const studentId in entry) {
-		for (const name in entry[studentId]) {
-			file.append(entry[studentId][name], {name: `${name}`})
-		}
-	}
-
-	file.finalize();
+	file.finalize()
 }

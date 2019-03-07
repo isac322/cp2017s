@@ -1,27 +1,15 @@
-FROM ubuntu:16.10
-MAINTAINER ByeongHun, Yoo <bh322yoo@gmail.com>
+FROM ubuntu:18.04
+MAINTAINER Byeonghoon, Yoo <bh322yoo@gmail.com>
 
-RUN apt-get update
-RUN apt-get install dirmngr -y
+RUN sed -Ei -e 's/http:\/\/archive.ubuntu.com\/ubuntu\//http:\/\/kr.archive.ubuntu.com\/ubuntu\//' -e 's/http:\/\/security.ubuntu.com\/ubuntu\//http:\/\/kr.archive.ubuntu.com\/ubuntu\//' /etc/apt/sources.list
 
-RUN sh -c 'echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" >> /etc/apt/sources.list.d/webupd8team-ubuntu-java-xenial.list'
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EEA14886
-
-RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections
-RUN apt-get update
-RUN apt-get install g++ oracle-java8-installer python3 jq -y
-
-RUN rm -rf /var/lib/apt/lists/*
-RUN rm -rf /var/cache/oracle-jdk8-installer
-RUN apt-get clean
+RUN apt update && apt install g++ openjdk-11-jdk python3 make -y && rm -rf /var/lib/apt/lists/* && apt clean
 
 ARG uid=1000
 RUN groupadd -g ${uid} tester && useradd -m -g tester -u ${uid} tester
 
-COPY judge.sh /home/tester/
-COPY compare.py /home/tester/
-RUN chown tester:tester /home/tester/judge.sh /home/tester/compare.py
-RUN chmod 500 /home/tester/judge.sh /home/tester/compare.py
+COPY judge.py /home/tester/
+RUN chown tester:tester /home/tester/judge.py && chmod 500 /home/tester/judge.py
 
 WORKDIR /home/tester
 USER tester

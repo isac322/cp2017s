@@ -1,8 +1,10 @@
 extends layout
 
 block header
-	script(src='/js/validator.min.js')
-	script(src='/js/jquery.form.min.js')
+	script(src='/js/validator.min.js', defer)
+	script(src='/js/jquery.form.min.js', defer)
+	script(src='/js/upload_entry.js', defer)
+	script(src='/js/card-run.js', defer)
 
 	link(rel='stylesheet', href='/css/card-style.css')
 
@@ -19,89 +21,14 @@ block content
 					| #[span.glyphicon.glyphicon-plus]
 					| Add
 
-	- var millis = 24 * 60 * 60 * 1000
+	include problem-card
 	each homework in homeworkList
-		.col-xs-12.col-md-6.homework-card
-			.panel.panel-default
-				.panel-body
-					.col-xs-12
-						h2.wrapped-text.card-header
-							b=homework.name
-								if admin
-									small
-										a(href='/homework/judge/' + homework.id).pull-right #[i.fa.fa-gavel(aria-hidden='true')] Judge
+		// TODO: variable graceDay
+		+card(homework, 'homework', 2)
 
-						.row
-							.col-xs-12.col-sm-4.col-md-12
-								h4
-									b Description
-								p
-									each desc in homework.description
-										a.wrapped-text(target='_blank', href=desc)=desc
-										br
-
-							.col-xs-6.col-sm-4
-								h4
-									b Start Date
-								p=homework.startDate
-
-							.col-xs-6.col-sm-4
-								h4
-									b Deadline
-								p=homework.dueDate
-
-					.col-xs-12
-						h4
-							if signIn
-								- var query = '/history?t=1&'
-								each attachment in homework.attachments
-									- query += 'hw=' + attachment.id + '&'
-								a(href=query) #[i.fa.fa-history(aria-hidden='true')] View history
-							a.pull-right.appender(role='button', data-toggle='collapse', href='#collapseExample' + homework.id, aria-expanded='false', aria-controls='collapseExample' + homework.id)
-								| #[i.fa.fa-upload(aria-hidden="true")]
-								| Submit
-								| #[span.glyphicon.glyphicon-menu-down]
-
-				ul.list-group.collapse(id='collapseExample' + homework.id)
-					each attachment in homework.attachments
-						form.upload-form(action='/homework/' + attachment.id, method='POST', encType="multipart/form-data", role='form', data-toggle="validator", data-focus='false')
-							li.list-group-item(class=attachment.submitted ? 'list-group-item-success' : undefined)
-								.row
-									if signIn && homework.leftMillis >= -2 * 24 * 60 * 60 * 1000
-										.col-xs-12.col-sm-5.vcenter
-											h4.wrapped-text
-												| #[span.glyphicon.glyphicon-file]
-												| &nbsp;
-												| #{attachment.name}
-
-										.col-xs-12.col-sm-7.vcenter
-											.form-group
-												.pull-right.input-group
-													input.form-control(type='text', data-validate='false', readonly)
-													.input-group-btn
-														span.btn.btn-default.btn-file Select
-															input(type='file' name='attachment', hidden, required)
-														button.btn.btn-primary(type='submit', role='submit', data-loading-text='<i class="fa fa-refresh fa-spin fa-fw" aria-hidden="true"></i> Sending...') Submit
-									else
-										.col-xs-12.vcenter
-											h4.wrapped-text
-												| #[span.glyphicon.glyphicon-file]
-												| &nbsp;
-												| #{attachment.name}
-
-
-				.panel-footer.text-center
-					if homework.leftMillis < 0
-						| Overpast
-					else if homework.leftMillis < millis
-						| Less than 24 hours
-					else if homework.leftMillis < 2 * millis
-						| 1 day left
-					else
-						| #{homework.leftMillis / millis >> 0} days left
+	// confirm modal
+	include modal-result
+	script(src='/js/compile_test.js', defer)
 
 	// confirm modal
 	include modal-confirm
-
-	script(src='/js/card-run.js')
-	script(src='/js/submit_non_judging_file.js')

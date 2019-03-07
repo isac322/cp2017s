@@ -1,4 +1,3 @@
-let accumulatedRowCount = 0;
 let currentRowCount = 0;
 
 const currentForm: JQuery = $('#create-form');
@@ -7,23 +6,15 @@ const attachList: JQuery = $('#attach-list');
 
 const btnAppend: JQuery = $('#btn-append-item');
 
-btnAppend.click((event: JQueryEventObject) => {
+btnAppend.on('click', (event: JQuery.ClickEvent<HTMLAnchorElement>) => {
 	event.preventDefault();
 
 	// create new row and add to list-group
 	const attachRow: JQuery = attachTemplate.clone();
 	attachRow.appendTo(attachList).fadeIn(400);
 
-	// change
-	const nameColumn = attachRow.find('.file-name:first');
-	nameColumn.find('input:first').attr('name', 'attachment[' + accumulatedRowCount + '][name]');
-
-	const extColumn = attachRow.find('.extension:first');
-	extColumn.find('select:first').attr('name', 'attachment[' + accumulatedRowCount + '][extension]');
-
 	currentForm.validator('update');
 
-	accumulatedRowCount++;
 	currentRowCount++;
 
 	if (currentRowCount == 2) {
@@ -36,7 +27,7 @@ btnAppend.trigger('click');
 attachList.children().first().find('.wrapper-btn-remove:first').hide();
 
 
-$('body').on('click', '.btn-remove-item', (event: JQueryEventObject) => {
+$('body').on('click', '.btn-remove-item', (event: JQuery.ClickEvent<HTMLAnchorElement>) => {
 	const clicked = $(event.target).closest('li');
 
 	currentRowCount--;
